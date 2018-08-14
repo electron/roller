@@ -1,4 +1,4 @@
-[![Build Status](https://img.shields.io/travis/electron/roller.svg)](https://travis-ci.org/electron/roller)
+[![Build Status](https://travis-ci.com/electron/roller.svg?branch=master)](https://travis-ci.com/electron/roller)
 
 # Roller
 
@@ -11,7 +11,7 @@ to the submodule reference in the main electron repository
 # Install dependencies
 npm install
 
-# Run the bot
+# Run the service
 npm start
 ```
 
