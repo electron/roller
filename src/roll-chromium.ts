@@ -1,7 +1,12 @@
+import * as debug from 'debug';
+
 import { getOctokit } from './utils/octokit';
 import { FORK_OWNER, FORK_NAME } from './constants';
 
+const d = debug('roller:rollChromium()');
+
 const updateDepsFile = async (forkRef: string, libccRef: string) => {
+  d(`updating deps file for: ${forkRef}`);
   const github = await getOctokit();
   let existing;
 
@@ -14,7 +19,7 @@ const updateDepsFile = async (forkRef: string, libccRef: string) => {
     });
   } catch (error) {
     if (error.code === 404) return true;
-    console.error(error);
+    d('deps update error', error);
     return false;
   }
 
@@ -38,6 +43,7 @@ const updateDepsFile = async (forkRef: string, libccRef: string) => {
 };
 
 const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef: string) => {
+  d(`updating git submodule for: ${forkRef}`);
   const github = await getOctokit();
 
   const tree = await github.gitdata.createTree({
@@ -80,6 +86,7 @@ const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef
 export async function rollChromium(
   electronBranch: string, libccRef: string
 ): Promise<string | null> {
+  d(`triggered for electronBranch=${electronBranch} libccRef=${libccRef}`);
   const github = await getOctokit();
   // Get current SHA of {electronBranch} on electron/electron
   const electronReference = await github.gitdata.getReference({
@@ -102,7 +109,7 @@ export async function rollChromium(
     await updateGitSubmodule(forkRef, electronSha, libccRef);
     await updateDepsFile(forkRef, libccRef);
   } catch (error) {
-    console.warn(`rollChromium() failed`, error);
+    d(`ailed`, error);
     return null;
   }
 

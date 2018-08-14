@@ -1,8 +1,10 @@
-import { GitdataCreateReferenceParams, ReposMergeParams } from '@octokit/rest';
+import * as debug from 'debug';
 
 import { raisePR } from './pr';
 import { rollChromium } from "./roll-chromium";
 import { branchFromRef } from './utils/branch-from-ref';
+
+const d = debug('roller:handleLibccPush()');
 
 /**
  * Handle a push to `/libcc-hook`.
@@ -12,21 +14,29 @@ import { branchFromRef } from './utils/branch-from-ref';
  * @returns {Promise void}
  */
 export async function handleLibccPush(
-  _, data?: any
+  _, data?: { ref: string, after: string }
 ): Promise<void> {
   if (data && data.ref) {
+    d('handling push');
     const { ref } = data;
     const branch = branchFromRef(ref);
 
     if (branch) {
+      d('upgrading chromium in fork');
       const forkBranchName = await rollChromium(branch, data.after)
       if (forkBranchName) {
+        d('raising PR');
         await raisePR(forkBranchName, branch);
+        return;
+      } else {
+        d('libcc upgrade failed, not raising any PRs');
+        return;
       }
     } else {
-      console.log(`handleLibccPush(): Received ${ref}, not doing anything.`);
+      d(`received ${ref}, could not detect target branch, not doing anything`);
+      return;
     }
   }
 
-  console.log(`handleLibccPush(): Received unknown request, not doing anything`);
+  d(`received unknown request, not doing anything`);
 }
