@@ -1,11 +1,11 @@
 import * as debug from 'debug';
 
 import { getOctokit } from './utils/octokit';
-import { FORK_OWNER, FORK_NAME } from './constants';
+import { FORK_OWNER, Commit } from './constants';
 
 const d = debug('roller:raisePR()');
 
-export const raisePR = async (forkBranchName: string, targetBranch: string) => {
+export const raisePR = async (forkBranchName: string, targetBranch: string, extraCommits: Commit[]) => {
   d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
   const github = await getOctokit();
 
@@ -24,8 +24,10 @@ export const raisePR = async (forkBranchName: string, targetBranch: string) => {
     repo: 'electron',
     base: targetBranch,
     head: `${FORK_OWNER}:${forkBranchName}`,
-    title: 'chore: bump libcc',
-    body: 'Updating libcc reference to latest'
+    title: `chore: bump libcc (${targetBranch})`,
+    body: `Updating libcc reference to latest.  Changes since the last roll:
+
+${extraCommits.map(commit => `* [${commit.sha.substr(6)}](https://github.com/electron/libchromiumcontent/commit/${commit.sha}) ${commit.message}`)}`
   });
   d(`created new PR with number: #${newPr.data.number}`);
 

@@ -3,9 +3,6 @@ import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import * as GithubWebHook from 'express-github-webhook';
 
-import { raisePR } from './pr';
-import { branchFromRef } from './utils/branch-from-ref';
-import { rollChromium } from './roll-chromium';
 import { handleLibccPush } from './handlers';
 
 const app = express();
