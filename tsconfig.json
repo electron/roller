@@ -15,7 +15,6 @@
 		"node_modules",
 		"tests",
 		"lib",
-		"working",
 		"coverage"
 	]
 }
