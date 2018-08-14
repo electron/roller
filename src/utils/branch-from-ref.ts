@@ -23,6 +23,7 @@ export function branchFromRef(input: string): string | null {
   if (lastRef === 'master') {
     return 'master';
   } else {
+    RGX_ELECTRON_RELEASE.lastIndex = 0;
     const electronBranchMatch = RGX_ELECTRON_RELEASE.exec(lastRef);
 
     if (Array.isArray(electronBranchMatch)) {

@@ -11,6 +11,13 @@ describe('branchFromRef()', () => {
     expect(branch).toBe('3-0-x');
   });
 
+  it('returns an electron release branch when called consecutively in a process', () => {
+    const branch = branchFromRef(`refs/HEADS/electron-3-0-x`);
+    expect(branch).toBe('3-0-x');
+    const branch2 = branchFromRef(`refs/HEADS/electron-3-0-x`);
+    expect(branch2).toBe('3-0-x');
+  });
+
   it(`returns null if it's anything else`, () => {
     const branch = branchFromRef(`refs/HEADS/bwap-bwap`);
     expect(branch).toBe(null);
