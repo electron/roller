@@ -1,0 +1,24 @@
+{
+  "name": "trop",
+  "description": "a bot that does automated libcc PRs for Electron",
+  "scripts": {
+  },
+  "env": {
+    "GITHUB_TOKEN": {
+      "required": true
+    },
+    "GITHUB_SECRET": {
+      "required": true
+    }
+  },
+  "formation": {
+  },
+  "addons": [
+
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
