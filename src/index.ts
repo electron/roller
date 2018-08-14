@@ -1,11 +1,12 @@
-import github from '@octokit/rest';
-import slack from '@slack/client';
 
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import * as GithubWebHook from 'express-github-webhook';
 
-import rollChromium from './roll-chromium';
+import { raisePR } from './pr';
+import { branchFromRef } from './utils/branch-from-ref';
+import { rollChromium } from './roll-chromium';
+import { handleLibccPush } from './handlers';
 
 const app = express();
 app.use(bodyParser.json());
@@ -17,28 +18,10 @@ const libccHookHandler = GithubWebHook({
 
 app.use(libccHookHandler);
 
-libccHookHandler.on('push', (repo, data) => {
-  let targetElectronBranch: string;
-  const { ref } = data;
-  // In a string that looks like ""/HEAD/blub/blab", match
-  // the last [A-Za-z] that isn't followed by a /
-  const lastRefMatch = ref.match(/([A-Za-z]*)(?!.*\/)/i);
-  const lastRef = Array.isArray(lastRefMatch) ? lastRefMatch[0] : null;
+libccHookHandler.on('push', handleLibccPush);
 
-  if (!lastRef) return;
+const port = process.env.PORT || 8080;
 
-  if (lastRef === 'master') {
-    targetElectronBranch = 'master';
-  } else {
-    const electronBranchMatch = /^electron-([0-9]-[0-9]-x)$/.match(lastRef);
-    if (electronBranchMatch) {
-      targetElectronBranch = electronBranchMatch[1];
-    }
-  }
-  if (targetElectronBranch) {
-    rollChromium(targetElectronBranch, data.head)
-  }
+app.listen(port, () => {
+  console.info(`Listening on port: ${port}`);
 });
-
-app.
-
