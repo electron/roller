@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 
 const libccHookHandler = GithubWebHook({
   path: '/libcc-hook',
-  secret: process.env.GITHUB_SECRET || 'secret'
+  secret: process.env.GITHUB_SECRET || 'secret',
 });
 
 app.use(libccHookHandler);

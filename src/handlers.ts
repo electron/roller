@@ -15,7 +15,7 @@ const d = debug('roller:handleLibccPush()');
  * @returns {Promise void}
  */
 export async function handleLibccPush(
-  _, data?: { ref: string, after: string }
+  _, data?: { ref: string, after: string },
 ): Promise<void> {
   if (data && data.ref) {
     d('handling push');
