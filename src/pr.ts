@@ -1,7 +1,7 @@
 import * as debug from 'debug';
 
+import { Commit, FORK_OWNER } from './constants';
 import { getOctokit } from './utils/octokit';
-import { FORK_OWNER, Commit } from './constants';
 
 const d = debug('roller:raisePR()');
 

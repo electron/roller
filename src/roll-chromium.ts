@@ -1,7 +1,7 @@
 import * as debug from 'debug';
 
+import { FORK_NAME, FORK_OWNER } from './constants';
 import { getOctokit } from './utils/octokit';
-import { FORK_OWNER, FORK_NAME } from './constants';
 
 const d = debug('roller:rollChromium()');
 
