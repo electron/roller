@@ -39,7 +39,7 @@ export const getExtraCommits = async (electronBranch, libccCommit): Promise<Comm
     head: libccCommit,
   });
 
-  return diff.data.commits.map((commit) => ({
+  return diff.data.commits.map(commit => ({
     sha: commit.sha,
     message: commit.commit.message,
   }));
