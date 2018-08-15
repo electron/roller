@@ -109,7 +109,7 @@ export async function rollChromium(
     await updateGitSubmodule(forkRef, electronSha, libccRef);
     await updateDepsFile(forkRef, libccRef);
   } catch (error) {
-    d(`ailed`, error);
+    d(`failed`, error);
     return null;
   }
 
