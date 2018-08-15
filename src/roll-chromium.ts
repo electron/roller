@@ -53,7 +53,7 @@ const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef
     tree: [
       {
         path: 'vendor/libchromiumcontent',
-        mode: "160000",
+        mode: '160000',
         type: 'commit',
         sha: libccRef,
       },

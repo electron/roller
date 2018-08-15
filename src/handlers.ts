@@ -2,7 +2,7 @@ import * as debug from 'debug';
 
 import { getExtraCommits } from './get-extra-commits';
 import { raisePR } from './pr';
-import { rollChromium } from "./roll-chromium";
+import { rollChromium } from './roll-chromium';
 import { branchFromRef } from './utils/branch-from-ref';
 
 const d = debug('roller:handleLibccPush()');

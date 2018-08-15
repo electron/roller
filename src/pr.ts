@@ -19,6 +19,7 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
   });
 
   d('creating new PR');
+  const urlBase = 'https://github.com/electron/libchromiumcontent/commit/';
   const newPr = await github.pullRequests.create({
     owner: 'electron',
     repo: 'electron',
@@ -27,7 +28,8 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
     title: `chore: bump libcc (${targetBranch})`,
     body: `Updating libcc reference to latest.  Changes since the last roll:
 
-${extraCommits.map(commit => `* [\`${commit.sha.substr(0, 8)}\`](https://github.com/electron/libchromiumcontent/commit/${commit.sha}) ${commit.message}`).join('\n')}`,
+${extraCommits.map((commit) =>
+      `* [\`${commit.sha.substr(0, 8)}\`](${urlBase}/${commit.sha}) ${commit.message}`).join('\n')}`,
   });
   d(`created new PR with number: #${newPr.data.number}`);
 
