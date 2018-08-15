@@ -1,6 +1,6 @@
 
-import * as express from 'express';
 import * as bodyParser from 'body-parser';
+import * as express from 'express';
 import * as GithubWebHook from 'express-github-webhook';
 
 import { handleLibccPush } from './handlers';
@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 
 const libccHookHandler = GithubWebHook({
   path: '/libcc-hook',
-  secret: process.env.GITHUB_SECRET || 'secret'
+  secret: process.env.GITHUB_SECRET || 'secret',
 });
 
 app.use(libccHookHandler);
