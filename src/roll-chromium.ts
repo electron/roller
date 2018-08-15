@@ -15,7 +15,7 @@ const updateDepsFile = async (forkRef: string, libccRef: string) => {
       owner: FORK_OWNER,
       repo: FORK_NAME,
       path: 'DEPS',
-      ref: forkRef
+      ref: forkRef,
     });
   } catch (error) {
     if (error.code === 404) return true;
@@ -26,7 +26,7 @@ const updateDepsFile = async (forkRef: string, libccRef: string) => {
   const content = Buffer.from(existing.data.content, 'base64').toString('utf8');
   const newContent = content.replace(
     /(libchromiumcontent_revision':\n +').+?',/gm,
-    `$1${libccRef}',`
+    `$1${libccRef}',`,
   );
 
   const commit = await github.repos.updateFile({
@@ -53,11 +53,11 @@ const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef
     tree: [
       {
         path: 'vendor/libchromiumcontent',
-        mode: "160000",
+        mode: '160000',
         type: 'commit',
         sha: libccRef,
-      }
-    ]
+      },
+    ],
   });
 
   const commit = await github.gitdata.createCommit({
@@ -84,7 +84,7 @@ const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef
  * @returns {Promise<boolean>}
  */
 export async function rollChromium(
-  electronBranch: string, libccRef: string
+  electronBranch: string, libccRef: string,
 ): Promise<string | null> {
   d(`triggered for electronBranch=${electronBranch} libccRef=${libccRef}`);
   const github = await getOctokit();
