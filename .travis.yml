@@ -5,4 +5,5 @@ node_js:
 notifications:
   disabled: true
 script:
-  - npm run test
+  - yarn run lint
+  - yarn run test

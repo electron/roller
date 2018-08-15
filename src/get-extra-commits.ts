@@ -1,7 +1,7 @@
 import * as debug from 'debug';
 
-import { getOctokit } from './utils/octokit';
 import { Commit } from './constants';
+import { getOctokit } from './utils/octokit';
 
 const d = debug('roller:getExtraCommits()');
 

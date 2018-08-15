@@ -1,9 +1,11 @@
 import * as debug from 'debug';
 
+import { Commit, FORK_OWNER } from './constants';
 import { getOctokit } from './utils/octokit';
-import { FORK_OWNER, Commit } from './constants';
 
 const d = debug('roller:raisePR()');
+
+const COMMIT_URL_BASE = 'https://github.com/electron/libchromiumcontent/commit/';
 
 export const raisePR = async (forkBranchName: string, targetBranch: string, extraCommits: Commit[]) => {
   d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
@@ -15,7 +17,7 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
     base: targetBranch,
     owner: 'electron',
     repo: 'electron',
-    state: 'open'
+    state: 'open',
   });
 
   d('creating new PR');
@@ -27,9 +29,11 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
     title: `chore: bump libcc (${targetBranch})`,
     body: `Updating libcc reference to latest.  Changes since the last roll:
 
-${extraCommits.map(commit => `* [\`${commit.sha.substr(0, 8)}\`](https://github.com/electron/libchromiumcontent/commit/${commit.sha}) ${commit.message}`).join('\n')}
+${extraCommits.map((commit) =>
+      `* [\`${commit.sha.substr(0, 8)}\`](${COMMIT_URL_BASE}/${commit.sha}) ${commit.message}`).join('\n')}
 
-Notes: no-notes`});
+Notes: no-notes`,
+  });
   d(`created new PR with number: #${newPr.data.number}`);
 
   d('closing old PRs');
@@ -40,7 +44,7 @@ Notes: no-notes`});
       number: pr.number,
       repo: 'electron',
       owner: 'electron',
-      body: `Closing PR as it is superceded by #${newPr.data.number}`
+      body: `Closing PR as it is superceded by #${newPr.data.number}`,
     });
 
     await github.pullRequests.update({
@@ -50,4 +54,4 @@ Notes: no-notes`});
       number: pr.number,
     });
   }
-}
+};
