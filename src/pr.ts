@@ -49,4 +49,4 @@ ${extraCommits.map(commit => `* [\`${commit.sha.substr(0, 8)}\`](https://github.
       number: pr.number,
     });
   }
-}
+};

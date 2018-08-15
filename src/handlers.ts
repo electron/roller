@@ -24,7 +24,7 @@ export async function handleLibccPush(
 
     if (branch) {
       d('upgrading chromium in fork');
-      const forkBranchName = await rollChromium(branch, data.after)
+      const forkBranchName = await rollChromium(branch, data.after);
       if (forkBranchName) {
         d('raising PR');
         await raisePR(forkBranchName, branch, await getExtraCommits(branch, data.after));
