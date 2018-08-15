@@ -5,6 +5,8 @@ import { getOctokit } from './utils/octokit';
 
 const d = debug('roller:raisePR()');
 
+const COMMIT_URL_BASE = 'https://github.com/electron/libchromiumcontent/commit/';
+
 export const raisePR = async (forkBranchName: string, targetBranch: string, extraCommits: Commit[]) => {
   d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
   const github = await getOctokit();
@@ -19,7 +21,6 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
   });
 
   d('creating new PR');
-  const urlBase = 'https://github.com/electron/libchromiumcontent/commit/';
   const newPr = await github.pullRequests.create({
     owner: 'electron',
     repo: 'electron',
@@ -29,7 +30,7 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
     body: `Updating libcc reference to latest.  Changes since the last roll:
 
 ${extraCommits.map((commit) =>
-      `* [\`${commit.sha.substr(0, 8)}\`](${urlBase}/${commit.sha}) ${commit.message}`).join('\n')}`,
+      `* [\`${commit.sha.substr(0, 8)}\`](${COMMIT_URL_BASE}/${commit.sha}) ${commit.message}`).join('\n')}`,
   });
   d(`created new PR with number: #${newPr.data.number}`);
 
