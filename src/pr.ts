@@ -27,8 +27,9 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
     title: `chore: bump libcc (${targetBranch})`,
     body: `Updating libcc reference to latest.  Changes since the last roll:
 
-${extraCommits.map(commit => `* [\`${commit.sha.substr(0, 8)}\`](https://github.com/electron/libchromiumcontent/commit/${commit.sha}) ${commit.message}`).join('\n')}`
-  });
+${extraCommits.map(commit => `* [\`${commit.sha.substr(0, 8)}\`](https://github.com/electron/libchromiumcontent/commit/${commit.sha}) ${commit.message}`).join('\n')}
+
+Notes: no-notes`});
   d(`created new PR with number: #${newPr.data.number}`);
 
   d('closing old PRs');
