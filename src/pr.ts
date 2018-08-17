@@ -30,7 +30,9 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
     body: `Updating libcc reference to latest.  Changes since the last roll:
 
 ${extraCommits.map((commit) =>
-      `* [\`${commit.sha.substr(0, 8)}\`](${COMMIT_URL_BASE}/${commit.sha}) ${commit.message}`).join('\n')}`,
+      `* [\`${commit.sha.substr(0, 8)}\`](${COMMIT_URL_BASE}/${commit.sha}) ${commit.message}`).join('\n')}
+
+Notes: no-notes`,
   });
   d(`created new PR with number: #${newPr.data.number}`);
 
