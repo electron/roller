@@ -6,6 +6,7 @@ import { getOctokit } from './utils/octokit';
 const d = debug('roller:raisePR()');
 
 const COMMIT_URL_BASE = 'https://github.com/electron/libchromiumcontent/commit/';
+const ISSUE_URL_BASE = 'https://github.com/electron/libchromiumcontent/issues/';
 
 export const raisePR = async (forkBranchName: string, targetBranch: string, extraCommits: Commit[]) => {
   d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
@@ -29,8 +30,11 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
     title: `chore: bump libcc (${targetBranch})`,
     body: `Updating libcc reference to latest.  Changes since the last roll:
 
-${extraCommits.map((commit) =>
-      `* [\`${commit.sha.substr(0, 8)}\`](${COMMIT_URL_BASE}/${commit.sha}) ${commit.message}`).join('\n')}
+${extraCommits.map((commit) => {
+      const sha = `[\`${commit.sha.substr(0, 8)}\`](${COMMIT_URL_BASE}${commit.sha})`;
+      const msg = commit.message.replace(/#(\d+)/g, `${ISSUE_URL_BASE}$1`);
+      return `* ${sha} ${msg}`;
+    }).join('\n')}
 
 Notes: no-notes`,
   });
