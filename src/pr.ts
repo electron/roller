@@ -32,7 +32,7 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
 
 ${extraCommits.map((commit) => {
       const sha = `[\`${commit.sha.substr(0, 8)}\`](${COMMIT_URL_BASE}${commit.sha})`;
-      const msg = commit.message.replace(/#(\d+)/g, `${ISSUE_URL_BASE}$1`);
+      const msg = commit.message.replace(/(^|[\s\(\[])#(\d+)($|[\s\)\]])/g, `$1${ISSUE_URL_BASE}$2$3`);
       return `* ${sha} ${msg}`;
     }).join('\n')}
 
