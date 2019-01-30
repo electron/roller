@@ -59,3 +59,60 @@ Notes: no-notes`,
     });
   }
 };
+
+export const raisePR4 = async (forkBranchName: string, targetBranch: string, extraCommits: Commit[], chromiumVersion: string) => {
+  d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
+  const github = await getOctokit();
+
+  d('fetching existing PRs');
+  const existingPrsForBranch = await github.pullRequests.getAll({
+    per_page: 100,
+    base: targetBranch,
+    owner: 'electron',
+    repo: 'electron',
+    state: 'open',
+  });
+
+  for (const pr of existingPrsForBranch.data) {
+    if (pr.user.login !== FORK_OWNER) continue;
+
+    if (pr.title.includes(chromiumVersion)) {
+      d(`Found pr #${pr.number} already open for ${chromiumVersion}, won't open a new one`)
+      return
+    }
+  }
+
+  d('creating new PR');
+  const newPr = await github.pullRequests.create({
+    owner: 'electron',
+    repo: 'electron',
+    base: targetBranch,
+    head: `${FORK_OWNER}:${forkBranchName}`,
+    title: `chore: bump chromium to ${chromiumVersion} (${targetBranch})`,
+    body: `Updating Chromium to ${chromiumVersion}.  Changes since the last roll:
+
+${extraCommits.map((commit) => '- TODO').join('\n')}
+
+Notes: Updated Chromium to ${chromiumVersion}.`,
+  });
+  d(`created new PR with number: #${newPr.data.number}`);
+
+  d('closing old PRs');
+  for (const pr of existingPrsForBranch.data) {
+    if (pr.user.login !== FORK_OWNER) continue;
+
+    await github.issues.createComment({
+      number: pr.number,
+      repo: 'electron',
+      owner: 'electron',
+      body: `Closing PR as it is superceded by #${newPr.data.number}`,
+    });
+
+    await github.pullRequests.update({
+      state: 'closed',
+      owner: 'electron',
+      repo: 'electron',
+      number: pr.number,
+    });
+  }
+};

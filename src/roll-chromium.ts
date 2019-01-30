@@ -1,9 +1,47 @@
 import * as debug from 'debug';
+import * as Github from '@octokit/rest';
 
 import { FORK_NAME, FORK_OWNER } from './constants';
 import { getOctokit } from './utils/octokit';
 
 const d = debug('roller:rollChromium()');
+
+const updateDepsFile4 = async (forkRef: string, chromiumVersion: string) => {
+  d(`updating deps file for: ${forkRef}`);
+  const github = await getOctokit();
+  let existing: Github.AnyResponse;
+
+  try {
+    existing = await github.repos.getContent({
+      owner: FORK_OWNER,
+      repo: FORK_NAME,
+      path: 'DEPS',
+      ref: forkRef,
+    });
+  } catch (error) {
+    if (error.code === 404) return true;
+    d('deps update error', error);
+    return false;
+  }
+
+  const content = Buffer.from(existing.data.content, 'base64').toString('utf8');
+  const newContent = content.replace(
+    /(chromium_version':\n +').+?',/gm,
+    `$1${chromiumVersion}',`,
+  );
+
+  const commit = await github.repos.updateFile({
+    owner: FORK_OWNER,
+    repo: FORK_NAME,
+    path: 'DEPS',
+    content: Buffer.from(newContent).toString('base64'),
+    message: `chore: bump chromium in DEPS to ${chromiumVersion}`,
+    sha: existing.data.sha,
+    branch: forkRef.substr(11),
+  });
+
+  return true;
+};
 
 const updateDepsFile = async (forkRef: string, libccRef: string) => {
   d(`updating deps file for: ${forkRef}`);
@@ -108,6 +146,39 @@ export async function rollChromium(
 
     await updateGitSubmodule(forkRef, electronSha, libccRef);
     await updateDepsFile(forkRef, libccRef);
+  } catch (error) {
+    d(`failed`, error);
+    return null;
+  }
+
+  return forkRef.substr(11);
+}
+
+
+export async function rollChromium4(
+  electronBranch: string, chromiumVersion: string,
+): Promise<string | null> {
+  d(`triggered for electronBranch=${electronBranch} chromiumVersion=${chromiumVersion}`);
+  const github = await getOctokit();
+  // Get current SHA of {electronBranch} on electron/electron
+  const electronReference = await github.gitdata.getReference({
+    owner: 'electron',
+    repo: 'electron',
+    ref: `heads/${electronBranch}`,
+  });
+  const electronSha = electronReference.data.object.sha;
+  const forkRef = `refs/heads/chromium-${chromiumVersion}-${Date.now()}`;
+
+  // Create new reference in electron-bot/electron for that SHA
+  try {
+    await github.gitdata.createReference({
+      owner: FORK_OWNER,
+      repo: FORK_NAME,
+      ref: forkRef,
+      sha: electronSha,
+    });
+
+    await updateDepsFile4(forkRef, chromiumVersion);
   } catch (error) {
     d(`failed`, error);
     return null;
