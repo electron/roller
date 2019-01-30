@@ -89,10 +89,8 @@ export async function handleChromiumCheck(): Promise<void> {
       if (forkBranchName) {
         d('raising PR');
         await raisePR4(forkBranchName, branch.name, [], latestUpstreamVersion);
-        return;
       } else {
-        d('chromium upgrade failed, not raising any PRs');
-        return;
+        d('chromium upgrade failed, not raising a PR');
       }
     }
   }
