@@ -1,5 +1,5 @@
-import * as debug from 'debug';
 import * as Github from '@octokit/rest';
+import * as debug from 'debug';
 
 import { FORK_NAME, FORK_OWNER } from './constants';
 import { getOctokit } from './utils/octokit';
@@ -153,7 +153,6 @@ export async function rollChromium(
 
   return forkRef.substr(11);
 }
-
 
 export async function rollChromium4(
   electronBranch: string, chromiumVersion: string,

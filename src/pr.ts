@@ -60,7 +60,12 @@ Notes: no-notes`,
   }
 };
 
-export const raisePR4 = async (forkBranchName: string, targetBranch: string, extraCommits: Commit[], chromiumVersion: string) => {
+export const raisePR4 = async (
+  forkBranchName: string,
+  targetBranch: string,
+  extraCommits: Commit[],
+  chromiumVersion: string,
+) => {
   d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
   const github = await getOctokit();
 
@@ -77,8 +82,8 @@ export const raisePR4 = async (forkBranchName: string, targetBranch: string, ext
     if (pr.user.login !== FORK_OWNER) continue;
 
     if (pr.title.includes(chromiumVersion)) {
-      d(`Found pr #${pr.number} already open for ${chromiumVersion}, won't open a new one`)
-      return
+      d(`Found pr #${pr.number} already open for ${chromiumVersion}, won't open a new one`);
+      return;
     }
   }
 
