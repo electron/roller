@@ -90,7 +90,7 @@ export async function handleChromiumCheck(): Promise<void> {
         d(`fetching chromium commits in ${chromiumVersion}..${latestUpstreamVersion}`);
         const chromiumCommits = await getChromiumCommits(chromiumVersion, latestUpstreamVersion);
         d('raising PR');
-        await raisePR4(forkBranchName, branch.name, chromiumCommits.log, latestUpstreamVersion);
+        await raisePR4(forkBranchName, branch.name, chromiumCommits.log, chromiumVersion, latestUpstreamVersion);
       } else {
         d('chromium upgrade failed, not raising a PR');
       }

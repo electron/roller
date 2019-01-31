@@ -65,6 +65,7 @@ export const raisePR4 = async (
   forkBranchName: string,
   targetBranch: string,
   extraCommits: ChromiumCommit[],
+  previousChromiumVersion: string,
   chromiumVersion: string,
 ) => {
   d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
@@ -91,6 +92,7 @@ export const raisePR4 = async (
   function commitLink(commit: ChromiumCommit): string {
     return `[${commit.commit.slice(0, 7)}](https://chromium.googlesource.com/chromium/src/+/${commit.commit})`;
   }
+  const diffLink = `https://chromium.googlesource.com/chromium/src/+/${previousChromiumVersion}..${chromiumVersion}`;
 
   d('creating new PR');
   const newPr = await github.pullRequests.create({
@@ -102,6 +104,8 @@ export const raisePR4 = async (
     body: `Updating Chromium to ${chromiumVersion}.  Changes since the last roll:
 
 ${extraCommits.map((commit) => `* ${commitLink(commit)} ${commit.message.split(/\n/)[0]}`).join('\n')}
+
+See [all changes in ${previousChromiumVersion}..${chromiumVersion}](${diffLink})
 
 Notes: Updated Chromium to ${chromiumVersion}.`,
   });
