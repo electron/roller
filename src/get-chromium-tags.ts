@@ -35,7 +35,7 @@ export interface ChromiumCommit {
 
 export function getChromiumCommits(fromRef: string, toRef: string): Promise<{log: ChromiumCommit[]}> {
   return new Promise((resolve, reject) => {
-    https.get(`https://chromium.googlesource.com/chromium/src/+log/${fromRef}..${toRef}`, (res) => {
+    https.get(`https://chromium.googlesource.com/chromium/src/+log/${fromRef}..${toRef}?format=JSON`, (res) => {
       let s = '';
       res.on('data', (d) => {
         s += d.toString('utf8');
