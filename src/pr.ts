@@ -90,7 +90,7 @@ export const raisePR4 = async (
   }
 
   function commitLink(commit: ChromiumCommit): string {
-    return `[\`${commit.commit.slice(0, 7)}\`](https://chromium.googlesource.com/chromium/src/+/${commit.commit})`;
+    return `[\`${commit.commit.slice(0, 7)}\`](https://chromium.googlesource.com/chromium/src/+/${commit.commit}^!)`;
   }
   const diffLink = `https://chromium.googlesource.com/chromium/src/+/${previousChromiumVersion}..${chromiumVersion}`;
 
