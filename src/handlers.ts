@@ -1,6 +1,6 @@
 import * as debug from 'debug';
 
-import { getChromiumTags } from './get-chromium-tags';
+import { getChromiumCommits, getChromiumTags } from './get-chromium-tags';
 import { getExtraCommits } from './get-extra-commits';
 import { raisePR, raisePR4 } from './pr';
 import { rollChromium, rollChromium4 } from './roll-chromium';
@@ -87,8 +87,10 @@ export async function handleChromiumCheck(): Promise<void> {
       d(`branch ${branch.name} could upgrade from ${chromiumVersion} to ${latestUpstreamVersion}`);
       const forkBranchName = await rollChromium4(branch.name, latestUpstreamVersion);
       if (forkBranchName) {
+        d(`fetching chromium commits in ${chromiumVersion}..${latestUpstreamVersion}`);
+        const chromiumCommits = await getChromiumCommits(chromiumVersion, latestUpstreamVersion);
         d('raising PR');
-        await raisePR4(forkBranchName, branch.name, [], latestUpstreamVersion);
+        await raisePR4(forkBranchName, branch.name, chromiumCommits.log, latestUpstreamVersion);
       } else {
         d('chromium upgrade failed, not raising a PR');
       }

@@ -1,6 +1,7 @@
 import * as debug from 'debug';
 
 import { Commit, FORK_OWNER } from './constants';
+import { ChromiumCommit } from './get-chromium-tags';
 import { getOctokit } from './utils/octokit';
 
 const d = debug('roller:raisePR()');
@@ -63,7 +64,7 @@ Notes: no-notes`,
 export const raisePR4 = async (
   forkBranchName: string,
   targetBranch: string,
-  extraCommits: Commit[],
+  extraCommits: ChromiumCommit[],
   chromiumVersion: string,
 ) => {
   d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
@@ -87,6 +88,10 @@ export const raisePR4 = async (
     }
   }
 
+  function commitLink(commit: ChromiumCommit): string {
+    return `[${commit.commit.slice(0, 7)}](https://chromium.googlesource.com/chromium/src/+/${commit.commit})`;
+  }
+
   d('creating new PR');
   const newPr = await github.pullRequests.create({
     owner: 'electron',
@@ -96,7 +101,7 @@ export const raisePR4 = async (
     title: `chore: bump chromium to ${chromiumVersion} (${targetBranch})`,
     body: `Updating Chromium to ${chromiumVersion}.  Changes since the last roll:
 
-${extraCommits.map((commit) => '- TODO').join('\n')}
+${extraCommits.map((commit) => `* ${commitLink(commit)} ${commit.message.split(/\n/)[0]}`).join('\n')}
 
 Notes: Updated Chromium to ${chromiumVersion}.`,
   });

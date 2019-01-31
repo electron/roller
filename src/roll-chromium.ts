@@ -155,7 +155,8 @@ export async function rollChromium(
 }
 
 export async function rollChromium4(
-  electronBranch: string, chromiumVersion: string,
+  electronBranch: string,
+  chromiumVersion: string,
 ): Promise<string | null> {
   d(`triggered for electronBranch=${electronBranch} chromiumVersion=${chromiumVersion}`);
   const github = await getOctokit();
