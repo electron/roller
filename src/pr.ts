@@ -101,15 +101,22 @@ export const raisePR4 = async (
     base: targetBranch,
     head: `${FORK_OWNER}:${forkBranchName}`,
     title: `chore: bump chromium to ${chromiumVersion} (${targetBranch})`,
-    body: `Updating Chromium to ${chromiumVersion}.  Changes since the last roll:
-
-${extraCommits.map((commit) => `* ${commitLink(commit)} ${commit.message.split(/\n/)[0]}`).join('\n')}
+    body: `Updating Chromium to ${chromiumVersion}.
 
 See [all changes in ${previousChromiumVersion}..${chromiumVersion}](${diffLink})
 
 Notes: Updated Chromium to ${chromiumVersion}.`,
   });
   d(`created new PR with number: #${newPr.data.number}`);
+  d(`adding change list comment to PR`);
+  await github.issues.createComment({
+    number: newPr.data.number,
+    repo: 'electron',
+    owner: 'electron',
+    body: `Changes since the last roll:
+
+${extraCommits.map((commit) => `* ${commitLink(commit)} ${commit.message.split(/\n/)[0]}`).join('\n')}`,
+  });
 
   d('closing old PRs');
   for (const pr of existingPrsForBranch.data) {
