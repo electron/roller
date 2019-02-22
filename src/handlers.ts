@@ -80,7 +80,9 @@ export async function handleChromiumCheck(): Promise<void> {
     const chromiumMajorVersion = Number(chromiumVersion.split('.')[0]);
     d(`computing latest upstream version for Chromium ${chromiumMajorVersion}`);
     const upstreamVersions = Object.keys(chromiumTags)
-      .filter((v) => Number(v.split('.')[0]) === chromiumMajorVersion)
+      .filter((v) =>
+        branch.name === 'master' // On master, we just want the highest tagged version.
+        || Number(v.split('.')[0]) === chromiumMajorVersion)
       .sort(compareVersions);
     const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
     if (compareVersions(latestUpstreamVersion, chromiumVersion) > 0) {
