@@ -7,8 +7,6 @@ import { rollChromium, rollChromium4 } from './roll-chromium';
 import { branchFromRef } from './utils/branch-from-ref';
 import { getOctokit } from './utils/octokit';
 
-const d = debug('roller:handleLibccPush()');
-
 /**
  * Handle a push to `/libcc-hook`.
  *
@@ -20,6 +18,7 @@ export async function handleLibccPush(
   _,
   data?: { ref: string, after: string },
 ): Promise<void> {
+  const d = debug('roller:handleLibccPush()');
   if (data && data.ref) {
     d('handling push');
     const { ref } = data;
@@ -58,6 +57,7 @@ function compareVersions(a: string, b: string): number {
 }
 
 export async function handleChromiumCheck(): Promise<void> {
+  const d = debug('roller:handleChromiumCheck()');
   d('fetching chromium tags');
   const chromiumTags = await getChromiumTags();
 
