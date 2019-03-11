@@ -64,7 +64,7 @@ Notes: no-notes`,
 export const raisePR4 = async (
   forkBranchName: string,
   targetBranch: string,
-  extraCommits: ChromiumCommit[],
+  extraCommits: {log: ChromiumCommit[], next?: string},
   previousChromiumVersion: string,
   chromiumVersion: string,
 ) => {
@@ -116,7 +116,9 @@ Notes: Updated Chromium to ${chromiumVersion}.`,
     owner: 'electron',
     body: `Changes since the last roll:
 
-${extraCommits.map((commit) => `* ${commitLink(commit)} ${commit.message.split(/\n/)[0]}`).join('\n')}`,
+${extraCommits.log.map((commit) => `* ${commitLink(commit)} ${commit.message.split(/\n/)[0]}`).join('\n')}` + (extraCommits.next ? `
+
+[More commits &raquo;](https://chromium.googlesource.com/chromium/src/+log/${previousChromiumVersion}..${chromiumVersion}` : ''),
   });
 
   d('closing old PRs');

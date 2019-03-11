@@ -33,7 +33,7 @@ export interface ChromiumCommit {
   'message': string;
 }
 
-export function getChromiumCommits(fromRef: string, toRef: string): Promise<{log: ChromiumCommit[]}> {
+export function getChromiumCommits(fromRef: string, toRef: string): Promise<{log: ChromiumCommit[], next?: string}> {
   return new Promise((resolve, reject) => {
     https.get(`https://chromium.googlesource.com/chromium/src/+log/${fromRef}..${toRef}?format=JSON`, (res) => {
       let s = '';
