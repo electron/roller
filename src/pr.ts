@@ -100,6 +100,7 @@ export const raisePR4 = async (
     repo: 'electron',
     base: targetBranch,
     head: `${FORK_OWNER}:${forkBranchName}`,
+    maintainer_can_modify: true,
     title: `chore: bump chromium to ${chromiumVersion} (${targetBranch})`,
     body: `Updating Chromium to ${chromiumVersion}.
 
