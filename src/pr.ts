@@ -93,6 +93,7 @@ export const raisePR4 = async (
     return `[\`${commit.commit.slice(0, 7)}\`](https://chromium.googlesource.com/chromium/src/+/${commit.commit}^!)`;
   }
   const diffLink = `https://chromium.googlesource.com/chromium/src/+/${previousChromiumVersion}..${chromiumVersion}`;
+  const logLink = `https://chromium.googlesource.com/chromium/src/+log/${previousChromiumVersion}..${chromiumVersion}`;
 
   d('creating new PR');
   const newPr = await github.pullRequests.create({
@@ -116,9 +117,10 @@ Notes: Updated Chromium to ${chromiumVersion}.`,
     owner: 'electron',
     body: `Changes since the last roll:
 
-${extraCommits.log.map((commit) => `* ${commitLink(commit)} ${commit.message.split(/\n/)[0]}`).join('\n')}` + (extraCommits.next ? `
+${extraCommits.log.map((commit) => `* ${commitLink(commit)} ${commit.message.split(/\n/)[0]}`).join('\n')}` +
+    (extraCommits.next ? `
 
-[More commits &raquo;](https://chromium.googlesource.com/chromium/src/+log/${previousChromiumVersion}..${chromiumVersion}` : ''),
+[More commits &raquo;](${logLink})` : ''),
   });
 
   d('closing old PRs');
