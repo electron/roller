@@ -99,7 +99,7 @@ export async function handleChromiumCheck(): Promise<void> {
 
   {
     d('getting DEPS for master');
-    const masterBranch = branches.data.filter((branch) => branch.name === 'master');
+    const masterBranch = branches.data.find((branch) => branch.name === 'master');
     const depsData = await github.repos.getContent({
       owner: 'electron',
       repo: 'electron',
