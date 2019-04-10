@@ -67,6 +67,7 @@ export const raisePR4 = async (
   extraCommits: {log: ChromiumCommit[], next?: string},
   previousChromiumVersion: string,
   chromiumVersion: string,
+  isLKGR: boolean,
 ) => {
   d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
   const github = await getOctokit();
@@ -80,11 +81,13 @@ export const raisePR4 = async (
     state: 'open',
   });
 
+  const prTitleVersion = isLKGR ? chromiumVersion.slice(0, 12) : chromiumVersion;
+
   for (const pr of existingPrsForBranch.data) {
     if (pr.user.login !== FORK_OWNER) continue;
 
-    if (pr.title.includes(chromiumVersion)) {
-      d(`Found pr #${pr.number} already open for ${chromiumVersion}, won't open a new one`);
+    if (pr.title.includes(prTitleVersion)) {
+      d(`Found pr #${pr.number} already open for ${prTitleVersion}, won't open a new one`);
       return;
     }
   }
@@ -102,12 +105,12 @@ export const raisePR4 = async (
     base: targetBranch,
     head: `${FORK_OWNER}:${forkBranchName}`,
     maintainer_can_modify: true,
-    title: `chore: bump chromium to ${chromiumVersion} (${targetBranch})`,
-    body: `Updating Chromium to ${chromiumVersion}.
+    title: `chore: bump chromium to ${prTitleVersion} (${targetBranch})`,
+    body: `Updating Chromium to ${chromiumVersion} (lkgr).
 
 See [all changes in ${previousChromiumVersion}..${chromiumVersion}](${diffLink})
 
-Notes: Updated Chromium to ${chromiumVersion}.`,
+Notes: ${isLKGR ? 'no-notes' : `Updated Chromium to ${chromiumVersion}.`}`,
   });
   d(`created new PR with number: #${newPr.data.number}`);
   d(`adding change list comment to PR`);

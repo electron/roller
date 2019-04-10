@@ -90,7 +90,7 @@ export async function handleChromiumCheck(): Promise<void> {
         d(`fetching chromium commits in ${chromiumVersion}..${latestUpstreamVersion}`);
         const chromiumCommits = await getChromiumCommits(chromiumVersion, latestUpstreamVersion);
         d('raising PR');
-        await raisePR4(forkBranchName, branch.name, chromiumCommits, chromiumVersion, latestUpstreamVersion);
+        await raisePR4(forkBranchName, branch.name, chromiumCommits, chromiumVersion, latestUpstreamVersion, false);
       } else {
         d('chromium upgrade failed, not raising a PR');
       }
@@ -116,7 +116,7 @@ export async function handleChromiumCheck(): Promise<void> {
         d(`fetching chromium commits in ${chromiumHash}..${lkgr.commit}`);
         const chromiumCommits = await getChromiumCommits(chromiumHash, lkgr.commit);
         d('raising PR');
-        await raisePR4(forkBranchName, masterBranch.name, chromiumCommits, chromiumHash, lkgr.commit);
+        await raisePR4(forkBranchName, masterBranch.name, chromiumCommits, chromiumHash, lkgr.commit, true);
       } else {
         d('chromium upgrade failed, not raising a PR');
       }
