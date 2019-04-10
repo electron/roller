@@ -17,11 +17,11 @@ function get(url: string): Promise<string> {
 }
 
 function getJSON(url: string): Promise<any> {
-  return get(url).then(s => JSON.parse(s.slice(s.indexOf('{'))))
+  return get(url).then((s) => JSON.parse(s.slice(s.indexOf('{'))));
 }
 
 export function getChromiumTags(): Promise<object> {
-  return getJSON('https://chromium.googlesource.com/chromium/src/+refs/tags?format=JSON')
+  return getJSON('https://chromium.googlesource.com/chromium/src/+refs/tags?format=JSON');
 }
 
 export interface ChromiumCommit {
@@ -42,5 +42,5 @@ export interface ChromiumCommit {
 }
 
 export function getChromiumCommits(fromRef: string, toRef: string): Promise<{log: ChromiumCommit[], next?: string}> {
-  return getJSON(`https://chromium.googlesource.com/chromium/src/+log/${fromRef}..${toRef}?format=JSON`)
+  return getJSON(`https://chromium.googlesource.com/chromium/src/+log/${fromRef}..${toRef}?format=JSON`);
 }
