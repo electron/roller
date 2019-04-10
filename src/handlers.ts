@@ -1,6 +1,6 @@
 import * as debug from 'debug';
 
-import { getChromiumCommits, getChromiumTags } from './get-chromium-tags';
+import { getChromiumCommits, getChromiumLkgr, getChromiumTags } from './get-chromium-tags';
 import { getExtraCommits } from './get-extra-commits';
 import { raisePR, raisePR4 } from './pr';
 import { rollChromium, rollChromium4 } from './roll-chromium';
@@ -65,7 +65,7 @@ export async function handleChromiumCheck(): Promise<void> {
   d('getting electron branches');
   const branches = await github.repos.getBranches({owner: 'electron', repo: 'electron', protected: true});
   const post4Branches = branches.data
-    .filter((branch) => branch.name === 'master' || Number(branch.name.split(/-/)[0]) >= 4);
+    .filter((branch) => Number(branch.name.split(/-/)[0]) >= 4);
 
   for (const branch of post4Branches) {
     d(`getting DEPS for ${branch.name}`);
@@ -91,6 +91,32 @@ export async function handleChromiumCheck(): Promise<void> {
         const chromiumCommits = await getChromiumCommits(chromiumVersion, latestUpstreamVersion);
         d('raising PR');
         await raisePR4(forkBranchName, branch.name, chromiumCommits, chromiumVersion, latestUpstreamVersion);
+      } else {
+        d('chromium upgrade failed, not raising a PR');
+      }
+    }
+  }
+
+  {
+    d('getting DEPS for master');
+    const masterBranch = branches.data.filter((branch) => branch.name === 'master');
+    const depsData = await github.repos.getContent({
+      owner: 'electron',
+      repo: 'electron',
+      path: 'DEPS',
+      ref: masterBranch.commit.sha,
+    });
+    const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
+    const [, chromiumHash] = /chromium_version':\n +'(.+?)',/m.exec(deps);
+    const lkgr = await getChromiumLkgr();
+    if (chromiumHash !== lkgr.commit) {
+      d(`updating master from ${chromiumHash} to ${lkgr.commit}`);
+      const forkBranchName = await rollChromium4(masterBranch.name, lkgr.commit);
+      if (forkBranchName) {
+        d(`fetching chromium commits in ${chromiumHash}..${lkgr.commit}`);
+        const chromiumCommits = await getChromiumCommits(chromiumHash, lkgr.commit);
+        d('raising PR');
+        await raisePR4(forkBranchName, masterBranch.name, chromiumCommits, chromiumHash, lkgr.commit);
       } else {
         d('chromium upgrade failed, not raising a PR');
       }

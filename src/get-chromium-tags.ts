@@ -44,3 +44,7 @@ export interface ChromiumCommit {
 export function getChromiumCommits(fromRef: string, toRef: string): Promise<{log: ChromiumCommit[], next?: string}> {
   return getJSON(`https://chromium.googlesource.com/chromium/src/+log/${fromRef}..${toRef}?format=JSON`);
 }
+
+export function getChromiumLkgr(): Promise<any> {
+  return getJSON(`https://chromium.googlesource.com/chromium/src/+/refs/heads/lkgr?format=JSON`);
+}
