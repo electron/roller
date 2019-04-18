@@ -17,7 +17,7 @@ const cleanUpRef = async (ref: string) => {
 
   const github = await getOctokit();
 
-  await github.gitdata.deleteReference({
+  await github.git.deleteRef({
     owner: REPO_OWNER,
     repo: REPO_NAME,
     ref,
@@ -30,7 +30,7 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
   const github = await getOctokit();
 
   d('fetching existing PRs');
-  const existingPrsForBranch = await github.pullRequests.getAll({
+  const existingPrsForBranch = await github.pulls.list({
     per_page: 100,
     base: targetBranch,
     owner: 'electron',
@@ -40,7 +40,7 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
 
   d('creating new PR');
   const prTitle = `chore: bump libcc (${targetBranch})`;
-  const newPr = await github.pullRequests.create({
+  const newPr = await github.pulls.create({
     owner: 'electron',
     repo: 'electron',
     base: targetBranch,
@@ -71,7 +71,7 @@ Notes: no-notes`,
       body: `Closing PR as it is superceded by #${newPr.data.number}`,
     });
 
-    await github.pullRequests.update({
+    await github.pulls.update({
       state: 'closed',
       owner: 'electron',
       repo: 'electron',
@@ -94,7 +94,7 @@ export const raisePR4 = async (
   const github = await getOctokit();
 
   d('fetching existing PRs');
-  const existingPrsForBranch = await github.pullRequests.getAll({
+  const existingPrsForBranch = await github.pulls.list({
     per_page: 100,
     base: targetBranch,
     owner: 'electron',
@@ -120,7 +120,7 @@ export const raisePR4 = async (
   const logLink = `https://chromium.googlesource.com/chromium/src/+log/${previousChromiumVersion}..${chromiumVersion}`;
 
   d('creating new PR');
-  const newPr = await github.pullRequests.create({
+  const newPr = await github.pulls.create({
     owner: 'electron',
     repo: 'electron',
     base: targetBranch,
@@ -160,7 +160,7 @@ ${extraCommits.log.map((commit) => `* ${commitLink(commit)} ${commit.message.spl
       body: `Closing PR as it is superceded by #${newPr.data.number}`,
     });
 
-    await github.pullRequests.update({
+    await github.pulls.update({
       state: 'closed',
       owner: 'electron',
       repo: 'electron',
