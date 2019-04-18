@@ -1,6 +1,6 @@
 import * as debug from 'debug';
 
-import { Commit, FORK_OWNER } from './constants';
+import { Commit, PR_USER, REPO_NAME, REPO_OWNER } from './constants';
 import { ChromiumCommit } from './get-chromium-tags';
 import { getOctokit } from './utils/octokit';
 
@@ -9,6 +9,7 @@ const d = debug('roller:raisePR()');
 const COMMIT_URL_BASE = 'https://github.com/electron/libchromiumcontent/commit/';
 const ISSUE_URL_BASE = 'https://github.com/electron/libchromiumcontent/issues/';
 
+// TODO: Remove once Electron 3 is EOL
 export const raisePR = async (forkBranchName: string, targetBranch: string, extraCommits: Commit[]) => {
   d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
   const github = await getOctokit();
@@ -23,12 +24,13 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
   });
 
   d('creating new PR');
+  const prTitle = `chore: bump libcc (${targetBranch})`;
   const newPr = await github.pullRequests.create({
     owner: 'electron',
     repo: 'electron',
     base: targetBranch,
-    head: `${FORK_OWNER}:${forkBranchName}`,
-    title: `chore: bump libcc (${targetBranch})`,
+    head: `${REPO_OWNER}:${forkBranchName}`,
+    title: prTitle,
     body: `Updating libcc reference to latest.  Changes since the last roll:
 
 ${extraCommits.map((commit) => {
@@ -43,7 +45,9 @@ Notes: no-notes`,
 
   d('closing old PRs');
   for (const pr of existingPrsForBranch.data) {
-    if (pr.user.login !== FORK_OWNER) continue;
+    if (pr.user.login !== PR_USER) continue;
+    // Handle other electron-bot PRs being open
+    if (pr.title !== prTitle) continue;
 
     await github.issues.createComment({
       number: pr.number,
@@ -84,7 +88,7 @@ export const raisePR4 = async (
   const prTitleVersion = isLKGR ? chromiumVersion.slice(0, 12) : chromiumVersion;
 
   for (const pr of existingPrsForBranch.data) {
-    if (pr.user.login !== FORK_OWNER) continue;
+    if (pr.user.login !== PR_USER) continue;
 
     if (pr.title.includes(prTitleVersion)) {
       d(`Found pr #${pr.number} already open for ${prTitleVersion}, won't open a new one`);
@@ -103,7 +107,7 @@ export const raisePR4 = async (
     owner: 'electron',
     repo: 'electron',
     base: targetBranch,
-    head: `${FORK_OWNER}:${forkBranchName}`,
+    head: `${REPO_NAME}:${forkBranchName}`,
     maintainer_can_modify: true,
     title: `chore: bump chromium to ${prTitleVersion} (${targetBranch})`,
     body: `Updating Chromium to ${chromiumVersion} (lkgr).
@@ -128,7 +132,9 @@ ${extraCommits.log.map((commit) => `* ${commitLink(commit)} ${commit.message.spl
 
   d('closing old PRs');
   for (const pr of existingPrsForBranch.data) {
-    if (pr.user.login !== FORK_OWNER) continue;
+    if (pr.user.login !== PR_USER) continue;
+    // Handle other electron-bot PRs being open
+    if (!pr.title.startsWith('chore: bump chromium to ')) continue;
 
     await github.issues.createComment({
       number: pr.number,

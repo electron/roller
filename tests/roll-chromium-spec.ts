@@ -40,6 +40,6 @@ describe('rollChromium()', () => {
 
     const result = await rollChromium('3-0-x', '12345');
     expect(result).toBeTruthy();
-    expect(result.startsWith('libcc-12345-')).toBe(true);
+    expect(result.startsWith('roller/libcc-12345-')).toBe(true);
   });
 });
