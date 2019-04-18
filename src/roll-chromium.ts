@@ -12,7 +12,7 @@ const updateDepsFile4 = async (forkRef: string, chromiumVersion: string) => {
   let existing: Github.AnyResponse;
 
   try {
-    existing = await github.repos.getContent({
+    existing = await github.repos.getContents({
       owner: REPO_NAME,
       repo: REPO_OWNER,
       path: 'DEPS',
@@ -50,7 +50,7 @@ const updateDepsFile = async (forkRef: string, libccRef: string) => {
   let existing;
 
   try {
-    existing = await github.repos.getContent({
+    existing = await github.repos.getContents({
       owner: REPO_OWNER,
       repo: REPO_NAME,
       path: 'DEPS',
@@ -85,7 +85,7 @@ const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef
   d(`updating git submodule for: ${forkRef}`);
   const github = await getOctokit();
 
-  const tree = await github.gitdata.createTree({
+  const tree = await github.git.createTree({
     owner: REPO_OWNER,
     repo: REPO_NAME,
     base_tree: electronSha,
@@ -99,7 +99,7 @@ const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef
     ],
   });
 
-  const commit = await github.gitdata.createCommit({
+  const commit = await github.git.createCommit({
     owner: REPO_OWNER,
     repo: REPO_NAME,
     message: `chore: bump libcc submodule to ${libccRef}`,
@@ -107,7 +107,7 @@ const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef
     parents: [electronSha],
   });
 
-  await github.gitdata.updateReference({
+  await github.git.updateRef({
     owner: REPO_OWNER,
     repo: REPO_NAME,
     ref: forkRef.substr(5),
@@ -128,7 +128,7 @@ export async function rollChromium(
   d(`triggered for electronBranch=${electronBranch} libccRef=${libccRef}`);
   const github = await getOctokit();
   // Get current SHA of {electronBranch} on electron/electron
-  const electronReference = await github.gitdata.getReference({
+  const electronReference = await github.git.getRef({
     owner: 'electron',
     repo: 'electron',
     ref: `heads/${electronBranch}`,
@@ -138,7 +138,7 @@ export async function rollChromium(
 
   // Create new reference in electron-bot/electron for that SHA
   try {
-    await github.gitdata.createReference({
+    await github.git.createRef({
       owner: REPO_OWNER,
       repo: REPO_NAME,
       ref: forkRef,
@@ -162,7 +162,7 @@ export async function rollChromium4(
   d(`triggered for electronBranch=${electronBranch} chromiumVersion=${chromiumVersion}`);
   const github = await getOctokit();
   // Get current SHA of {electronBranch} on electron/electron
-  const electronReference = await github.gitdata.getReference({
+  const electronReference = await github.git.getRef({
     owner: 'electron',
     repo: 'electron',
     ref: `heads/${electronBranch}`,
@@ -172,7 +172,7 @@ export async function rollChromium4(
 
   // Create new reference in electron-bot/electron for that SHA
   try {
-    await github.gitdata.createReference({
+    await github.git.createRef({
       owner: REPO_OWNER,
       repo: REPO_NAME,
       ref: forkRef,

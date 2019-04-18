@@ -1,41 +1,41 @@
-import { getOctokit } from '../src/utils/octokit';
 import { rollChromium } from '../src/roll-chromium';
+import { getOctokit } from '../src/utils/octokit';
 
 jest.mock('../src/utils/octokit');
 
 describe('rollChromium()', () => {
   beforeEach(() => {
     this.mockOctokit = {
-      gitdata: {
+      git: {
         createCommit: jest.fn(() => ({
-          data: { sha: '123456' }
+          data: { sha: '123456' },
         })),
-        createReference: jest.fn(),
+        createRef: jest.fn(),
         createTree: jest.fn(() => ({
-          data: { sha: '123456' }
+          data: { sha: '123456' },
         })),
-        getReference: jest.fn(),
-        updateReference: jest.fn(() => ({
-          data: { sha: '123456' }
-        }))
+        getRef: jest.fn(),
+        updateRef: jest.fn(() => ({
+          data: { sha: '123456' },
+        })),
       },
       repos: {
-        getContent: jest.fn(() => ({
-          data: { content: Buffer.from('12345') }
+        getContents: jest.fn(() => ({
+          data: { content: Buffer.from('12345') },
         })),
-        updateFile: jest.fn()
-      }
-    }
+        updateFile: jest.fn(),
+      },
+    };
   });
 
   it('attempts to update the DEPS file', async () => {
     (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
-    this.mockOctokit.gitdata.getReference.mockReturnValueOnce({
+    this.mockOctokit.git.getRef.mockReturnValueOnce({
       data: {
         object: {
-          sha: '12345'
-        }
-      }
+          sha: '12345',
+        },
+      },
     });
 
     const result = await rollChromium('3-0-x', '12345');

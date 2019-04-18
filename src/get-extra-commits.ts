@@ -10,7 +10,7 @@ export const getExtraCommits = async (electronBranch, libccCommit): Promise<Comm
   let currentLibccCommit: string;
   d(`getting extra commits between ${electronBranch}...${libccCommit}`);
   try {
-    const currentSubmodule = await github.repos.getContent({
+    const currentSubmodule = await github.repos.getContents({
       owner: 'electron',
       repo: 'electron',
       path: 'vendor/libchromiumcontent',
@@ -18,7 +18,7 @@ export const getExtraCommits = async (electronBranch, libccCommit): Promise<Comm
     });
     currentLibccCommit = currentSubmodule.data.sha;
   } catch (err) {
-    const currentDeps = await github.repos.getContent({
+    const currentDeps = await github.repos.getContents({
       owner: 'electron',
       repo: 'electron',
       path: 'DEPS',

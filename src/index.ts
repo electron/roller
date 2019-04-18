@@ -3,7 +3,7 @@ import * as bodyParser from 'body-parser';
 import * as express from 'express';
 import * as GithubWebHook from 'express-github-webhook';
 
-import { handleChromiumCheck, handleLibccPush } from './handlers';
+import { handleLibccPush } from './handlers';
 
 const app = express();
 app.use(bodyParser.json());

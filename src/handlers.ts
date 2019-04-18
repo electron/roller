@@ -63,13 +63,13 @@ export async function handleChromiumCheck(): Promise<void> {
 
   const github = await getOctokit();
   d('getting electron branches');
-  const branches = await github.repos.getBranches({owner: 'electron', repo: 'electron', protected: true});
+  const branches = await github.repos.listBranches({owner: 'electron', repo: 'electron', protected: true});
   const post4Branches = branches.data
     .filter((branch) => Number(branch.name.split(/-/)[0]) >= 4);
 
   for (const branch of post4Branches) {
     d(`getting DEPS for ${branch.name}`);
-    const depsData = await github.repos.getContent({
+    const depsData = await github.repos.getContents({
       owner: 'electron',
       repo: 'electron',
       path: 'DEPS',
@@ -100,7 +100,7 @@ export async function handleChromiumCheck(): Promise<void> {
   {
     d('getting DEPS for master');
     const masterBranch = branches.data.find((branch) => branch.name === 'master');
-    const depsData = await github.repos.getContent({
+    const depsData = await github.repos.getContents({
       owner: 'electron',
       repo: 'electron',
       path: 'DEPS',
