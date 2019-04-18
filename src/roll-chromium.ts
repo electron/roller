@@ -1,7 +1,7 @@
 import * as Github from '@octokit/rest';
 import * as debug from 'debug';
 
-import { FORK_NAME, FORK_OWNER } from './constants';
+import { REPO_NAME, REPO_OWNER } from './constants';
 import { getOctokit } from './utils/octokit';
 
 const d = debug('roller:rollChromium()');
@@ -13,8 +13,8 @@ const updateDepsFile4 = async (forkRef: string, chromiumVersion: string) => {
 
   try {
     existing = await github.repos.getContent({
-      owner: FORK_OWNER,
-      repo: FORK_NAME,
+      owner: REPO_NAME,
+      repo: REPO_OWNER,
       path: 'DEPS',
       ref: forkRef,
     });
@@ -31,8 +31,8 @@ const updateDepsFile4 = async (forkRef: string, chromiumVersion: string) => {
   );
 
   const commit = await github.repos.updateFile({
-    owner: FORK_OWNER,
-    repo: FORK_NAME,
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
     path: 'DEPS',
     content: Buffer.from(newContent).toString('base64'),
     message: `chore: bump chromium in DEPS to ${chromiumVersion}`,
@@ -43,6 +43,7 @@ const updateDepsFile4 = async (forkRef: string, chromiumVersion: string) => {
   return true;
 };
 
+// TODO: Remove once Electron 3 is EOL
 const updateDepsFile = async (forkRef: string, libccRef: string) => {
   d(`updating deps file for: ${forkRef}`);
   const github = await getOctokit();
@@ -50,8 +51,8 @@ const updateDepsFile = async (forkRef: string, libccRef: string) => {
 
   try {
     existing = await github.repos.getContent({
-      owner: FORK_OWNER,
-      repo: FORK_NAME,
+      owner: REPO_OWNER,
+      repo: REPO_NAME,
       path: 'DEPS',
       ref: forkRef,
     });
@@ -68,8 +69,8 @@ const updateDepsFile = async (forkRef: string, libccRef: string) => {
   );
 
   const commit = await github.repos.updateFile({
-    owner: FORK_OWNER,
-    repo: FORK_NAME,
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
     path: 'DEPS',
     content: Buffer.from(newContent).toString('base64'),
     message: `chore: bump libcc in DEPS to ${libccRef}`,
@@ -85,8 +86,8 @@ const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef
   const github = await getOctokit();
 
   const tree = await github.gitdata.createTree({
-    owner: FORK_OWNER,
-    repo: FORK_NAME,
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
     base_tree: electronSha,
     tree: [
       {
@@ -99,16 +100,16 @@ const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef
   });
 
   const commit = await github.gitdata.createCommit({
-    owner: FORK_OWNER,
-    repo: FORK_NAME,
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
     message: `chore: bump libcc submodule to ${libccRef}`,
     tree: tree.data.sha,
     parents: [electronSha],
   });
 
   await github.gitdata.updateReference({
-    owner: FORK_OWNER,
-    repo: FORK_NAME,
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
     ref: forkRef.substr(5),
     sha: commit.data.sha,
   });
@@ -133,13 +134,13 @@ export async function rollChromium(
     ref: `heads/${electronBranch}`,
   });
   const electronSha = electronReference.data.object.sha;
-  const forkRef = `refs/heads/libcc-${libccRef}-${Date.now()}`;
+  const forkRef = `refs/heads/roller/libcc-${libccRef}-${Date.now()}`;
 
   // Create new reference in electron-bot/electron for that SHA
   try {
     await github.gitdata.createReference({
-      owner: FORK_OWNER,
-      repo: FORK_NAME,
+      owner: REPO_OWNER,
+      repo: REPO_NAME,
       ref: forkRef,
       sha: electronSha,
     });
@@ -167,13 +168,13 @@ export async function rollChromium4(
     ref: `heads/${electronBranch}`,
   });
   const electronSha = electronReference.data.object.sha;
-  const forkRef = `refs/heads/chromium-${chromiumVersion}-${Date.now()}`;
+  const forkRef = `refs/heads/roller/chromium-${chromiumVersion}-${Date.now()}`;
 
   // Create new reference in electron-bot/electron for that SHA
   try {
     await github.gitdata.createReference({
-      owner: FORK_OWNER,
-      repo: FORK_NAME,
+      owner: REPO_OWNER,
+      repo: REPO_NAME,
       ref: forkRef,
       sha: electronSha,
     });
