@@ -9,6 +9,21 @@ const d = debug('roller:raisePR()');
 const COMMIT_URL_BASE = 'https://github.com/electron/libchromiumcontent/commit/';
 const ISSUE_URL_BASE = 'https://github.com/electron/libchromiumcontent/issues/';
 
+const cleanUpRef = async (ref: string) => {
+  d('being told to clean up ref:', ref);
+  // Safety check to ensure we do not delete any branches that are not roller PRs
+  if (!ref.startsWith('roller/')) return;
+  d('actually cleaning ref:', ref);
+
+  const github = await getOctokit();
+
+  await github.gitdata.deleteReference({
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
+    ref,
+  });
+};
+
 // TODO: Remove once Electron 3 is EOL
 export const raisePR = async (forkBranchName: string, targetBranch: string, extraCommits: Commit[]) => {
   d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
@@ -62,6 +77,8 @@ Notes: no-notes`,
       repo: 'electron',
       number: pr.number,
     });
+
+    await cleanUpRef(pr.head.sha);
   }
 };
 
@@ -149,5 +166,7 @@ ${extraCommits.log.map((commit) => `* ${commitLink(commit)} ${commit.message.spl
       repo: 'electron',
       number: pr.number,
     });
+
+    await cleanUpRef(pr.head.sha);
   }
 };
