@@ -78,7 +78,7 @@ Notes: no-notes`,
       number: pr.number,
     });
 
-    await cleanUpRef(pr.head.sha);
+    await cleanUpRef(pr.head.ref);
   }
 };
 
@@ -167,6 +167,6 @@ ${extraCommits.log.map((commit) => `* ${commitLink(commit)} ${commit.message.spl
       number: pr.number,
     });
 
-    await cleanUpRef(pr.head.sha);
+    await cleanUpRef(pr.head.ref);
   }
 };
