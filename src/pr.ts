@@ -65,7 +65,7 @@ Notes: no-notes`,
     if (pr.title !== prTitle) continue;
 
     await github.issues.createComment({
-      number: pr.number,
+      issue_number: pr.number,
       repo: 'electron',
       owner: 'electron',
       body: `Closing PR as it is superceded by #${newPr.data.number}`,
@@ -75,7 +75,7 @@ Notes: no-notes`,
       state: 'closed',
       owner: 'electron',
       repo: 'electron',
-      number: pr.number,
+      pull_number: pr.number,
     });
 
     await cleanUpRef(pr.head.ref);
@@ -136,7 +136,7 @@ Notes: ${isLKGR ? 'no-notes' : `Updated Chromium to ${chromiumVersion}.`}`,
   d(`created new PR with number: #${newPr.data.number}`);
   d(`adding change list comment to PR`);
   await github.issues.createComment({
-    number: newPr.data.number,
+    issue_number: newPr.data.number,
     repo: 'electron',
     owner: 'electron',
     body: `Changes since the last roll:
@@ -154,7 +154,7 @@ ${extraCommits.log.map((commit) => `* ${commitLink(commit)} ${commit.message.spl
     if (!pr.title.startsWith('chore: bump chromium to ')) continue;
 
     await github.issues.createComment({
-      number: pr.number,
+      issue_number: pr.number,
       repo: 'electron',
       owner: 'electron',
       body: `Closing PR as it is superceded by #${newPr.data.number}`,
@@ -164,7 +164,7 @@ ${extraCommits.log.map((commit) => `* ${commitLink(commit)} ${commit.message.spl
       state: 'closed',
       owner: 'electron',
       repo: 'electron',
-      number: pr.number,
+      pull_number: pr.number,
     });
 
     await cleanUpRef(pr.head.ref);
