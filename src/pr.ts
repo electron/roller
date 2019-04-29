@@ -9,18 +9,18 @@ const d = debug('roller:raisePR()');
 const COMMIT_URL_BASE = 'https://github.com/electron/libchromiumcontent/commit/';
 const ISSUE_URL_BASE = 'https://github.com/electron/libchromiumcontent/issues/';
 
-const cleanUpRef = async (ref: string) => {
-  d('being told to clean up ref:', ref);
+const cleanUpBranch = async (branchName: string) => {
+  d('being told to clean up branch:', branchName);
   // Safety check to ensure we do not delete any branches that are not roller PRs
-  if (!ref.startsWith('roller/')) return;
-  d('actually cleaning ref:', ref);
+  if (!branchName.startsWith('roller/')) return;
+  d('actually cleaning branch:', branchName);
 
   const github = await getOctokit();
 
   await github.git.deleteRef({
     owner: REPO_OWNER,
     repo: REPO_NAME,
-    ref,
+    ref: `heads/${branchName}`,
   });
 };
 
@@ -78,7 +78,7 @@ Notes: no-notes`,
       pull_number: pr.number,
     });
 
-    await cleanUpRef(pr.head.ref);
+    await cleanUpBranch(pr.head.ref);
   }
 };
 
@@ -167,6 +167,6 @@ ${extraCommits.log.map((commit) => `* ${commitLink(commit)} ${commit.message.spl
       pull_number: pr.number,
     });
 
-    await cleanUpRef(pr.head.ref);
+    await cleanUpBranch(pr.head.ref);
   }
 };
