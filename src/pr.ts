@@ -127,7 +127,7 @@ export const raisePR4 = async (
     head: `${REPO_NAME}:${forkBranchName}`,
     maintainer_can_modify: true,
     title: `chore: bump chromium to ${prTitleVersion} (${targetBranch})`,
-    body: `Updating Chromium to ${chromiumVersion} (lkgr).
+    body: `Updating Chromium to ${chromiumVersion}${isLKGR ? " (lkgr)" : ""}.
 
 See [all changes in ${previousChromiumVersion}..${chromiumVersion}](${diffLink})
 
