@@ -2,7 +2,7 @@ import * as debug from 'debug';
 
 import { getChromiumCommits, getChromiumLkgr, getChromiumTags } from './get-chromium-tags';
 import { getExtraCommits } from './get-extra-commits';
-import { raisePR, raisePR4 } from './pr';
+import { raisePR } from './pr';
 import { rollChromium, rollChromium4 } from './roll-chromium';
 import { branchFromRef } from './utils/branch-from-ref';
 import { getOctokit } from './utils/octokit';
@@ -77,6 +77,7 @@ export async function handleChromiumCheck(): Promise<void> {
     });
     const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
     const [, chromiumVersion] = /chromium_version':\n +'(.+?)',/m.exec(deps);
+
     const chromiumMajorVersion = Number(chromiumVersion.split('.')[0]);
     d(`computing latest upstream version for Chromium ${chromiumMajorVersion}`);
     const upstreamVersions = Object.keys(chromiumTags)
@@ -85,14 +86,11 @@ export async function handleChromiumCheck(): Promise<void> {
     const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
     if (compareVersions(latestUpstreamVersion, chromiumVersion) > 0) {
       d(`branch ${branch.name} could upgrade from ${chromiumVersion} to ${latestUpstreamVersion}`);
-      const forkBranchName = await rollChromium4(branch.name, latestUpstreamVersion);
-      if (forkBranchName) {
-        d(`fetching chromium commits in ${chromiumVersion}..${latestUpstreamVersion}`);
-        const chromiumCommits = await getChromiumCommits(chromiumVersion, latestUpstreamVersion);
-        d('raising PR');
-        await raisePR4(forkBranchName, branch.name, chromiumCommits, chromiumVersion, latestUpstreamVersion, false);
-      } else {
-        d('chromium upgrade failed, not raising a PR');
+
+      try {
+        await rollChromium4(branch, latestUpstreamVersion);
+      } catch (e) {
+        d(`Error rolling ${branch.name} to ${latestUpstreamVersion}: ${e}`);
       }
     }
   }
@@ -111,14 +109,10 @@ export async function handleChromiumCheck(): Promise<void> {
     const lkgr = await getChromiumLkgr();
     if (chromiumHash !== lkgr.commit) {
       d(`updating master from ${chromiumHash} to ${lkgr.commit}`);
-      const forkBranchName = await rollChromium4(masterBranch.name, lkgr.commit);
-      if (forkBranchName) {
-        d(`fetching chromium commits in ${chromiumHash}..${lkgr.commit}`);
-        const chromiumCommits = await getChromiumCommits(chromiumHash, lkgr.commit);
-        d('raising PR');
-        await raisePR4(forkBranchName, masterBranch.name, chromiumCommits, chromiumHash, lkgr.commit, true);
-      } else {
-        d('chromium upgrade failed, not raising a PR');
+      try {
+        await rollChromium4(masterBranch, lkgr.commit);
+      } catch (e) {
+        d(`Error rolling ${masterBranch.name} to ${lkgr.commit}: ${e}`);
       }
     }
   }
