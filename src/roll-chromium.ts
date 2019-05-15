@@ -201,7 +201,7 @@ export async function rollChromium4(
     d(`no existing PR found, raising a new PR`);
     // Create a new ref that the PR will point to
     const electronSha = electronBranch.commit.sha;
-    const branchName = `roller/chromium-${electronBranch.name}-${Date.now()}`;
+    const branchName = `roller/chromium/${electronBranch.name}`;
     const newRef = `refs/heads/${branchName}`;
 
     d(`creating ref=${newRef} at sha=${electronSha}`);
