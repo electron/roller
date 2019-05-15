@@ -147,6 +147,25 @@ export async function rollChromium(
   return forkRef.substr(11);
 }
 
+function prText(previousChromiumVersion: string, chromiumVersion: string, branchName: string) {
+  const isLKGR = !chromiumVersion.includes('.');
+  const shortVersion = isLKGR ? chromiumVersion.substr(11) : chromiumVersion;
+  const shortPreviousVersion = isLKGR ? previousChromiumVersion.substr(11) : previousChromiumVersion;
+  const diffLink = `https://chromium.googlesource.com/chromium/src/+/${previousChromiumVersion}..${chromiumVersion}`;
+  return {
+    title: `chore: bump chromium to ${shortVersion} (${branchName})`,
+    body: `Updating Chromium to ${shortVersion}${isLKGR ? ' (lkgr)' : ''}.
+
+See [all changes in ${shortPreviousVersion}..${shortVersion}](${diffLink})
+
+<!--
+Original-Chromium-Version: ${previousChromiumVersion}
+-->
+
+Notes: ${isLKGR ? 'no-notes' : `Updated Chromium to ${chromiumVersion}.`}`,
+  };
+}
+
 export async function rollChromium4(
   electronBranch: {name: string, commit: {sha: string}},
   chromiumVersion: string,
@@ -156,7 +175,7 @@ export async function rollChromium4(
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
   const existingPrsForBranch = await github.pulls.list({
-    per_page: 100,
+    per_page: 100, // TODO: paginate
     base: electronBranch.name,
     owner: 'electron',
     repo: 'electron',
@@ -169,7 +188,14 @@ export async function rollChromium4(
     for (const pr of myPrs) {
       d(`found existing PR: #${pr.number}, updating`);
       await updateDepsFile4(pr.head.ref, chromiumVersion);
-      // TODO: update PR body
+      const m = /^Original-Chromium-Version: (\S+)/m.exec(pr.body);
+      const previousChromiumVersion = m ? m[1] : /chromium\/src\/+\/([^.]+?)\.\./.exec(pr.body)[1];
+      await github.pulls.update({
+        owner: 'electron',
+        repo: 'electron',
+        pull_number: pr.number,
+        ...prText(previousChromiumVersion, chromiumVersion, electronBranch.name),
+      });
     }
   } else {
     d(`no existing PR found, raising a new PR`);
@@ -191,10 +217,6 @@ export async function rollChromium4(
     d(`updating the new ref with chromiumVersion=${chromiumVersion}`);
     const previousChromiumVersion = await updateDepsFile4(branchName, chromiumVersion);
 
-    const isLKGR = !chromiumVersion.includes('.');
-    const prTitleVersion = isLKGR ? chromiumVersion.substr(11) : chromiumVersion;
-    const diffLink = `https://chromium.googlesource.com/chromium/src/+/${previousChromiumVersion}..${chromiumVersion}`;
-
     // Raise a PR
     d(`raising a PR for ${branchName} to ${electronBranch.name}`);
     const newPr = await github.pulls.create({
@@ -202,13 +224,7 @@ export async function rollChromium4(
       repo: 'electron',
       base: electronBranch.name,
       head: `${REPO_NAME}:${branchName}`,
-      maintainer_can_modify: true,
-      title: `chore: bump chromium to ${prTitleVersion} (${electronBranch.name})`,
-      body: `Updating Chromium to ${prTitleVersion}${isLKGR ? ' (lkgr)' : ''}.
-
-  See [all changes in ${previousChromiumVersion}..${prTitleVersion}](${diffLink})
-
-  Notes: ${isLKGR ? 'no-notes' : `Updated Chromium to ${chromiumVersion}.`}`,
+      ...prText(previousChromiumVersion, chromiumVersion, electronBranch.name),
     });
     d(`new PR: ${newPr.data.html_url}`);
     // TODO: add comment with commit list to new PR.
