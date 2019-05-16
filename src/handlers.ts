@@ -67,7 +67,7 @@ export async function handleChromiumCheck(): Promise<void> {
   const post4Branches = branches.data
     .filter((branch) => Number(branch.name.split(/-/)[0]) >= 4);
 
-  let allQuietOnTheWesternFront = true
+  let allQuietOnTheWesternFront = true;
 
   for (const branch of post4Branches) {
     d(`getting DEPS for ${branch.name}`);
@@ -93,7 +93,7 @@ export async function handleChromiumCheck(): Promise<void> {
         await rollChromium4(branch, latestUpstreamVersion);
       } catch (e) {
         d(`Error rolling ${branch.name} to ${latestUpstreamVersion}`, e);
-        allQuietOnTheWesternFront = false
+        allQuietOnTheWesternFront = false;
       }
     }
   }
@@ -116,12 +116,12 @@ export async function handleChromiumCheck(): Promise<void> {
         await rollChromium4(masterBranch, lkgr.commit);
       } catch (e) {
         d(`Error rolling ${masterBranch.name} to ${lkgr.commit}`, e);
-        allQuietOnTheWesternFront = false
+        allQuietOnTheWesternFront = false;
       }
     }
   }
 
   if (!allQuietOnTheWesternFront) {
-    throw new Error(`One or more upgrade checks failed; see the logs for details`)
+    throw new Error(`One or more upgrade checks failed; see the logs for details`);
   }
 }
