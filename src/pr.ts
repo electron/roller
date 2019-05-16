@@ -1,7 +1,6 @@
 import * as debug from 'debug';
 
 import { Commit, PR_USER, REPO_NAME, REPO_OWNER } from './constants';
-import { ChromiumCommit } from './get-chromium-tags';
 import { getOctokit } from './utils/octokit';
 
 const d = debug('roller:raisePR()');
@@ -63,95 +62,6 @@ Notes: no-notes`,
     if (pr.user.login !== PR_USER) continue;
     // Handle other electron-bot PRs being open
     if (pr.title !== prTitle) continue;
-
-    await github.issues.createComment({
-      issue_number: pr.number,
-      repo: 'electron',
-      owner: 'electron',
-      body: `Closing PR as it is superceded by #${newPr.data.number}`,
-    });
-
-    await github.pulls.update({
-      state: 'closed',
-      owner: 'electron',
-      repo: 'electron',
-      pull_number: pr.number,
-    });
-
-    await cleanUpBranch(pr.head.ref);
-  }
-};
-
-export const raisePR4 = async (
-  forkBranchName: string,
-  targetBranch: string,
-  extraCommits: {log: ChromiumCommit[], next?: string},
-  previousChromiumVersion: string,
-  chromiumVersion: string,
-  isLKGR: boolean,
-) => {
-  d(`triggered for forkBranch=${forkBranchName} and targetBranch=${targetBranch}`);
-  const github = await getOctokit();
-
-  d('fetching existing PRs');
-  const existingPrsForBranch = await github.pulls.list({
-    per_page: 100,
-    base: targetBranch,
-    owner: 'electron',
-    repo: 'electron',
-    state: 'open',
-  });
-
-  const prTitleVersion = isLKGR ? chromiumVersion.slice(0, 12) : chromiumVersion;
-
-  for (const pr of existingPrsForBranch.data) {
-    if (pr.user.login !== PR_USER) continue;
-
-    if (pr.title.includes(prTitleVersion)) {
-      d(`Found pr #${pr.number} already open for ${prTitleVersion}, won't open a new one`);
-      return;
-    }
-  }
-
-  function commitLink(commit: ChromiumCommit): string {
-    return `[\`${commit.commit.slice(0, 7)}\`](https://chromium.googlesource.com/chromium/src/+/${commit.commit}^!)`;
-  }
-  const diffLink = `https://chromium.googlesource.com/chromium/src/+/${previousChromiumVersion}..${chromiumVersion}`;
-  const logLink = `https://chromium.googlesource.com/chromium/src/+log/${previousChromiumVersion}..${chromiumVersion}`;
-
-  d('creating new PR');
-  const newPr = await github.pulls.create({
-    owner: 'electron',
-    repo: 'electron',
-    base: targetBranch,
-    head: `${REPO_NAME}:${forkBranchName}`,
-    maintainer_can_modify: true,
-    title: `chore: bump chromium to ${prTitleVersion} (${targetBranch})`,
-    body: `Updating Chromium to ${chromiumVersion} (lkgr).
-
-See [all changes in ${previousChromiumVersion}..${chromiumVersion}](${diffLink})
-
-Notes: ${isLKGR ? 'no-notes' : `Updated Chromium to ${chromiumVersion}.`}`,
-  });
-  d(`created new PR with number: #${newPr.data.number}`);
-  d(`adding change list comment to PR`);
-  await github.issues.createComment({
-    issue_number: newPr.data.number,
-    repo: 'electron',
-    owner: 'electron',
-    body: `Changes since the last roll:
-
-${extraCommits.log.map((commit) => `* ${commitLink(commit)} ${commit.message.split(/\n/)[0]}`).join('\n')}` +
-    (extraCommits.next ? `
-
-[More commits &raquo;](${logLink})` : ''),
-  });
-
-  d('closing old PRs');
-  for (const pr of existingPrsForBranch.data) {
-    if (pr.user.login !== PR_USER) continue;
-    // Handle other electron-bot PRs being open
-    if (!pr.title.startsWith('chore: bump chromium to ')) continue;
 
     await github.issues.createComment({
       issue_number: pr.number,
