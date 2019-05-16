@@ -67,6 +67,8 @@ export async function handleChromiumCheck(): Promise<void> {
   const post4Branches = branches.data
     .filter((branch) => Number(branch.name.split(/-/)[0]) >= 4);
 
+  let thisIsFine = true;
+
   for (const branch of post4Branches) {
     d(`getting DEPS for ${branch.name}`);
     const depsData = await github.repos.getContents({
@@ -91,6 +93,7 @@ export async function handleChromiumCheck(): Promise<void> {
         await rollChromium4(branch, latestUpstreamVersion);
       } catch (e) {
         d(`Error rolling ${branch.name} to ${latestUpstreamVersion}`, e);
+        thisIsFine = false;
       }
     }
   }
@@ -113,7 +116,12 @@ export async function handleChromiumCheck(): Promise<void> {
         await rollChromium4(masterBranch, lkgr.commit);
       } catch (e) {
         d(`Error rolling ${masterBranch.name} to ${lkgr.commit}`, e);
+        thisIsFine = false;
       }
     }
+  }
+
+  if (!thisIsFine) {
+    throw new Error(`One or more upgrade checks failed; see the logs for details`);
   }
 }
