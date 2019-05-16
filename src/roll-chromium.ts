@@ -189,7 +189,7 @@ export async function rollChromium4(
       d(`found existing PR: #${pr.number}, updating`);
       await updateDepsFile4(pr.head.ref, chromiumVersion);
       const m = /^Original-Chromium-Version: (\S+)/m.exec(pr.body);
-      const previousChromiumVersion = m ? m[1] : /chromium\/src\/+\/([^.]+?)\.\./.exec(pr.body)[1];
+      const previousChromiumVersion = m ? m[1] : /chromium\/src\/\+\/(.+?)\.\./.exec(pr.body)[1];
       await github.pulls.update({
         owner: 'electron',
         repo: 'electron',
