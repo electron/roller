@@ -18,20 +18,22 @@ const updateDepsFile4 = async (branch: string, chromiumVersion: string) => {
   });
   const content = Buffer.from(existing.data.content, 'base64').toString('utf8');
   const [, previousVersion] = /chromium_version':\n +'(.+?)',/m.exec(content);
-  const newContent = content.replace(
-    /(chromium_version':\n +').+?',/gm,
-    `$1${chromiumVersion}',`,
-  );
 
-  await github.repos.updateFile({
-    owner: REPO_OWNER,
-    repo: REPO_NAME,
-    path: 'DEPS',
-    content: Buffer.from(newContent).toString('base64'),
-    message: `chore: bump chromium in DEPS to ${chromiumVersion}`,
-    sha: existing.data.sha,
-    branch,
-  });
+  if (chromiumVersion !== previousVersion) {
+    const newContent = content.replace(
+      /(chromium_version':\n +').+?',/gm,
+      `$1${chromiumVersion}',`,
+    );
+    await github.repos.updateFile({
+      owner: REPO_OWNER,
+      repo: REPO_NAME,
+      path: 'DEPS',
+      content: Buffer.from(newContent).toString('base64'),
+      message: `chore: bump chromium in DEPS to ${chromiumVersion}`,
+      sha: existing.data.sha,
+      branch,
+    });
+  }
   return previousVersion;
 };
 
@@ -187,7 +189,12 @@ export async function rollChromium4(
     // Update the existing PR (s?)
     for (const pr of myPrs) {
       d(`found existing PR: #${pr.number}, updating`);
-      await updateDepsFile4(pr.head.ref, chromiumVersion);
+      const previousVersion = await updateDepsFile4(pr.head.ref, chromiumVersion);
+      if (previousVersion === chromiumVersion) {
+        d(`version unchanged, skipping PR body update`)
+        continue;
+      }
+      d(`version changed, updating PR body`)
       const m = /^Original-Chromium-Version: (\S+)/m.exec(pr.body);
       const previousChromiumVersion = m ? m[1] : /chromium\/src\/\+\/(.+?)\.\./.exec(pr.body)[1];
       await github.pulls.update({
