@@ -90,7 +90,7 @@ export async function handleChromiumCheck(): Promise<void> {
       try {
         await rollChromium4(branch, latestUpstreamVersion);
       } catch (e) {
-        d(`Error rolling ${branch.name} to ${latestUpstreamVersion}: ${e}`);
+        d(`Error rolling ${branch.name} to ${latestUpstreamVersion}`, e);
       }
     }
   }
@@ -112,7 +112,7 @@ export async function handleChromiumCheck(): Promise<void> {
       try {
         await rollChromium4(masterBranch, lkgr.commit);
       } catch (e) {
-        d(`Error rolling ${masterBranch.name} to ${lkgr.commit}: ${e}`);
+        d(`Error rolling ${masterBranch.name} to ${lkgr.commit}`, e);
       }
     }
   }
