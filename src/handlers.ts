@@ -4,6 +4,7 @@ import { getChromiumCommits, getChromiumLkgr, getChromiumTags } from './get-chro
 import { getExtraCommits } from './get-extra-commits';
 import { raisePR } from './pr';
 import { rollChromium, rollChromium4 } from './roll-chromium';
+import { rollNode } from './roll-node';
 import { branchFromRef } from './utils/branch-from-ref';
 import { getOctokit } from './utils/octokit';
 
@@ -116,6 +117,60 @@ export async function handleChromiumCheck(): Promise<void> {
         await rollChromium4(masterBranch, lkgr.commit);
       } catch (e) {
         d(`Error rolling ${masterBranch.name} to ${lkgr.commit}`, e);
+        thisIsFine = false;
+      }
+    }
+  }
+
+  if (!thisIsFine) {
+    throw new Error(`One or more upgrade checks failed; see the logs for details`);
+  }
+}
+
+export async function handleNodeCheck(): Promise<void> {
+  let thisIsFine = true;
+  const d = debug('roller:handleNodeCheck()');
+  const github = await getOctokit();
+
+  d('fetching nodejs/node releases');
+  const { data: releases } = await github.repos.listReleases({
+    owner: 'dddpppmmm',
+    repo: 'main-node',
+  });
+  const releaseTags = releases.map((r) => r.tag_name);
+
+  d('fetching electron/electron branches');
+  const { data: branches } = await github.repos.listBranches({
+    owner: 'dddpppmmm',
+    repo: 'electron',
+    protected: true, // TODO: filter branches for node patch system
+  });
+
+  for (const branch of branches) {
+    d(`getting DEPS for branch ${branch} in electron/electron`);
+    const depsData = await github.repos.getContents({
+      owner: 'dddpppmmm',
+      repo: 'electron',
+      path: 'DEPS',
+      ref: branch.commit.sha,
+    });
+    const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
+
+    // find node version from DEPS
+    const [, depsNodeVersion] = /node_version':\n +'(.+?)',/m.exec(deps);
+    const nodeMajorVersion = depsNodeVersion.split('.')[0];
+
+    d(`computing latest upstream version for Node ${nodeMajorVersion}`);
+    const upstreamVersions =
+      releaseTags.filter((r) => r.split('.')[0] === nodeMajorVersion);
+    const latestUpstreamVersion = upstreamVersions[0];
+
+    if (compareVersions(latestUpstreamVersion.substr(1), depsNodeVersion.substr(1)) > 0) {
+      debug(`branch ${branch.name} could upgrade from ${depsNodeVersion} to ${latestUpstreamVersion}`);
+      try {
+        await rollNode(branch, latestUpstreamVersion);
+      } catch (e) {
+        d(`Error rolling ${branch.name} to ${latestUpstreamVersion}`, e);
         thisIsFine = false;
       }
     }
