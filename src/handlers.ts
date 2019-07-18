@@ -1,5 +1,6 @@
 import * as debug from 'debug';
 
+import { REPOS } from './constants';
 import { getChromiumCommits, getChromiumLkgr, getChromiumTags } from './get-chromium-tags';
 import { getExtraCommits } from './get-extra-commits';
 import { raisePR } from './pr';
@@ -7,7 +8,6 @@ import { rollChromium, rollChromium4 } from './roll-chromium';
 import { rollNode } from './roll-node';
 import { branchFromRef } from './utils/branch-from-ref';
 import { getOctokit } from './utils/octokit';
-import { REPOS } from './constants';
 
 /**
  * Handle a push to `/libcc-hook`.
@@ -68,7 +68,7 @@ export async function handleChromiumCheck(): Promise<void> {
   const branches = await github.repos.listBranches({
     owner: REPOS.ELECTRON.OWNER,
     repo: REPOS.ELECTRON.NAME,
-    protected: true
+    protected: true,
   });
   const post4Branches = branches.data
     .filter((branch) => Number(branch.name.split(/-/)[0]) >= 4);

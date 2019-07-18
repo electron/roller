@@ -1,41 +1,11 @@
-import { PullsListResponseItem }  from '@octokit/rest';
+import { PullsListResponseItem } from '@octokit/rest';
 import * as debug from 'debug';
 
 import { PR_USER, REPOS } from './constants';
 import { getOctokit } from './utils/octokit';
+import { updateDepsFile as updateDepsFile4 } from './utils/updateDeps';
 
 const d = debug('roller/chromium:rollChromium()');
-
-const updateDepsFile4 = async (branch: string, chromiumVersion: string) => {
-  d(`updating deps file for: ${branch}`);
-  const github = await getOctokit();
-
-  const existing = await github.repos.getContents({
-    owner: REPOS.ELECTRON.OWNER,
-    repo: REPOS.ELECTRON.NAME,
-    path: 'DEPS',
-    ref: branch,
-  });
-  const content = Buffer.from(existing.data.content, 'base64').toString('utf8');
-  const [, previousVersion] = /chromium_version':\n +'(.+?)',/m.exec(content);
-
-  if (chromiumVersion !== previousVersion) {
-    const newContent = content.replace(
-      /(chromium_version':\n +').+?',/gm,
-      `$1${chromiumVersion}',`,
-    );
-    await github.repos.updateFile({
-      owner: REPOS.ELECTRON.OWNER,
-      repo: REPOS.ELECTRON.NAME,
-      path: 'DEPS',
-      content: Buffer.from(newContent).toString('base64'),
-      message: `chore: bump chromium in DEPS to ${chromiumVersion}`,
-      sha: existing.data.sha,
-      branch,
-    });
-  }
-  return previousVersion;
-};
 
 // TODO: Remove once Electron 3 is EOL
 const updateDepsFile = async (forkRef: string, libccRef: string) => {
@@ -176,7 +146,7 @@ export async function rollChromium4(
   const github = await getOctokit();
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
-  const existingPrsForBranch = await github.paginate('GET /repos/:owner/:repo/pulls',{
+  const existingPrsForBranch = await github.paginate('GET /repos/:owner/:repo/pulls', {
     base: electronBranch.name,
     owner: REPOS.ELECTRON.OWNER,
     repo: REPOS.ELECTRON.NAME,
@@ -190,7 +160,13 @@ export async function rollChromium4(
     // Update the existing PR (s?)
     for (const pr of myPrs) {
       d(`found existing PR: #${pr.number}, updating`);
-      const previousVersion = await updateDepsFile4(pr.head.ref, chromiumVersion);
+      const previousVersion = await updateDepsFile4({
+        repo: REPOS.ELECTRON,
+        branch: pr.head.ref,
+        depKey: 'chromium_version',
+        depName: 'chromium',
+        newVersion: chromiumVersion,
+      });
       if (previousVersion === chromiumVersion) {
         d(`version unchanged, skipping PR body update`);
         continue;
@@ -223,7 +199,13 @@ export async function rollChromium4(
 
     // Update the ref
     d(`updating the new ref with chromiumVersion=${chromiumVersion}`);
-    const previousChromiumVersion = await updateDepsFile4(branchName, chromiumVersion);
+    const previousChromiumVersion = await updateDepsFile4({
+      repo: REPOS.ELECTRON,
+      branch: branchName,
+      depKey: 'chromium_version',
+      depName: 'chromium',
+      newVersion: chromiumVersion,
+    });
 
     // Raise a PR
     d(`raising a PR for ${branchName} to ${electronBranch.name}`);

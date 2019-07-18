@@ -1,39 +1,11 @@
+import { PullsListResponseItem } from '@octokit/rest';
 import * as debug from 'debug';
+
+import { REPOS } from './constants';
 import { getOctokit } from './utils/octokit';
-import { PullsListResponseItem }  from '@octokit/rest';
+import { updateDepsFile } from './utils/updateDeps';
 
 const d = debug('roller/node:rollNode()');
-
-const updateDepsFile = async (branch: string, nodeVersion: string) => {
-  d(`updating deps file for: ${branch}`);
-  const github = await getOctokit();
-
-  const existing = await github.repos.getContents({
-    owner: 'dddpppmmm',
-    repo: 'electron',
-    path: 'DEPS',
-    ref: branch,
-  });
-  const content = Buffer.from(existing.data.content, 'base64').toString('utf8');
-  const [, previousVersion] = /node_version':\n +'(.+?)',/m.exec(content);
-
-  if (nodeVersion !== previousVersion) {
-    const newContent = content.replace(
-      /(node_version':\n +').+?',/gm,
-      `$1${nodeVersion}',`,
-    );
-    await github.repos.updateFile({
-      owner: 'dddpppmmm',
-      repo: 'electron',
-      path: 'DEPS',
-      content: Buffer.from(newContent).toString('base64'),
-      message: `chore: bump Node.js in DEPS to ${nodeVersion}`,
-      sha: existing.data.sha,
-      branch,
-    });
-  }
-  return previousVersion;
-};
 
 function prText(previousNodeVersion: string, nodeVersion: string, branchName: string) {
 
@@ -74,8 +46,18 @@ export async function rollNode(
   if (myPrs.length) {
     // Update the existing PR (s?)
     for (const pr of myPrs) {
-      d(`found existing PR: #${pr.number}, updating`);
-      const previousVersion = await updateDepsFile(pr.head.ref, nodeVersion);
+      d(`found existing PR: #${pr.number}, updating DEPS version`);
+      const previousVersion = await updateDepsFile({
+        repo: {
+          OWNER: 'dddpppmmm',
+          NAME: 'electron',
+        },
+        depName: 'Node.js',
+        depKey: 'node_version',
+        branch: pr.head.ref,
+        newVersion: nodeVersion,
+      });
+
       if (previousVersion === nodeVersion) {
         d(`version unchanged, skipping PR body update`);
         continue;
@@ -108,7 +90,16 @@ export async function rollNode(
 
     // Update the ref
     d(`updating the new ref with NodeVersion=${nodeVersion}`);
-    const previousNodeVersion = await updateDepsFile(branchName, nodeVersion);
+    const previousNodeVersion = await updateDepsFile({
+      repo: {
+        OWNER: 'dddpppmmm',
+        NAME: 'electron',
+      },
+      depName: 'Node.js',
+      depKey: 'node_version',
+      branch: branchName,
+      newVersion: nodeVersion,
+    });
 
     // Raise a PR
     d(`raising a PR for ${branchName} to ${electronBranch.name}`);
