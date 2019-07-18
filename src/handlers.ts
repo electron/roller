@@ -96,7 +96,11 @@ export async function handleChromiumCheck(): Promise<void> {
       d(`branch ${branch.name} could upgrade from ${chromiumVersion} to ${latestUpstreamVersion}`);
 
       try {
-        await rollChromium4(branch, latestUpstreamVersion);
+        await roll({
+          rollTarget: ROLL_TARGETS.CHROMIUM,
+          electronBranch: branch,
+          newVersion: latestUpstreamVersion,
+        });
       } catch (e) {
         d(`Error rolling ${branch.name} to ${latestUpstreamVersion}`, e);
         thisIsFine = false;
@@ -119,7 +123,11 @@ export async function handleChromiumCheck(): Promise<void> {
     if (chromiumHash !== lkgr.commit) {
       d(`updating master from ${chromiumHash} to ${lkgr.commit}`);
       try {
-        await rollChromium4(masterBranch, lkgr.commit);
+        await roll({
+          rollTarget: ROLL_TARGETS.CHROMIUM,
+          electronBranch: masterBranch,
+          newVersion: lkgr.commit,
+        });
       } catch (e) {
         d(`Error rolling ${masterBranch.name} to ${lkgr.commit}`, e);
         thisIsFine = false;
