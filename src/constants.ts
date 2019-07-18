@@ -20,7 +20,7 @@ export const ROLL_TARGETS = {
   },
   CHROMIUM: {
     name: 'chromium',
-    key: 'node_version',
+    key: 'chromium_version',
   },
 };
 
