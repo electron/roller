@@ -156,40 +156,42 @@ export async function handleNodeCheck(): Promise<void> {
   const { data: branches } = await github.repos.listBranches({
     owner: REPOS.ELECTRON.OWNER,
     repo: REPOS.ELECTRON.NAME,
-    protected: true, // TODO: filter branches for node patch system
+    protected: true,
   });
 
-  for (const branch of branches) {
-    d(`getting DEPS for branch ${branch} in electron/electron`);
-    const depsData = await github.repos.getContents({
-      owner:  REPOS.ELECTRON.OWNER,
-      repo: REPOS.ELECTRON.NAME,
-      path: 'DEPS',
-      ref: branch.commit.sha,
-    });
-    const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
 
-    // find node version from DEPS
-    const [, depsNodeVersion] = /node_version':\n +'(.+?)',/m.exec(deps);
-    const nodeMajorVersion = depsNodeVersion.split('.')[0];
+  // TODO: Implement node roller rules for release branches
+  const masterBranch = branches.find((branch) => branch.name === 'master');
 
-    d(`computing latest upstream version for Node ${nodeMajorVersion}`);
-    const upstreamVersions =
-      releaseTags.filter((r) => r.split('.')[0] === nodeMajorVersion);
-    const latestUpstreamVersion = upstreamVersions[0];
+  d(`getting DEPS for branch ${masterBranch} in electron/electron`);
+  const depsData = await github.repos.getContents({
+    owner:  REPOS.ELECTRON.OWNER,
+    repo: REPOS.ELECTRON.NAME,
+    path: 'DEPS',
+    ref: masterBranch.commit.sha,
+  });
+  const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
 
-    if (compareVersions(latestUpstreamVersion.substr(1), depsNodeVersion.substr(1)) > 0) {
-      d(`branch ${branch.name} could upgrade from ${depsNodeVersion} to ${latestUpstreamVersion}`);
-      try {
-        await roll({
-          rollTarget: ROLL_TARGETS.NODE,
-          electronBranch: branch,
-          newVersion: latestUpstreamVersion,
-        });
-      } catch (e) {
-        d(`Error rolling ${branch.name} to ${latestUpstreamVersion}`, e);
-        thisIsFine = false;
-      }
+  // find node version from DEPS
+  const [, depsNodeVersion] = /node_version':\n +'(.+?)',/m.exec(deps);
+  const nodeMajorVersion = depsNodeVersion.split('.')[0];
+
+  d(`computing latest upstream version for Node ${nodeMajorVersion}`);
+  const upstreamVersions =
+    releaseTags.filter((r) => r.split('.')[0] === nodeMajorVersion);
+  const latestUpstreamVersion = upstreamVersions[0];
+
+  if (compareVersions(latestUpstreamVersion.substr(1), depsNodeVersion.substr(1)) > 0) {
+    d(`branch ${masterBranch.name} could upgrade from ${depsNodeVersion} to ${latestUpstreamVersion}`);
+    try {
+      await roll({
+        rollTarget: ROLL_TARGETS.NODE,
+        electronBranch: masterBranch,
+        newVersion: latestUpstreamVersion,
+      });
+    } catch (e) {
+      d(`Error rolling ${masterBranch.name} to ${latestUpstreamVersion}`, e);
+      thisIsFine = false;
     }
   }
 
