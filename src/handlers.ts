@@ -1,13 +1,13 @@
 import * as debug from 'debug';
 
-import { REPOS } from './constants';
+import { REPOS, ROLL_TARGETS } from './constants';
 import { getChromiumCommits, getChromiumLkgr, getChromiumTags } from './get-chromium-tags';
 import { getExtraCommits } from './get-extra-commits';
 import { raisePR } from './pr';
 import { rollChromium, rollChromium4 } from './roll-chromium';
-import { rollNode } from './roll-node';
 import { branchFromRef } from './utils/branch-from-ref';
 import { getOctokit } from './utils/octokit';
+import { roll } from './utils/roll';
 
 /**
  * Handle a push to `/libcc-hook`.
@@ -139,23 +139,23 @@ export async function handleNodeCheck(): Promise<void> {
 
   d('fetching nodejs/node releases');
   const { data: releases } = await github.repos.listReleases({
-    owner: 'dddpppmmm',
-    repo: 'main-node',
+    owner: REPOS.NODE.OWNER,
+    repo: REPOS.NODE.NAME,
   });
   const releaseTags = releases.map((r) => r.tag_name);
 
   d('fetching electron/electron branches');
   const { data: branches } = await github.repos.listBranches({
-    owner: 'dddpppmmm',
-    repo: 'electron',
+    owner: REPOS.ELECTRON.OWNER,
+    repo: REPOS.ELECTRON.NAME,
     protected: true, // TODO: filter branches for node patch system
   });
 
   for (const branch of branches) {
     d(`getting DEPS for branch ${branch} in electron/electron`);
     const depsData = await github.repos.getContents({
-      owner: 'dddpppmmm',
-      repo: 'electron',
+      owner:  REPOS.ELECTRON.OWNER,
+      repo: REPOS.ELECTRON.NAME,
       path: 'DEPS',
       ref: branch.commit.sha,
     });
@@ -171,9 +171,13 @@ export async function handleNodeCheck(): Promise<void> {
     const latestUpstreamVersion = upstreamVersions[0];
 
     if (compareVersions(latestUpstreamVersion.substr(1), depsNodeVersion.substr(1)) > 0) {
-      debug(`branch ${branch.name} could upgrade from ${depsNodeVersion} to ${latestUpstreamVersion}`);
+      d(`branch ${branch.name} could upgrade from ${depsNodeVersion} to ${latestUpstreamVersion}`);
       try {
-        await rollNode(branch, latestUpstreamVersion);
+        await roll({
+          rollTarget: ROLL_TARGETS.NODE,
+          electronBranch: branch,
+          newVersion: latestUpstreamVersion,
+        });
       } catch (e) {
         d(`Error rolling ${branch.name} to ${latestUpstreamVersion}`, e);
         thisIsFine = false;

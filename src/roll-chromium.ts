@@ -161,7 +161,6 @@ export async function rollChromium4(
     for (const pr of myPrs) {
       d(`found existing PR: #${pr.number}, updating`);
       const previousVersion = await updateDepsFile4({
-        repo: REPOS.ELECTRON,
         branch: pr.head.ref,
         depKey: 'chromium_version',
         depName: 'chromium',
@@ -200,7 +199,6 @@ export async function rollChromium4(
     // Update the ref
     d(`updating the new ref with chromiumVersion=${chromiumVersion}`);
     const previousChromiumVersion = await updateDepsFile4({
-      repo: REPOS.ELECTRON,
       branch: branchName,
       depKey: 'chromium_version',
       depName: 'chromium',

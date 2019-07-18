@@ -13,6 +13,17 @@ export const REPOS = {
   },
 };
 
+export const ROLL_TARGETS = {
+  NODE: {
+    name: 'node',
+    key: 'node_version',
+  },
+  CHROMIUM: {
+    name: 'chromium',
+    key: 'node_version',
+  },
+};
+
 export const PR_USER = 'electron-bot';
 
 export interface Commit {
@@ -20,7 +31,7 @@ export interface Commit {
   message: string;
 }
 
-export interface Repo {
-  OWNER: string;
-  NAME: string;
+export interface RollTarget {
+  name: string;
+  key: string;
 }
