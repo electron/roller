@@ -3,7 +3,7 @@ import * as debug from 'debug';
 import { Commit, REPOS } from './constants';
 import { getOctokit } from './utils/octokit';
 
-const d = debug('roller:getExtraCommits()');
+const d = debug('roller/chromium:getExtraCommits()');
 
 export const getExtraCommits = async (electronBranch, libccCommit): Promise<Commit[]> => {
   const github = await getOctokit();

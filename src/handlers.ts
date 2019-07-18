@@ -20,7 +20,7 @@ export async function handleLibccPush(
   _,
   data?: { ref: string, after: string },
 ): Promise<void> {
-  const d = debug('roller:handleLibccPush()');
+  const d = debug('roller/chromium:handleLibccPush()');
   if (data && data.ref) {
     d('handling push');
     const { ref } = data;
@@ -59,7 +59,7 @@ function compareVersions(a: string, b: string): number {
 }
 
 export async function handleChromiumCheck(): Promise<void> {
-  const d = debug('roller:handleChromiumCheck()');
+  const d = debug('roller/chromium:handleChromiumCheck()');
   d('fetching chromium tags');
   const chromiumTags = await getChromiumTags();
 
@@ -134,7 +134,7 @@ export async function handleChromiumCheck(): Promise<void> {
 
 export async function handleNodeCheck(): Promise<void> {
   let thisIsFine = true;
-  const d = debug('roller:handleNodeCheck()');
+  const d = debug('roller/node:handleNodeCheck()');
   const github = await getOctokit();
 
   d('fetching nodejs/node releases');

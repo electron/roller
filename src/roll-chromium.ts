@@ -4,7 +4,7 @@ import * as debug from 'debug';
 import { PR_USER, REPOS } from './constants';
 import { getOctokit } from './utils/octokit';
 
-const d = debug('roller:rollChromium()');
+const d = debug('roller/chromium:rollChromium()');
 
 const updateDepsFile4 = async (branch: string, chromiumVersion: string) => {
   d(`updating deps file for: ${branch}`);

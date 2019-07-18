@@ -3,7 +3,7 @@ import * as debug from 'debug';
 import { Commit, PR_USER, REPOS } from './constants';
 import { getOctokit } from './utils/octokit';
 
-const d = debug('roller:raisePR()');
+const d = debug('roller/chromium:raisePR()');
 
 const COMMIT_URL_BASE = 'https://github.com/electron/libchromiumcontent/commit/';
 const ISSUE_URL_BASE = 'https://github.com/electron/libchromiumcontent/issues/';

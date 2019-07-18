@@ -2,7 +2,7 @@ import * as debug from 'debug';
 import { getOctokit } from './utils/octokit';
 import { PullsListResponseItem }  from '@octokit/rest';
 
-const d = debug('roller:rollNode()');
+const d = debug('roller/node:rollNode()');
 
 const updateDepsFile = async (branch: string, nodeVersion: string) => {
   d(`updating deps file for: ${branch}`);
