@@ -7,6 +7,7 @@ import { rollChromium, rollChromium4 } from './roll-chromium';
 import { rollNode } from './roll-node';
 import { branchFromRef } from './utils/branch-from-ref';
 import { getOctokit } from './utils/octokit';
+import { REPOS } from './constants';
 
 /**
  * Handle a push to `/libcc-hook`.
@@ -64,7 +65,11 @@ export async function handleChromiumCheck(): Promise<void> {
 
   const github = await getOctokit();
   d('getting electron branches');
-  const branches = await github.repos.listBranches({owner: 'electron', repo: 'electron', protected: true});
+  const branches = await github.repos.listBranches({
+    owner: REPOS.ELECTRON.OWNER,
+    repo: REPOS.ELECTRON.NAME,
+    protected: true
+  });
   const post4Branches = branches.data
     .filter((branch) => Number(branch.name.split(/-/)[0]) >= 4);
 
@@ -73,8 +78,8 @@ export async function handleChromiumCheck(): Promise<void> {
   for (const branch of post4Branches) {
     d(`getting DEPS for ${branch.name}`);
     const depsData = await github.repos.getContents({
-      owner: 'electron',
-      repo: 'electron',
+      owner: REPOS.ELECTRON.OWNER,
+      repo: REPOS.ELECTRON.NAME,
       path: 'DEPS',
       ref: branch.commit.sha,
     });
@@ -103,8 +108,8 @@ export async function handleChromiumCheck(): Promise<void> {
     d('getting DEPS for master');
     const masterBranch = branches.data.find((branch) => branch.name === 'master');
     const depsData = await github.repos.getContents({
-      owner: 'electron',
-      repo: 'electron',
+      owner: REPOS.ELECTRON.OWNER,
+      repo: REPOS.ELECTRON.NAME,
       path: 'DEPS',
       ref: masterBranch.commit.sha,
     });

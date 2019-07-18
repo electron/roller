@@ -1,5 +1,18 @@
-export const REPO_OWNER = 'electron';
-export const REPO_NAME = 'electron';
+export const REPOS = {
+  ELECTRON: {
+    OWNER: 'electron',
+    NAME: 'electron'
+  },
+  NODE: {
+    OWNER: 'nodejs',
+    NAME: 'node'
+  },
+  LIBCC: {
+    OWNER: 'electron',
+    NAME: 'libchromiumcontent'
+  }
+};
+
 export const PR_USER = 'electron-bot';
 
 export interface Commit {
