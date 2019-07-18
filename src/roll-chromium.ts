@@ -183,8 +183,8 @@ export async function rollChromium4(
     repo: REPOS.ELECTRON.NAME,
     state: 'open',
   });
-  // TODO: ensure this is chromium and not node PR
-  const myPrs = existingPrsForBranch.data.filter((pr) => pr.user.login === PR_USER);
+  const myPrs = existingPrsForBranch.data
+    .filter((pr) => pr.user.login === PR_USER && pr.title.includes('chromium'));
 
   if (myPrs.length) {
     // Update the existing PR (s?)
