@@ -1,4 +1,4 @@
-import * as Github from '@octokit/rest';
+import { PullsListResponseItem }  from '@octokit/rest';
 import * as debug from 'debug';
 
 import { PR_USER, REPOS } from './constants';
@@ -176,14 +176,14 @@ export async function rollChromium4(
   const github = await getOctokit();
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
-  const existingPrsForBranch = await github.pulls.list({
-    per_page: 100, // TODO: paginate
+  const existingPrsForBranch = await github.paginate('GET /repos/:owner/:repo/pulls',{
     base: electronBranch.name,
     owner: REPOS.ELECTRON.OWNER,
     repo: REPOS.ELECTRON.NAME,
     state: 'open',
-  });
-  const myPrs = existingPrsForBranch.data
+  }) as PullsListResponseItem[];
+
+  const myPrs = existingPrsForBranch
     .filter((pr) => pr.user.login === PR_USER && pr.title.includes('chromium'));
 
   if (myPrs.length) {

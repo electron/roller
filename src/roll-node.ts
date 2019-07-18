@@ -1,5 +1,6 @@
 import * as debug from 'debug';
 import { getOctokit } from './utils/octokit';
+import { PullsListResponseItem }  from '@octokit/rest';
 
 const d = debug('roller:rollNode()');
 
@@ -59,15 +60,15 @@ export async function rollNode(
   const github = await getOctokit();
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
-  const existingPrsForBranch = await github.pulls.list({
-    per_page: 100, // TODO: paginate
-    base: electronBranch.name,
-    owner: 'dddpppmmm',
-    repo: 'electron',
-    state: 'open',
-  });
+  const existingPrsForBranch =
+    await github.paginate('GET /repos/:owner/:repo/pulls', {
+      base: electronBranch.name,
+      owner: 'dddpppmmm',
+      repo: 'electron',
+      state: 'open',
+    }) as PullsListResponseItem[];
 
-  const myPrs = existingPrsForBranch.data
+  const myPrs = existingPrsForBranch
     .filter((pr) => pr.user.login === 'erickzhao' && pr.title.includes('Node.js'));
 
   if (myPrs.length) {
