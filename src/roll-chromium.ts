@@ -32,7 +32,7 @@ const updateDepsFile = async (forkRef: string, libccRef: string) => {
     `$1${libccRef}',`,
   );
 
-  const commit = await github.repos.updateFile({
+  await github.repos.updateFile({
     owner: REPOS.ELECTRON.OWNER,
     repo: REPOS.ELECTRON.NAME,
     path: 'DEPS',
@@ -117,104 +117,4 @@ export async function rollChromium(
   }
 
   return forkRef.substr(11);
-}
-
-function prText(previousChromiumVersion: string, chromiumVersion: string, branchName: string) {
-  const isLKGR = !chromiumVersion.includes('.');
-  const shortVersion = isLKGR ? chromiumVersion.substr(11) : chromiumVersion;
-  const shortPreviousVersion = isLKGR ? previousChromiumVersion.substr(11) : previousChromiumVersion;
-  const diffLink = `https://chromium.googlesource.com/chromium/src/+/${previousChromiumVersion}..${chromiumVersion}`;
-  return {
-    title: `chore: bump chromium to ${shortVersion} (${branchName})`,
-    body: `Updating Chromium to ${shortVersion}${isLKGR ? ' (lkgr)' : ''}.
-
-See [all changes in ${shortPreviousVersion}..${shortVersion}](${diffLink})
-
-<!--
-Original-Chromium-Version: ${previousChromiumVersion}
--->
-
-Notes: ${isLKGR ? 'no-notes' : `Updated Chromium to ${chromiumVersion}.`}`,
-  };
-}
-
-export async function rollChromium4(
-  electronBranch: {name: string, commit: {sha: string}},
-  chromiumVersion: string,
-): Promise<void> {
-  d(`roll triggered triggered for electronBranch=${electronBranch.name} chromiumVersion=${chromiumVersion}`);
-  const github = await getOctokit();
-
-  // Look for a pre-existing PR that targets this branch to see if we can update that.
-  const existingPrsForBranch = await github.paginate('GET /repos/:owner/:repo/pulls', {
-    base: electronBranch.name,
-    owner: REPOS.ELECTRON.OWNER,
-    repo: REPOS.ELECTRON.NAME,
-    state: 'open',
-  }) as PullsListResponseItem[];
-
-  const myPrs = existingPrsForBranch
-    .filter((pr) => pr.user.login === PR_USER && pr.title.includes('chromium'));
-
-  if (myPrs.length) {
-    // Update the existing PR (s?)
-    for (const pr of myPrs) {
-      d(`found existing PR: #${pr.number}, updating`);
-      const previousVersion = await updateDepsFile4({
-        branch: pr.head.ref,
-        depKey: 'chromium_version',
-        depName: 'chromium',
-        newVersion: chromiumVersion,
-      });
-      if (previousVersion === chromiumVersion) {
-        d(`version unchanged, skipping PR body update`);
-        continue;
-      }
-      d(`version changed, updating PR body`);
-      const m = /^Original-Chromium-Version: (\S+)/m.exec(pr.body);
-      const previousChromiumVersion = m ? m[1] : /chromium\/src\/\+\/(.+?)\.\./.exec(pr.body)[1];
-      await github.pulls.update({
-        owner: REPOS.ELECTRON.OWNER,
-        repo: REPOS.ELECTRON.NAME,
-        pull_number: pr.number,
-        ...prText(previousChromiumVersion, chromiumVersion, electronBranch.name),
-      });
-    }
-  } else {
-    d(`no existing PR found, raising a new PR`);
-    // Create a new ref that the PR will point to
-    const electronSha = electronBranch.commit.sha;
-    const branchName = `roller/chromium/${electronBranch.name}`;
-    const newRef = `refs/heads/${branchName}`;
-
-    d(`creating ref=${newRef} at sha=${electronSha}`);
-
-    await github.git.createRef({
-      owner: REPOS.ELECTRON.OWNER,
-      repo: REPOS.ELECTRON.NAME,
-      ref: newRef,
-      sha: electronSha,
-    });
-
-    // Update the ref
-    d(`updating the new ref with chromiumVersion=${chromiumVersion}`);
-    const previousChromiumVersion = await updateDepsFile4({
-      branch: branchName,
-      depKey: 'chromium_version',
-      depName: 'chromium',
-      newVersion: chromiumVersion,
-    });
-
-    // Raise a PR
-    d(`raising a PR for ${branchName} to ${electronBranch.name}`);
-    const newPr = await github.pulls.create({
-      owner: REPOS.ELECTRON.OWNER,
-      repo: REPOS.ELECTRON.NAME,
-      base: electronBranch.name,
-      head: `${REPOS.ELECTRON.NAME}:${branchName}`,
-      ...prText(previousChromiumVersion, chromiumVersion, electronBranch.name),
-    });
-    d(`new PR: ${newPr.data.html_url}`);
-    // TODO: add comment with commit list to new PR.
-  }
 }

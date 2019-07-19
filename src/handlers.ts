@@ -1,10 +1,10 @@
 import * as debug from 'debug';
 
 import { REPOS, ROLL_TARGETS } from './constants';
-import { getChromiumCommits, getChromiumLkgr, getChromiumTags } from './get-chromium-tags';
+import { getChromiumLkgr, getChromiumTags } from './get-chromium-tags';
 import { getExtraCommits } from './get-extra-commits';
 import { raisePR } from './pr';
-import { rollChromium, rollChromium4 } from './roll-chromium';
+import { rollChromium } from './roll-chromium';
 import { branchFromRef } from './utils/branch-from-ref';
 import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
