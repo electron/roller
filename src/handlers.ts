@@ -85,7 +85,8 @@ export async function handleChromiumCheck(): Promise<void> {
       ref: branch.commit.sha,
     });
     const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
-    const [, chromiumVersion] = /chromium_version':\n +'(.+?)',/m.exec(deps);
+    const versionRegex = new RegExp(`${ROLL_TARGETS.CHROMIUM.key}':\n +'(.+?)',`, 'm');
+    const [, chromiumVersion] = versionRegex.exec(deps);
 
     const chromiumMajorVersion = Number(chromiumVersion.split('.')[0]);
     d(`computing latest upstream version for Chromium ${chromiumMajorVersion}`);
@@ -173,7 +174,8 @@ export async function handleNodeCheck(): Promise<void> {
   const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
 
   // find node version from DEPS
-  const [, depsNodeVersion] = /node_version':\n +'(.+?)',/m.exec(deps);
+  const versionRegex = new RegExp(`${ROLL_TARGETS.NODE.key}':\n +'(.+?)',`, 'm');
+  const [, depsNodeVersion] = versionRegex.exec(deps);
   const majorVersion = semver.major(semver.clean(depsNodeVersion));
 
   d(`computing latest upstream version for Node ${majorVersion}`);
