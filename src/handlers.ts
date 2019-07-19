@@ -8,6 +8,7 @@ import { rollChromium } from './roll-chromium';
 import { branchFromRef } from './utils/branch-from-ref';
 import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
+import * as semver from 'semver';
 
 /**
  * Handle a push to `/libcc-hook`.
@@ -173,14 +174,12 @@ export async function handleNodeCheck(): Promise<void> {
 
   // find node version from DEPS
   const [, depsNodeVersion] = /node_version':\n +'(.+?)',/m.exec(deps);
-  const nodeMajorVersion = depsNodeVersion.split('.')[0];
+  const majorVersion = semver.major(semver.clean(depsNodeVersion));
 
-  d(`computing latest upstream version for Node ${nodeMajorVersion}`);
-  const upstreamVersions =
-    releaseTags.filter((r) => r.split('.')[0] === nodeMajorVersion);
-  const latestUpstreamVersion = upstreamVersions[0];
-
-  if (compareVersions(latestUpstreamVersion.substr(1), depsNodeVersion.substr(1)) > 0) {
+  d(`computing latest upstream version for Node ${majorVersion}`);
+  const latestUpstreamVersion = semver.maxSatisfying(releaseTags, `^${majorVersion}`);
+  
+  if (semver.gt(latestUpstreamVersion, depsNodeVersion)) {
     d(`branch ${masterBranch.name} could upgrade from ${depsNodeVersion} to ${latestUpstreamVersion}`);
     try {
       await roll({
