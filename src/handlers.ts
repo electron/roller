@@ -159,7 +159,6 @@ export async function handleNodeCheck(): Promise<void> {
     protected: true,
   });
 
-
   // TODO: Implement node roller rules for release branches
   const masterBranch = branches.find((branch) => branch.name === 'master');
 

@@ -50,5 +50,5 @@ See [all changes in ${previousVersion}..${newVersion}](${diffLink})
 Original-Node-Version: ${previousVersion}
 -->
 
-Notes: Updated Node.js to ${newVersion}.`}
+Notes: Updated Node.js to ${newVersion}.`};
 }
