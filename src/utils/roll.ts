@@ -4,7 +4,7 @@ import * as debug from 'debug';
 import { PR_USER , REPOS, RollTarget } from '../constants';
 import { getOctokit } from './octokit';
 import { getPRText } from './pr-text';
-import { updateDepsFile } from './updateDeps';
+import { updateDepsFile } from './update-deps';
 
 interface RollParams {
   rollTarget: RollTarget;

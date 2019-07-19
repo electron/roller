@@ -3,7 +3,7 @@ import * as debug from 'debug';
 
 import { PR_USER, REPOS } from './constants';
 import { getOctokit } from './utils/octokit';
-import { updateDepsFile as updateDepsFile4 } from './utils/updateDeps';
+import { updateDepsFile as updateDepsFile4 } from './utils/update-deps';
 
 const d = debug('roller/chromium:rollChromium()');
 
