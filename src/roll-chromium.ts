@@ -230,7 +230,7 @@ export async function rollChromium4(
       owner: 'electron',
       repo: 'electron',
       base: electronBranch.name,
-      head: `${REPO_NAME}:${branchName}`,
+      head: `${REPO_OWNER}:${branchName}`,
       ...prText(previousChromiumVersion, chromiumVersion, electronBranch.name),
     });
     d(`new PR: ${newPr.data.html_url}`);
