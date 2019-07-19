@@ -179,7 +179,8 @@ export async function handleNodeCheck(): Promise<void> {
   d(`computing latest upstream version for Node ${majorVersion}`);
   const latestUpstreamVersion = semver.maxSatisfying(releaseTags, `^${majorVersion}`);
   
-  if (semver.gt(latestUpstreamVersion, depsNodeVersion)) {
+  // only roll for LTS release lines of Node.js (even-numbered major versions)
+  if (majorVersion % 2 === 0 && semver.gt(latestUpstreamVersion, depsNodeVersion)) {
     d(`branch ${masterBranch.name} could upgrade from ${depsNodeVersion} to ${latestUpstreamVersion}`);
     try {
       await roll({
