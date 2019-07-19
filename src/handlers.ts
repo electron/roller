@@ -1,4 +1,5 @@
 import * as debug from 'debug';
+import * as semver from 'semver';
 
 import { REPOS, ROLL_TARGETS } from './constants';
 import { getChromiumLkgr, getChromiumTags } from './get-chromium-tags';
@@ -8,7 +9,6 @@ import { rollChromium } from './roll-chromium';
 import { branchFromRef } from './utils/branch-from-ref';
 import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
-import * as semver from 'semver';
 
 /**
  * Handle a push to `/libcc-hook`.
@@ -178,7 +178,7 @@ export async function handleNodeCheck(): Promise<void> {
 
   d(`computing latest upstream version for Node ${majorVersion}`);
   const latestUpstreamVersion = semver.maxSatisfying(releaseTags, `^${majorVersion}`);
-  
+
   // only roll for LTS release lines of Node.js (even-numbered major versions)
   if (majorVersion % 2 === 0 && semver.gt(latestUpstreamVersion, depsNodeVersion)) {
     d(`branch ${masterBranch.name} could upgrade from ${depsNodeVersion} to ${latestUpstreamVersion}`);
