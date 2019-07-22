@@ -153,7 +153,8 @@ function prText(previousChromiumVersion: string, chromiumVersion: string, branch
   const isLKGR = !chromiumVersion.includes('.');
   const shortVersion = isLKGR ? chromiumVersion.substr(11) : chromiumVersion;
   const shortPreviousVersion = isLKGR ? previousChromiumVersion.substr(11) : previousChromiumVersion;
-  const diffLink = `https://chromium.googlesource.com/chromium/src/+/${previousChromiumVersion}..${chromiumVersion}`;
+  const diffLink = `https://chromium.googlesource.com/chromium/src/+log/` +
+                   `${previousChromiumVersion}..${chromiumVersion}?n=10000&pretty=fuller`;
   return {
     title: `chore: bump chromium to ${shortVersion} (${branchName})`,
     body: `Updating Chromium to ${shortVersion}${isLKGR ? ' (lkgr)' : ''}.
