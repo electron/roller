@@ -55,7 +55,7 @@ describe('getPRText()', () => {
         .toContain(`Original-Chromium-Version: ${details.previousVersion}`);
       // contains link to diff
       expect(prText.body)
-        .toContain(`https://chromium.googlesource.com/chromium/src/+/${details.previousVersion}..${details.newVersion}`);
+        .toContain(`https://chromium.googlesource.com/chromium/src/+log/${details.previousVersion}..${details.newVersion}?n=10000&pretty=fuller`);
     });
 
     it('assumes LKGR if version is a commit SHA', () => {
