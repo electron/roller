@@ -1,11 +1,13 @@
-import { handleLibccPush, handleNodeCheck } from '../src/handlers';
+import { getChromiumLkgr, getChromiumTags } from '../src/get-chromium-tags';
+import { handleLibccPush, handleNodeCheck, handleChromiumCheck } from '../src/handlers';
 import { rollChromium } from '../src/roll-chromium';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
 import { ROLL_TARGETS } from '../src/constants';
 
-jest.mock('../src/utils/octokit');
+jest.mock('../src/get-chromium-tags');
 jest.mock('../src/roll-chromium');
+jest.mock('../src/utils/octokit');
 jest.mock('../src/utils/roll');
 
 describe('handleLibccPush()', () => {
@@ -27,6 +29,140 @@ describe('handleLibccPush()', () => {
     await handleLibccPush(null, '💩' as any);
 
     expect(rollChromium).toHaveBeenCalledTimes(0);
+  });
+});
+
+describe('handleChromiumCheck()', () => {
+  beforeEach(() => {
+    this.mockOctokit = {
+      repos: {
+        listBranches: jest.fn(),
+        getContents: jest.fn()
+      },
+    };
+    (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
+  });
+
+  describe('release branches', () => {
+    beforeEach(() => {
+      this.mockOctokit.repos.listBranches.mockReturnValue({
+        data: [
+          {
+            name: '4-0-x',
+            commit: {
+              sha: '1234'
+            }
+          }
+        ]
+      });
+
+      this.mockOctokit.repos.getContents.mockReturnValue({
+        data: {
+          content: Buffer.from(`${ROLL_TARGETS.CHROMIUM.key}':\n    '1.0.0.0',`),
+          sha: '1234'
+        },
+      });
+      (getChromiumTags as jest.Mock).mockReturnValue({
+        "1.1.0.0": {
+          "value": "5678"
+        },
+        "1.2.0.0": {
+          "value": "5678"
+        },
+        "2.1.0.0": {
+          "value": "5678"
+        }
+      });
+    });
+
+    it('rolls with latest versions from release tags', async () => {
+      await handleChromiumCheck();
+
+      expect(roll).toHaveBeenCalledWith(expect.objectContaining({
+        rollTarget: ROLL_TARGETS.CHROMIUM,
+        newVersion: '1.2.0.0'
+      }));
+    });
+
+    it('takes no action if no new minor/build/patch available', async () => {
+      this.mockOctokit.repos.getContents.mockReturnValue({
+        data: {
+          content: Buffer.from(`${ROLL_TARGETS.CHROMIUM.key}':\n    '1.5.0.0',`),
+          sha: '1234'
+        },
+      });
+
+      await handleChromiumCheck();
+
+      expect(roll).not.toHaveBeenCalled();
+    });
+
+    it('takes no action for branches <= 3', async () => {
+      this.mockOctokit.repos.listBranches.mockReturnValue({
+        data: [
+          {
+            name: '3-0-x',
+            commit: {
+              sha: '1234'
+            }
+          },
+          {
+            name: '2-0-x',
+            commit: {
+              sha: '1234'
+            }
+          },
+        ]
+      });
+
+      await handleChromiumCheck();
+
+      expect(roll).not.toHaveBeenCalled();
+    })
+  });
+
+  describe('master branch', () => {
+    beforeEach(() => {
+      this.mockOctokit.repos.listBranches.mockReturnValue({
+        data: [
+          {
+            name: 'master',
+            commit: {
+              sha: '1234'
+            }
+          }
+        ]
+      });
+
+      this.mockOctokit.repos.getContents.mockReturnValue({
+        data: {
+          content: Buffer.from(`${ROLL_TARGETS.CHROMIUM.key}':\n    'old-sha',`),
+          sha: '1234'
+        },
+      });
+
+      (getChromiumLkgr as jest.Mock).mockReturnValue({
+        commit: 'new-sha'
+      });
+    });
+
+    it('updates to the LKGR', async () => {
+      await handleChromiumCheck();
+
+      expect(roll).toHaveBeenCalledWith(expect.objectContaining({
+        rollTarget: ROLL_TARGETS.CHROMIUM,
+        newVersion: 'new-sha',
+      }));
+    });
+
+    it('takes no action if LKGR is already in DEPS', async () => {
+      (getChromiumLkgr as jest.Mock).mockReturnValue({
+        commit: 'old-sha'
+      });
+      await handleChromiumCheck();
+
+      expect(roll).not.toHaveBeenCalled();
+    })
   });
 });
 
