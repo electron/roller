@@ -113,27 +113,31 @@ export async function handleChromiumCheck(): Promise<void> {
   {
     d('getting DEPS for master');
     const masterBranch = branches.data.find((branch) => branch.name === 'master');
-    const depsData = await github.repos.getContents({
-      owner: REPOS.ELECTRON.OWNER,
-      repo: REPOS.ELECTRON.NAME,
-      path: 'DEPS',
-      ref: masterBranch.commit.sha,
-    });
-    const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
-    const [, chromiumHash] = /chromium_version':\n +'(.+?)',/m.exec(deps);
-    const lkgr = await getChromiumLkgr();
-    if (chromiumHash !== lkgr.commit) {
-      d(`updating master from ${chromiumHash} to ${lkgr.commit}`);
-      try {
-        await roll({
-          rollTarget: ROLL_TARGETS.CHROMIUM,
-          electronBranch: masterBranch,
-          newVersion: lkgr.commit,
-        });
-      } catch (e) {
-        d(`Error rolling ${masterBranch.name} to ${lkgr.commit}`, e);
-        thisIsFine = false;
+    if (!!masterBranch) {
+      const depsData = await github.repos.getContents({
+        owner: REPOS.ELECTRON.OWNER,
+        repo: REPOS.ELECTRON.NAME,
+        path: 'DEPS',
+        ref: masterBranch.commit.sha,
+      });
+      const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
+      const [, chromiumHash] = /chromium_version':\n +'(.+?)',/m.exec(deps);
+      const lkgr = await getChromiumLkgr();
+      if (chromiumHash !== lkgr.commit) {
+        d(`updating master from ${chromiumHash} to ${lkgr.commit}`);
+        try {
+          await roll({
+            rollTarget: ROLL_TARGETS.CHROMIUM,
+            electronBranch: masterBranch,
+            newVersion: lkgr.commit,
+          });
+        } catch (e) {
+          d(`Error rolling ${masterBranch.name} to ${lkgr.commit}`, e);
+          thisIsFine = false;
+        }
       }
+    } else {
+      d('master branch not found!');
     }
   }
 
