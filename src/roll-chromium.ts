@@ -1,9 +1,7 @@
-import { PullsListResponseItem } from '@octokit/rest';
 import * as debug from 'debug';
 
-import { PR_USER, REPOS } from './constants';
+import { REPOS } from './constants';
 import { getOctokit } from './utils/octokit';
-import { updateDepsFile as updateDepsFile4 } from './utils/update-deps';
 
 const d = debug('roller/chromium:rollChromium()');
 
