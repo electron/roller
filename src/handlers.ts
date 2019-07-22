@@ -121,7 +121,8 @@ export async function handleChromiumCheck(): Promise<void> {
         ref: masterBranch.commit.sha,
       });
       const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
-      const [, chromiumHash] = /chromium_version':\n +'(.+?)',/m.exec(deps);
+      const hashRegex = new RegExp(`${ROLL_TARGETS.CHROMIUM.key}':\n +'(.+?)',`, 'm');
+      const [, chromiumHash] = hashRegex.exec(deps);
       const lkgr = await getChromiumLkgr();
       if (chromiumHash !== lkgr.commit) {
         d(`updating master from ${chromiumHash} to ${lkgr.commit}`);
