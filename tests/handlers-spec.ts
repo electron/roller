@@ -164,6 +164,43 @@ describe('handleChromiumCheck()', () => {
       expect(roll).not.toHaveBeenCalled();
     })
   });
+
+  it('throws error if roll() process failed', async () => {
+    this.mockOctokit.repos.listBranches.mockReturnValue({
+      data: [
+        {
+          name: '4-0-x',
+          commit: {
+            sha: '1234'
+          }
+        }
+      ]
+    });
+
+    this.mockOctokit.repos.getContents.mockReturnValue({
+      data: {
+        content: Buffer.from(`${ROLL_TARGETS.CHROMIUM.key}':\n    '1.0.0.0',`),
+        sha: '1234'
+      },
+    });
+    (getChromiumTags as jest.Mock).mockReturnValue({
+      "1.1.0.0": {
+        "value": "5678"
+      },
+      "1.2.0.0": {
+        "value": "5678"
+      },
+      "2.1.0.0": {
+        "value": "5678"
+      }
+    });
+
+    (roll as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('');
+    })
+    await expect(handleChromiumCheck()).rejects.toThrowError(`One or more upgrade checks failed; see the logs for details`);
+    expect(roll).toHaveBeenCalled();
+  })
 });
 
 describe('handleNodeCheck()', () => {
@@ -257,5 +294,5 @@ describe('handleNodeCheck()', () => {
     })
     await expect(handleNodeCheck()).rejects.toThrowError(`One or more upgrade checks failed; see the logs for details`);
     expect(roll).toHaveBeenCalled();
-  })
+  });
 })
