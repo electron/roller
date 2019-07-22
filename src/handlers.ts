@@ -118,7 +118,7 @@ export async function handleChromiumCheck(): Promise<void> {
         owner: REPOS.ELECTRON.OWNER,
         repo: REPOS.ELECTRON.NAME,
         path: 'DEPS',
-        ref: masterBranch.commit.sha,
+        ref: 'master',
       });
       const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
       const hashRegex = new RegExp(`${ROLL_TARGETS.CHROMIUM.key}':\n +'(.+?)',`, 'm');
@@ -174,7 +174,7 @@ export async function handleNodeCheck(): Promise<void> {
     owner:  REPOS.ELECTRON.OWNER,
     repo: REPOS.ELECTRON.NAME,
     path: 'DEPS',
-    ref: masterBranch.commit.sha,
+    ref: 'master',
   });
   const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
 
