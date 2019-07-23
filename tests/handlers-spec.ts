@@ -80,7 +80,7 @@ describe('handleChromiumCheck()', () => {
 
       expect(roll).toHaveBeenCalledWith(expect.objectContaining({
         rollTarget: ROLL_TARGETS.CHROMIUM,
-        newVersion: '1.2.0.0'
+        targetVersion: '1.2.0.0'
       }));
     });
 
@@ -151,7 +151,7 @@ describe('handleChromiumCheck()', () => {
 
       expect(roll).toHaveBeenCalledWith(expect.objectContaining({
         rollTarget: ROLL_TARGETS.CHROMIUM,
-        newVersion: 'new-sha',
+        targetVersion: 'new-sha',
       }));
     });
 
@@ -253,7 +253,7 @@ describe('handleNodeCheck()', () => {
       electronBranch: expect.objectContaining({
         name: 'master'
       }),
-      newVersion: 'v12.2.0',
+      targetVersion: 'v12.2.0',
     })
   });
 
