@@ -101,7 +101,7 @@ export async function handleChromiumCheck(): Promise<void> {
         await roll({
           rollTarget: ROLL_TARGETS.CHROMIUM,
           electronBranch: branch,
-          newVersion: latestUpstreamVersion,
+          targetVersion: latestUpstreamVersion,
         });
       } catch (e) {
         d(`Error rolling ${branch.name} to ${latestUpstreamVersion}`, e);
@@ -130,7 +130,7 @@ export async function handleChromiumCheck(): Promise<void> {
           await roll({
             rollTarget: ROLL_TARGETS.CHROMIUM,
             electronBranch: masterBranch,
-            newVersion: lkgr.commit,
+            targetVersion: lkgr.commit,
           });
         } catch (e) {
           d(`Error rolling ${masterBranch.name} to ${lkgr.commit}`, e);
@@ -193,7 +193,7 @@ export async function handleNodeCheck(): Promise<void> {
       await roll({
         rollTarget: ROLL_TARGETS.NODE,
         electronBranch: masterBranch,
-        newVersion: latestUpstreamVersion,
+        targetVersion: latestUpstreamVersion,
       });
     } catch (e) {
       d(`Error rolling ${masterBranch.name} to ${latestUpstreamVersion}`, e);
