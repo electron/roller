@@ -7,9 +7,8 @@ export interface UpdateDepsParams {
   branch: string;
   newVersion: string;
 }
-export async function updateDepsFile(params: UpdateDepsParams) {
+export async function updateDepsFile({ depName, depKey, branch, newVersion }: UpdateDepsParams) {
   const github = await getOctokit();
-  const { depName, depKey, branch, newVersion } = params;
 
   const existing = await github.repos.getContents({
     owner: REPOS.ELECTRON.OWNER,

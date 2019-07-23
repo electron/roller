@@ -12,8 +12,7 @@ interface RollParams {
   newVersion: string;
 }
 
-export async function roll(params: RollParams): Promise<void> {
-  const { rollTarget, electronBranch, newVersion } = params;
+export async function roll({ rollTarget, electronBranch, newVersion }): Promise<void> {
   const d = debug(`roller/${rollTarget.name}:roll()`);
   const github = await getOctokit();
 
