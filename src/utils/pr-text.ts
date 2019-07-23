@@ -12,6 +12,8 @@ export function getPRText(rollTarget: RollTarget, details: PRTextDetails) {
       return getNodePRText(details);
     case ROLL_TARGETS.CHROMIUM.name:
       return getChromiumPRText(details);
+    default:
+      throw new Error(`Roll target ${rollTarget.name} does not have PR text defined!`);
   }
 }
 

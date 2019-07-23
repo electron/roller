@@ -1,5 +1,5 @@
 import { getPRText } from '../../src/utils/pr-text';
-import { ROLL_TARGETS } from '../../src/constants';
+import { ROLL_TARGETS, RollTarget } from '../../src/constants';
 
 jest.mock('../../src/utils/octokit');
 
@@ -83,5 +83,19 @@ describe('getPRText()', () => {
       const prText = getPRText(target, details);
       expect(prText.body).toContain(`Updated Chromium to ${details.newVersion}.`);
     });
-  })
+  });
+  it.only('throws if invalid roll target passed in', () => {
+    const target: RollTarget = {
+      name: '💩',
+      key: '🔑'
+    };
+    const details = {
+      newVersion: 'v10.0.0',
+      previousVersion: 'v4.0.0',
+      branchName: 'master'
+    };
+    expect(() => {
+      getPRText(target, details);
+    }).toThrowError('Roll target 💩 does not have PR text defined!');
+  });
 });
