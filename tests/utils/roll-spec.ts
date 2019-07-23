@@ -36,7 +36,10 @@ describe('roll()', () => {
       }
     };
     (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
-    (updateDepsFile as jest.Mock).mockReturnValue('v4.0.0');
+    (updateDepsFile as jest.Mock).mockReturnValue({
+      previousDEPSVersion: 'v4.0.0',
+      newDEPSVersion: 'v10.0.0'
+    });
   });
   
   it('takes no action if versions are identical', async () => {
@@ -54,10 +57,15 @@ describe('roll()', () => {
       }]
     );
 
+    (updateDepsFile as jest.Mock).mockReturnValue({
+      previousDEPSVersion: 'v4.0.0',
+      newDEPSVersion: 'v4.0.0'
+    });
+
     await roll({
       rollTarget: ROLL_TARGETS.NODE,
       electronBranch: branch,
-      newVersion: 'v4.0.0'
+      targetVersion: 'v4.0.0'
     });
 
     expect(this.mockOctokit.pulls.update).not.toHaveBeenCalled();
@@ -82,7 +90,7 @@ describe('roll()', () => {
     await roll({
       rollTarget: ROLL_TARGETS.NODE,
       electronBranch: branch,
-      newVersion: 'v10.0.0'
+      targetVersion: 'v10.0.0'
     });
 
     expect(this.mockOctokit.pulls.update).toHaveBeenCalledWith(expect.objectContaining({
@@ -98,7 +106,7 @@ describe('roll()', () => {
     await roll({
       rollTarget: ROLL_TARGETS.NODE,
       electronBranch: branch,
-      newVersion: 'v10.0.0'
+      targetVersion: 'v10.0.0'
     });
 
     const newBranchName = `roller/${ROLL_TARGETS.NODE.name}/${branch.name}`;

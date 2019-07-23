@@ -84,7 +84,7 @@ describe('getPRText()', () => {
       expect(prText.body).toContain(`Updated Chromium to ${details.newVersion}.`);
     });
   });
-  it.only('throws if invalid roll target passed in', () => {
+  it('throws if invalid roll target passed in', () => {
     const target: RollTarget = {
       name: '💩',
       key: '🔑'

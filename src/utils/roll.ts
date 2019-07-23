@@ -9,14 +9,14 @@ import { updateDepsFile } from './update-deps';
 interface RollParams {
   rollTarget: RollTarget;
   electronBranch: ReposListBranchesResponseItem;
-  newVersion: string;
+  targetVersion: string;
 }
 
-export async function roll({ rollTarget, electronBranch, newVersion }): Promise<void> {
+export async function roll({ rollTarget, electronBranch, targetVersion }: RollParams): Promise<void> {
   const d = debug(`roller/${rollTarget.name}:roll()`);
   const github = await getOctokit();
 
-  d(`roll triggered for electron branch=${electronBranch.name} ${rollTarget.key}=${newVersion}`);
+  d(`roll triggered for electron branch=${electronBranch.name} ${rollTarget.key}=${targetVersion}`);
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
   const existingPrsForBranch =
@@ -34,14 +34,16 @@ export async function roll({ rollTarget, electronBranch, newVersion }): Promise<
     // Update the existing PR (s?)
     for (const pr of myPrs) {
       d(`found existing PR: #${pr.number}, attempting DEPS update`);
-      const previousDEPSVersion = await updateDepsFile({
+      const { previousDEPSVersion, newDEPSVersion } = await updateDepsFile({
         depName: rollTarget.name,
         depKey: rollTarget.key,
         branch: pr.head.ref,
-        newVersion,
+        targetVersion,
       });
 
-      if (previousDEPSVersion === newVersion) {
+      d(previousDEPSVersion);
+
+      if (previousDEPSVersion === newDEPSVersion) {
         d(`version unchanged, skipping PR body update`);
         continue;
       }
@@ -58,7 +60,7 @@ export async function roll({ rollTarget, electronBranch, newVersion }): Promise<
         pull_number: pr.number,
         ...getPRText(rollTarget, {
           previousVersion: previousPRVersion,
-          newVersion,
+          newVersion: newDEPSVersion,
           branchName: electronBranch.name,
         }),
       });
@@ -80,12 +82,12 @@ export async function roll({ rollTarget, electronBranch, newVersion }): Promise<
     });
 
     // Update the ref
-    d(`updating the new ref with version=${newVersion}`);
-    const previousNodeVersion = await updateDepsFile({
+    d(`updating the new ref with version=${targetVersion}`);
+    const { previousDEPSVersion } = await updateDepsFile({
       depName: rollTarget.name,
       depKey: rollTarget.key,
       branch: branchName,
-      newVersion,
+      targetVersion,
     });
 
     // Raise a PR
@@ -96,8 +98,8 @@ export async function roll({ rollTarget, electronBranch, newVersion }): Promise<
       base: electronBranch.name,
       head: `${REPOS.ELECTRON.OWNER}:${branchName}`,
       ...getPRText(rollTarget, {
-        previousVersion: previousNodeVersion,
-        newVersion,
+        previousVersion: previousDEPSVersion,
+        newVersion: targetVersion,
         branchName: electronBranch.name,
       }),
     });
