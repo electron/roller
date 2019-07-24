@@ -189,7 +189,7 @@ export async function rollChromium4(
     // Update the existing PR (s?)
     for (const pr of myPrs) {
       d(`found existing PR: #${pr.number}, updating`);
-      const daysOld = (+new Date() - +new Date(pr.created_at)) / 1000 / 60 / 60 / 24
+      const daysOld = (+new Date() - +new Date(pr.created_at)) / 1000 / 60 / 60 / 24;
       if (daysOld > 10) {
         d(`PR is ${daysOld} days old, waiting for maintainers to catch up`);
         continue;
