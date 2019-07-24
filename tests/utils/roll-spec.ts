@@ -53,7 +53,8 @@ describe('roll()', () => {
         head: {
           ref: 'asd'
         },
-        body: 'Original-Node-Version: v4.0.0'
+        body: 'Original-Node-Version: v4.0.0',
+        created_at: (new Date()).toISOString()
       }]
     );
 
@@ -83,7 +84,8 @@ describe('roll()', () => {
         head: {
           ref: 'asd'
         },
-        body: 'Original-Node-Version: v4.0.0'
+        body: 'Original-Node-Version: v4.0.0',
+        created_at: (new Date()).toISOString()
       }]
     );
 
@@ -98,7 +100,7 @@ describe('roll()', () => {
       repo: REPOS.ELECTRON.NAME,
       pull_number: 1
     }));
-  })
+  });
 
   it('creates a new PR if none found', async () => {
     this.mockOctokit.paginate.mockReturnValue([]);
@@ -116,7 +118,7 @@ describe('roll()', () => {
       repo: REPOS.ELECTRON.NAME,
       ref: `refs/heads/${newBranchName}`,
       sha: branch.commit.sha
-    })
+    });
 
     expect(this.mockOctokit.pulls.create).toHaveBeenCalledWith(expect.objectContaining({
       owner: REPOS.ELECTRON.OWNER,
@@ -124,5 +126,30 @@ describe('roll()', () => {
       base: branch.name,
       head: `${REPOS.ELECTRON.OWNER}:${newBranchName}`
     }));
+  });
+
+  it.only('skips PR if existing one is stale', async () => {
+    this.mockOctokit.paginate.mockReturnValue(
+      [{
+        user: {
+          login: PR_USER
+        },
+        title: ROLL_TARGETS.NODE.name,
+        number: 1,
+        head: {
+          ref: 'asd'
+        },
+        body: 'Original-Node-Version: v4.0.0',
+        created_at: (new Date('December 17, 1995 03:24:00')).toISOString()
+      }]
+    );
+
+    await roll({
+      rollTarget: ROLL_TARGETS.NODE,
+      electronBranch: branch,
+      targetVersion: 'v10.0.0'
+    });
+
+    expect(this.mockOctokit.pulls.update).not.toHaveBeenCalled();
   })
 });
