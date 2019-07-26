@@ -292,7 +292,7 @@ describe('handleNodeCheck()', () => {
     (roll as jest.Mock).mockImplementationOnce(() => {
       throw new Error('');
     })
-    await expect(handleNodeCheck()).rejects.toThrowError(`One or more upgrade checks failed; see the logs for details`);
+    await expect(handleNodeCheck()).rejects.toThrowError(`Upgrade check failed; see the logs for details`);
     expect(roll).toHaveBeenCalled();
   });
 })

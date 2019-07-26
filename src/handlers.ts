@@ -148,7 +148,6 @@ export async function handleChromiumCheck(): Promise<void> {
 }
 
 export async function handleNodeCheck(): Promise<void> {
-  let thisIsFine = true;
   const d = debug('roller/node:handleNodeCheck()');
   const github = await getOctokit();
 
@@ -197,11 +196,7 @@ export async function handleNodeCheck(): Promise<void> {
       });
     } catch (e) {
       d(`Error rolling ${masterBranch.name} to ${latestUpstreamVersion}`, e);
-      thisIsFine = false;
+      throw new Error(`Upgrade check failed; see the logs for details`);
     }
-  }
-
-  if (!thisIsFine) {
-    throw new Error(`One or more upgrade checks failed; see the logs for details`);
   }
 }
