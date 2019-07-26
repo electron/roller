@@ -85,7 +85,7 @@ export async function handleChromiumCheck(): Promise<void> {
       ref: branch.commit.sha,
     });
     const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
-    const versionRegex = new RegExp(`${rollTargets.chromium.key}':\n +'(.+?)',`, 'm');
+    const versionRegex = new RegExp(`${rollTargets.chromium.depsKey}':\n +'(.+?)',`, 'm');
     const [, chromiumVersion] = versionRegex.exec(deps);
 
     const chromiumMajorVersion = Number(chromiumVersion.split('.')[0]);
@@ -121,7 +121,7 @@ export async function handleChromiumCheck(): Promise<void> {
         ref: 'master',
       });
       const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
-      const hashRegex = new RegExp(`${rollTargets.chromium.key}':\n +'(.+?)',`, 'm');
+      const hashRegex = new RegExp(`${rollTargets.chromium.depsKey}':\n +'(.+?)',`, 'm');
       const [, chromiumHash] = hashRegex.exec(deps);
       const lkgr = await getChromiumLkgr();
       if (chromiumHash !== lkgr.commit) {
@@ -179,7 +179,7 @@ export async function handleNodeCheck(): Promise<void> {
   const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
 
   // find node version from DEPS
-  const versionRegex = new RegExp(`${rollTargets.node.key}':\n +'(.+?)',`, 'm');
+  const versionRegex = new RegExp(`${rollTargets.node.depsKey}':\n +'(.+?)',`, 'm');
   const [, depsNodeVersion] = versionRegex.exec(deps);
   const majorVersion = semver.major(semver.clean(depsNodeVersion));
 

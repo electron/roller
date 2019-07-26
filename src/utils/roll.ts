@@ -16,7 +16,7 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
   const d = debug(`roller/${rollTarget.name}:roll()`);
   const github = await getOctokit();
 
-  d(`roll triggered for electron branch=${electronBranch.name} ${rollTarget.key}=${targetVersion}`);
+  d(`roll triggered for electron branch=${electronBranch.name} ${rollTarget.depsKey}=${targetVersion}`);
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
   const existingPrsForBranch =
@@ -42,7 +42,7 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
 
       const { previousDEPSVersion, newDEPSVersion } = await updateDepsFile({
         depName: rollTarget.name,
-        depKey: rollTarget.key,
+        depKey: rollTarget.depsKey,
         branch: pr.head.ref,
         targetVersion,
       });
@@ -91,7 +91,7 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
     d(`updating the new ref with version=${targetVersion}`);
     const { previousDEPSVersion } = await updateDepsFile({
       depName: rollTarget.name,
-      depKey: rollTarget.key,
+      depKey: rollTarget.depsKey,
       branch: branchName,
       targetVersion,
     });

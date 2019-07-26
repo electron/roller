@@ -58,7 +58,7 @@ describe('handleChromiumCheck()', () => {
 
       this.mockOctokit.repos.getContents.mockReturnValue({
         data: {
-          content: Buffer.from(`${rollTargets.chromium.key}':\n    '1.0.0.0',`),
+          content: Buffer.from(`${rollTargets.chromium.depsKey}':\n    '1.0.0.0',`),
           sha: '1234'
         },
       });
@@ -87,7 +87,7 @@ describe('handleChromiumCheck()', () => {
     it('takes no action if no new minor/build/patch available', async () => {
       this.mockOctokit.repos.getContents.mockReturnValue({
         data: {
-          content: Buffer.from(`${rollTargets.chromium.key}':\n    '1.5.0.0',`),
+          content: Buffer.from(`${rollTargets.chromium.depsKey}':\n    '1.5.0.0',`),
           sha: '1234'
         },
       });
@@ -136,7 +136,7 @@ describe('handleChromiumCheck()', () => {
 
       this.mockOctokit.repos.getContents.mockReturnValue({
         data: {
-          content: Buffer.from(`${rollTargets.chromium.key}':\n    'old-sha',`),
+          content: Buffer.from(`${rollTargets.chromium.depsKey}':\n    'old-sha',`),
           sha: '1234'
         },
       });
@@ -179,7 +179,7 @@ describe('handleChromiumCheck()', () => {
 
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
-        content: Buffer.from(`${rollTargets.chromium.key}':\n    '1.0.0.0',`),
+        content: Buffer.from(`${rollTargets.chromium.depsKey}':\n    '1.0.0.0',`),
         sha: '1234'
       },
     });
@@ -242,7 +242,7 @@ describe('handleNodeCheck()', () => {
   it('rolls even major versions of Node.js with latest minor/patch update', async () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
-        content: Buffer.from(`${rollTargets.node.key}':\n    'v12.0.0',`),
+        content: Buffer.from(`${rollTargets.node.depsKey}':\n    'v12.0.0',`),
         sha: '1234'
       },
     })
@@ -260,7 +260,7 @@ describe('handleNodeCheck()', () => {
   it('does not roll for uneven major versions of Node.js', async () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
-        content: Buffer.from(`${rollTargets.node.key}':\n    'v11.0.0',`),
+        content: Buffer.from(`${rollTargets.node.depsKey}':\n    'v11.0.0',`),
         sha: '1234'
       },
     })
@@ -272,7 +272,7 @@ describe('handleNodeCheck()', () => {
   it('does not roll if no newer release found', async () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
-        content: Buffer.from(`${rollTargets.node.key}':\n    'v12.2.0',`),
+        content: Buffer.from(`${rollTargets.node.depsKey}':\n    'v12.2.0',`),
         sha: '1234'
       },
     })
@@ -284,7 +284,7 @@ describe('handleNodeCheck()', () => {
   it('throws error if roll() process failed', async () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
-        content: Buffer.from(`${rollTargets.node.key}':\n    'v12.0.0',`),
+        content: Buffer.from(`${rollTargets.node.depsKey}':\n    'v12.0.0',`),
         sha: '1234'
       },
     });

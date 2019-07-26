@@ -16,11 +16,11 @@ export const REPOS = {
 export const rollTargets = {
   node: {
     name: 'node',
-    key: 'node_version',
+    depsKey: 'node_version',
   },
   chromium: {
     name: 'chromium',
-    key: 'chromium_version',
+    depsKey: 'chromium_version',
   },
 };
 
@@ -33,5 +33,5 @@ export interface Commit {
 
 export interface RollTarget {
   name: string;
-  key: string;
+  depsKey: string;
 }
