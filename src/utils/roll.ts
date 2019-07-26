@@ -53,8 +53,8 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
       }
 
       d(`version changed, updating PR body`);
-      const targetName = rollTarget.name.charAt(0).toUpperCase() + rollTarget.name.slice(1);
-      const originalVersionRegex = new RegExp(`^Original-${targetName}-Version: (\\S+)`, 'm');
+      // TODO(erickzhao): remove "Original-Chromium-Version" once older PRs are closed
+      const originalVersionRegex = new RegExp('^Original-Chromium-Version: (\\S+)|^Original-Version: (\\S+)', 'm');
       const captured = originalVersionRegex.exec(pr.body);
       const [, previousPRVersion] = captured;
 

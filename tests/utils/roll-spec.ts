@@ -1,6 +1,6 @@
 import { roll } from '../../src/utils/roll';
 import { getOctokit } from '../../src/utils/octokit';
-import { rollTargets, PR_USER, repos } from '../../src/constants';
+import { rollTargets, PR_USER, REPOS } from '../../src/constants';
 import { updateDepsFile } from '../../src/utils/update-deps';
 
 jest.mock('../../src/utils/octokit');
@@ -53,7 +53,7 @@ describe('roll()', () => {
         head: {
           ref: 'asd'
         },
-        body: 'Original-Node-Version: v4.0.0',
+        body: 'Original-Version: v4.0.0',
         created_at: (new Date()).toISOString()
       }]
     );
@@ -84,7 +84,7 @@ describe('roll()', () => {
         head: {
           ref: 'asd'
         },
-        body: 'Original-Node-Version: v4.0.0',
+        body: 'Original-Version: v4.0.0',
         created_at: (new Date()).toISOString()
       }]
     );
@@ -128,7 +128,7 @@ describe('roll()', () => {
     }));
   });
 
-  it.only('skips PR if existing one is stale', async () => {
+  it('skips PR if existing one is stale', async () => {
     this.mockOctokit.paginate.mockReturnValue(
       [{
         user: {
@@ -139,7 +139,7 @@ describe('roll()', () => {
         head: {
           ref: 'asd'
         },
-        body: 'Original-Node-Version: v4.0.0',
+        body: 'Original-Version: v4.0.0',
         created_at: (new Date('December 17, 1995 03:24:00')).toISOString()
       }]
     );

@@ -23,7 +23,7 @@ describe('getPRText()', () => {
         .toContain(`Updating Node.js to ${details.newVersion}.`);
       // contains original node version reference
       expect(prText.body)
-        .toContain(`Original-Node-Version: ${details.previousVersion}`);
+        .toContain(`Original-Version: ${details.previousVersion}`);
       // contains release notes
       expect(prText.body)
         .toContain(`Notes: Updated Node.js to ${details.newVersion}`);
@@ -52,7 +52,7 @@ describe('getPRText()', () => {
         .toContain(`Updating Chromium`);
       // contains original chromium version reference
       expect(prText.body)
-        .toContain(`Original-Chromium-Version: ${details.previousVersion}`);
+        .toContain(`Original-Version: ${details.previousVersion}`);
       // contains link to diff
       expect(prText.body)
         .toContain(`https://chromium.googlesource.com/chromium/src/+log/${details.previousVersion}..${details.newVersion}?n=10000&pretty=fuller`);

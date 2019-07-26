@@ -32,7 +32,7 @@ function getChromiumPRText(details: PRTextDetails) {
 See [all changes in ${shortPreviousVersion}..${shortVersion}](${diffLink})
 
 <!--
-Original-Chromium-Version: ${previousVersion}
+Original-Version: ${previousVersion}
 -->
 
 Notes: ${isLKGR ? 'no-notes' : `Updated Chromium to ${newVersion}.`}`,
@@ -50,7 +50,7 @@ function getNodePRText(details: PRTextDetails) {
 See [all changes in ${previousVersion}..${newVersion}](${diffLink})
 
 <!--
-Original-Node-Version: ${previousVersion}
+Original-Version: ${previousVersion}
 -->
 
 Notes: Updated Node.js to ${newVersion}.`};
