@@ -1,24 +1,24 @@
 export const REPOS = {
-  ELECTRON: {
-    OWNER: 'electron',
-    NAME: 'electron',
+  electron: {
+    owner: 'electron',
+    name: 'electron',
   },
-  NODE: {
-    OWNER: 'nodejs',
-    NAME: 'node',
+  node: {
+    owner: 'nodejs',
+    name: 'node',
   },
-  LIBCC: {
-    OWNER: 'electron',
-    NAME: 'libchromiumcontent',
+  libcc: {
+    owner: 'electron',
+    name: 'libchromiumcontent',
   },
 };
 
-export const ROLL_TARGETS = {
-  NODE: {
+export const rollTargets = {
+  node: {
     name: 'node',
     key: 'node_version',
   },
-  CHROMIUM: {
+  chromium: {
     name: 'chromium',
     key: 'chromium_version',
   },

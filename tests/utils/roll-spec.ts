@@ -1,6 +1,6 @@
 import { roll } from '../../src/utils/roll';
 import { getOctokit } from '../../src/utils/octokit';
-import { ROLL_TARGETS, PR_USER, REPOS } from '../../src/constants';
+import { rollTargets, PR_USER, repos } from '../../src/constants';
 import { updateDepsFile } from '../../src/utils/update-deps';
 
 jest.mock('../../src/utils/octokit');
@@ -48,7 +48,7 @@ describe('roll()', () => {
         user: {
           login: PR_USER
         },
-        title: ROLL_TARGETS.NODE.name,
+        title: rollTargets.node.name,
         number: 1,
         head: {
           ref: 'asd'
@@ -64,7 +64,7 @@ describe('roll()', () => {
     });
 
     await roll({
-      rollTarget: ROLL_TARGETS.NODE,
+      rollTarget: rollTargets.node,
       electronBranch: branch,
       targetVersion: 'v4.0.0'
     });
@@ -79,7 +79,7 @@ describe('roll()', () => {
         user: {
           login: PR_USER
         },
-        title: ROLL_TARGETS.NODE.name,
+        title: rollTargets.node.name,
         number: 1,
         head: {
           ref: 'asd'
@@ -90,14 +90,14 @@ describe('roll()', () => {
     );
 
     await roll({
-      rollTarget: ROLL_TARGETS.NODE,
+      rollTarget: rollTargets.node,
       electronBranch: branch,
       targetVersion: 'v10.0.0'
     });
 
     expect(this.mockOctokit.pulls.update).toHaveBeenCalledWith(expect.objectContaining({
-      owner: REPOS.ELECTRON.OWNER,
-      repo: REPOS.ELECTRON.NAME,
+      owner: REPOS.electron.owner,
+      repo: REPOS.electron.name,
       pull_number: 1
     }));
   });
@@ -106,25 +106,25 @@ describe('roll()', () => {
     this.mockOctokit.paginate.mockReturnValue([]);
 
     await roll({
-      rollTarget: ROLL_TARGETS.NODE,
+      rollTarget: rollTargets.node,
       electronBranch: branch,
       targetVersion: 'v10.0.0'
     });
 
-    const newBranchName = `roller/${ROLL_TARGETS.NODE.name}/${branch.name}`;
+    const newBranchName = `roller/${rollTargets.node.name}/${branch.name}`;
 
     expect(this.mockOctokit.git.createRef).toHaveBeenCalledWith({
-      owner: REPOS.ELECTRON.OWNER,
-      repo: REPOS.ELECTRON.NAME,
+      owner: REPOS.electron.owner,
+      repo: REPOS.electron.name,
       ref: `refs/heads/${newBranchName}`,
       sha: branch.commit.sha
     });
 
     expect(this.mockOctokit.pulls.create).toHaveBeenCalledWith(expect.objectContaining({
-      owner: REPOS.ELECTRON.OWNER,
-      repo: REPOS.ELECTRON.NAME,
+      owner: REPOS.electron.owner,
+      repo: REPOS.electron.name,
       base: branch.name,
-      head: `${REPOS.ELECTRON.OWNER}:${newBranchName}`
+      head: `${REPOS.electron.owner}:${newBranchName}`
     }));
   });
 
@@ -134,7 +134,7 @@ describe('roll()', () => {
         user: {
           login: PR_USER
         },
-        title: ROLL_TARGETS.NODE.name,
+        title: rollTargets.node.name,
         number: 1,
         head: {
           ref: 'asd'
@@ -145,7 +145,7 @@ describe('roll()', () => {
     );
 
     await roll({
-      rollTarget: ROLL_TARGETS.NODE,
+      rollTarget: rollTargets.node,
       electronBranch: branch,
       targetVersion: 'v10.0.0'
     });

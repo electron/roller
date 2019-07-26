@@ -17,8 +17,8 @@ const cleanUpBranch = async (branchName: string) => {
   const github = await getOctokit();
 
   await github.git.deleteRef({
-    owner: REPOS.ELECTRON.OWNER,
-    repo: REPOS.ELECTRON.NAME,
+    owner: REPOS.electron.owner,
+    repo: REPOS.electron.name,
     ref: `heads/${branchName}`,
   });
 };
@@ -43,7 +43,7 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
     owner: 'electron',
     repo: 'electron',
     base: targetBranch,
-    head: `${REPOS.ELECTRON.OWNER}:${forkBranchName}`,
+    head: `${REPOS.electron.owner}:${forkBranchName}`,
     title: prTitle,
     body: `Updating libcc reference to latest.  Changes since the last roll:
 

@@ -11,8 +11,8 @@ export async function updateDepsFile({ depName, depKey, branch, targetVersion }:
   const github = await getOctokit();
 
   const existing = await github.repos.getContents({
-    owner: REPOS.ELECTRON.OWNER,
-    repo: REPOS.ELECTRON.NAME,
+    owner: REPOS.electron.owner,
+    repo: REPOS.electron.name,
     path: 'DEPS',
     ref: branch,
   });
@@ -25,8 +25,8 @@ export async function updateDepsFile({ depName, depKey, branch, targetVersion }:
     const regexToReplace = new RegExp(`(${depKey}':\n +').+?',`, 'gm');
     const newContent = content.replace(regexToReplace, `$1${targetVersion}',`);
     await github.repos.updateFile({
-      owner: REPOS.ELECTRON.OWNER,
-      repo: REPOS.ELECTRON.NAME,
+      owner: REPOS.electron.owner,
+      repo: REPOS.electron.name,
       path: 'DEPS',
       content: Buffer.from(newContent).toString('base64'),
       message: `chore: bump ${depName} in DEPS to ${targetVersion}`,

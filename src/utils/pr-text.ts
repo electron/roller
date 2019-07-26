@@ -1,4 +1,4 @@
-import { ROLL_TARGETS, RollTarget } from '../constants';
+import { rollTargets, RollTarget } from '../constants';
 
 interface PRTextDetails {
   previousVersion: string;
@@ -8,9 +8,9 @@ interface PRTextDetails {
 
 export function getPRText(rollTarget: RollTarget, details: PRTextDetails) {
   switch (rollTarget.name) {
-    case ROLL_TARGETS.NODE.name:
+    case rollTargets.node.name:
       return getNodePRText(details);
-    case ROLL_TARGETS.CHROMIUM.name:
+    case rollTargets.chromium.name:
       return getChromiumPRText(details);
     default:
       throw new Error(`Roll target ${rollTarget.name} does not have PR text defined!`);
@@ -26,7 +26,7 @@ function getChromiumPRText(details: PRTextDetails) {
   const diffLink = `https://chromium.googlesource.com/chromium/src/+log/` +
                    `${previousVersion}..${newVersion}?n=10000&pretty=fuller`;
   return {
-    title: `chore: bump ${ROLL_TARGETS.CHROMIUM.name} to ${shortVersion} (${branchName})`,
+    title: `chore: bump ${rollTargets.chromium.name} to ${shortVersion} (${branchName})`,
     body: `Updating Chromium to ${shortVersion}${isLKGR ? ' (lkgr)' : ''}.
 
 See [all changes in ${shortPreviousVersion}..${shortVersion}](${diffLink})
@@ -44,7 +44,7 @@ function getNodePRText(details: PRTextDetails) {
 
   const diffLink = `https://github.com/nodejs/node/compare/${previousVersion}...${newVersion}`;
   return {
-    title: `chore: bump ${ROLL_TARGETS.NODE.name} to ${newVersion} (${branchName})`,
+    title: `chore: bump ${rollTargets.node.name} to ${newVersion} (${branchName})`,
     body: `Updating Node.js to ${newVersion}.
 
 See [all changes in ${previousVersion}..${newVersion}](${diffLink})

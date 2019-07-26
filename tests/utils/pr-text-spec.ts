@@ -1,12 +1,12 @@
 import { getPRText } from '../../src/utils/pr-text';
-import { ROLL_TARGETS, RollTarget } from '../../src/constants';
+import { rollTargets, RollTarget } from '../../src/constants';
 
 jest.mock('../../src/utils/octokit');
 
 describe('getPRText()', () => {
   describe('Node.js target', () => {
     it('returns a Node.js PR body', () => {
-      const target = ROLL_TARGETS.NODE;
+      const target = rollTargets.node;
       const details = {
         newVersion: 'v10.0.0',
         previousVersion: 'v4.0.0',
@@ -16,7 +16,7 @@ describe('getPRText()', () => {
   
       // correct title
       expect(prText.title)
-        .toBe(`chore: bump ${ROLL_TARGETS.NODE.name} to ${details.newVersion} (${details.branchName})`);
+        .toBe(`chore: bump ${rollTargets.node.name} to ${details.newVersion} (${details.branchName})`);
       
       // contains short description
       expect(prText.body)
@@ -34,7 +34,7 @@ describe('getPRText()', () => {
   });
   describe('Chromium target', () => {
     it('returns a Chromium PR body', () => {
-      const target = ROLL_TARGETS.CHROMIUM;
+      const target = rollTargets.chromium;
       const details = {
         newVersion: '1.0.154.65',
         previousVersion: '1.0.154.61',
@@ -45,7 +45,7 @@ describe('getPRText()', () => {
 
       // correct title
       expect(prText.title)
-        .toContain(`chore: bump ${ROLL_TARGETS.CHROMIUM.name}`);
+        .toContain(`chore: bump ${rollTargets.chromium.name}`);
       
       // contains short description
       expect(prText.body)
@@ -59,7 +59,7 @@ describe('getPRText()', () => {
     });
 
     it('assumes LKGR if version is a commit SHA', () => {
-      const target = ROLL_TARGETS.CHROMIUM;
+      const target = rollTargets.chromium;
       const details = {
         newVersion: '9F86D081884C7D659A2FEAA0C55',
         previousVersion: 'AD015A3BF4F1B2B0B822CD15D6C15B0F00A08',
@@ -73,7 +73,7 @@ describe('getPRText()', () => {
     });
 
     it('adds version to release notes if version is release tag', () => {
-      const target = ROLL_TARGETS.CHROMIUM;
+      const target = rollTargets.chromium;
       const details = {
         newVersion: '1.0.154.65',
         previousVersion: '1.0.154.61',

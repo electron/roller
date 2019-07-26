@@ -3,7 +3,7 @@ import { handleLibccPush, handleNodeCheck, handleChromiumCheck } from '../src/ha
 import { rollChromium } from '../src/roll-chromium';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
-import { ROLL_TARGETS } from '../src/constants';
+import { rollTargets } from '../src/constants';
 
 jest.mock('../src/get-chromium-tags');
 jest.mock('../src/roll-chromium');
@@ -58,7 +58,7 @@ describe('handleChromiumCheck()', () => {
 
       this.mockOctokit.repos.getContents.mockReturnValue({
         data: {
-          content: Buffer.from(`${ROLL_TARGETS.CHROMIUM.key}':\n    '1.0.0.0',`),
+          content: Buffer.from(`${rollTargets.chromium.key}':\n    '1.0.0.0',`),
           sha: '1234'
         },
       });
@@ -79,7 +79,7 @@ describe('handleChromiumCheck()', () => {
       await handleChromiumCheck();
 
       expect(roll).toHaveBeenCalledWith(expect.objectContaining({
-        rollTarget: ROLL_TARGETS.CHROMIUM,
+        rollTarget: rollTargets.chromium,
         targetVersion: '1.2.0.0'
       }));
     });
@@ -87,7 +87,7 @@ describe('handleChromiumCheck()', () => {
     it('takes no action if no new minor/build/patch available', async () => {
       this.mockOctokit.repos.getContents.mockReturnValue({
         data: {
-          content: Buffer.from(`${ROLL_TARGETS.CHROMIUM.key}':\n    '1.5.0.0',`),
+          content: Buffer.from(`${rollTargets.chromium.key}':\n    '1.5.0.0',`),
           sha: '1234'
         },
       });
@@ -136,7 +136,7 @@ describe('handleChromiumCheck()', () => {
 
       this.mockOctokit.repos.getContents.mockReturnValue({
         data: {
-          content: Buffer.from(`${ROLL_TARGETS.CHROMIUM.key}':\n    'old-sha',`),
+          content: Buffer.from(`${rollTargets.chromium.key}':\n    'old-sha',`),
           sha: '1234'
         },
       });
@@ -150,7 +150,7 @@ describe('handleChromiumCheck()', () => {
       await handleChromiumCheck();
 
       expect(roll).toHaveBeenCalledWith(expect.objectContaining({
-        rollTarget: ROLL_TARGETS.CHROMIUM,
+        rollTarget: rollTargets.chromium,
         targetVersion: 'new-sha',
       }));
     });
@@ -179,7 +179,7 @@ describe('handleChromiumCheck()', () => {
 
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
-        content: Buffer.from(`${ROLL_TARGETS.CHROMIUM.key}':\n    '1.0.0.0',`),
+        content: Buffer.from(`${rollTargets.chromium.key}':\n    '1.0.0.0',`),
         sha: '1234'
       },
     });
@@ -242,14 +242,14 @@ describe('handleNodeCheck()', () => {
   it('rolls even major versions of Node.js with latest minor/patch update', async () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
-        content: Buffer.from(`${ROLL_TARGETS.NODE.key}':\n    'v12.0.0',`),
+        content: Buffer.from(`${rollTargets.node.key}':\n    'v12.0.0',`),
         sha: '1234'
       },
     })
     await handleNodeCheck();
 
     expect(roll).toHaveBeenCalledWith({
-      rollTarget: ROLL_TARGETS.NODE,
+      rollTarget: rollTargets.node,
       electronBranch: expect.objectContaining({
         name: 'master'
       }),
@@ -260,7 +260,7 @@ describe('handleNodeCheck()', () => {
   it('does not roll for uneven major versions of Node.js', async () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
-        content: Buffer.from(`${ROLL_TARGETS.NODE.key}':\n    'v11.0.0',`),
+        content: Buffer.from(`${rollTargets.node.key}':\n    'v11.0.0',`),
         sha: '1234'
       },
     })
@@ -272,7 +272,7 @@ describe('handleNodeCheck()', () => {
   it('does not roll if no newer release found', async () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
-        content: Buffer.from(`${ROLL_TARGETS.NODE.key}':\n    'v12.2.0',`),
+        content: Buffer.from(`${rollTargets.node.key}':\n    'v12.2.0',`),
         sha: '1234'
       },
     })
@@ -284,7 +284,7 @@ describe('handleNodeCheck()', () => {
   it('throws error if roll() process failed', async () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
-        content: Buffer.from(`${ROLL_TARGETS.NODE.key}':\n    'v12.0.0',`),
+        content: Buffer.from(`${rollTargets.node.key}':\n    'v12.0.0',`),
         sha: '1234'
       },
     });
