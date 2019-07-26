@@ -67,8 +67,7 @@ export async function handleChromiumCheck(): Promise<void> {
   const github = await getOctokit();
   d('getting electron branches');
   const branches = await github.repos.listBranches({
-    owner: REPOS.electron.owner,
-    repo: REPOS.electron.name,
+    ...REPOS.electron,
     protected: true,
   });
   const post4Branches = branches.data
@@ -80,7 +79,7 @@ export async function handleChromiumCheck(): Promise<void> {
     d(`getting DEPS for ${branch.name}`);
     const depsData = await github.repos.getContents({
       owner: REPOS.electron.owner,
-      repo: REPOS.electron.name,
+      repo: REPOS.electron.repo,
       path: 'DEPS',
       ref: branch.commit.sha,
     });
@@ -116,7 +115,7 @@ export async function handleChromiumCheck(): Promise<void> {
     if (!!masterBranch) {
       const depsData = await github.repos.getContents({
         owner: REPOS.electron.owner,
-        repo: REPOS.electron.name,
+        repo: REPOS.electron.repo,
         path: 'DEPS',
         ref: 'master',
       });
@@ -154,14 +153,13 @@ export async function handleNodeCheck(): Promise<void> {
   d('fetching nodejs/node releases');
   const { data: releases } = await github.repos.listReleases({
     owner: REPOS.node.owner,
-    repo: REPOS.node.name,
+    repo: REPOS.node.repo,
   });
   const releaseTags = releases.map((r) => r.tag_name);
 
   d('fetching electron/electron branches');
   const { data: branches } = await github.repos.listBranches({
-    owner: REPOS.electron.owner,
-    repo: REPOS.electron.name,
+    ...REPOS.electron,
     protected: true,
   });
 
@@ -171,7 +169,7 @@ export async function handleNodeCheck(): Promise<void> {
   d(`getting DEPS for branch ${masterBranch} in electron/electron`);
   const depsData = await github.repos.getContents({
     owner:  REPOS.electron.owner,
-    repo: REPOS.electron.name,
+    repo: REPOS.electron.repo,
     path: 'DEPS',
     ref: 'master',
   });

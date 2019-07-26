@@ -97,7 +97,7 @@ describe('roll()', () => {
 
     expect(this.mockOctokit.pulls.update).toHaveBeenCalledWith(expect.objectContaining({
       owner: REPOS.electron.owner,
-      repo: REPOS.electron.name,
+      repo: REPOS.electron.repo,
       pull_number: 1
     }));
   });
@@ -115,14 +115,14 @@ describe('roll()', () => {
 
     expect(this.mockOctokit.git.createRef).toHaveBeenCalledWith({
       owner: REPOS.electron.owner,
-      repo: REPOS.electron.name,
+      repo: REPOS.electron.repo,
       ref: `refs/heads/${newBranchName}`,
       sha: branch.commit.sha
     });
 
     expect(this.mockOctokit.pulls.create).toHaveBeenCalledWith(expect.objectContaining({
       owner: REPOS.electron.owner,
-      repo: REPOS.electron.name,
+      repo: REPOS.electron.repo,
       base: branch.name,
       head: `${REPOS.electron.owner}:${newBranchName}`
     }));

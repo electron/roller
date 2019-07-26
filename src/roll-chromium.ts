@@ -14,7 +14,7 @@ const updateDepsFile = async (forkRef: string, libccRef: string) => {
   try {
     existing = await github.repos.getContents({
       owner: REPOS.electron.owner,
-      repo: REPOS.electron.name,
+      repo: REPOS.electron.repo,
       path: 'DEPS',
       ref: forkRef,
     });
@@ -31,8 +31,7 @@ const updateDepsFile = async (forkRef: string, libccRef: string) => {
   );
 
   await github.repos.updateFile({
-    owner: REPOS.electron.owner,
-    repo: REPOS.electron.name,
+    ...REPOS.electron,
     path: 'DEPS',
     content: Buffer.from(newContent).toString('base64'),
     message: `chore: bump libcc in DEPS to ${libccRef}`,
@@ -48,8 +47,7 @@ const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef
   const github = await getOctokit();
 
   const tree = await github.git.createTree({
-    owner: REPOS.electron.owner,
-    repo: REPOS.electron.name,
+    ...REPOS.electron,
     base_tree: electronSha,
     tree: [
       {
@@ -62,16 +60,14 @@ const updateGitSubmodule = async (forkRef: string, electronSha: string, libccRef
   });
 
   const commit = await github.git.createCommit({
-    owner: REPOS.electron.owner,
-    repo: REPOS.electron.name,
+    ...REPOS.electron,
     message: `chore: bump libcc submodule to ${libccRef}`,
     tree: tree.data.sha,
     parents: [electronSha],
   });
 
   await github.git.updateRef({
-    owner: REPOS.electron.owner,
-    repo: REPOS.electron.name,
+    ...REPOS.electron,
     ref: forkRef.substr(5),
     sha: commit.data.sha,
   });
@@ -91,8 +87,7 @@ export async function rollChromium(
   const github = await getOctokit();
   // Get current SHA of {electronBranch} on electron/electron
   const electronReference = await github.git.getRef({
-    owner: REPOS.electron.owner,
-    repo: REPOS.electron.name,
+    ...REPOS.electron,
     ref: `heads/${electronBranch}`,
   });
   const electronSha = electronReference.data.object.sha;
@@ -102,7 +97,7 @@ export async function rollChromium(
   try {
     await github.git.createRef({
       owner: REPOS.electron.owner,
-      repo: REPOS.electron.name,
+      repo: REPOS.electron.repo,
       ref: forkRef,
       sha: electronSha,
     });

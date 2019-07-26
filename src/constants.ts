@@ -1,15 +1,15 @@
 export const REPOS = {
   electron: {
     owner: 'electron',
-    name: 'electron',
+    repo: 'electron',
   },
   node: {
     owner: 'nodejs',
-    name: 'node',
+    repo: 'node',
   },
   libcc: {
     owner: 'electron',
-    name: 'libchromiumcontent',
+    repo: 'libchromiumcontent',
   },
 };
 

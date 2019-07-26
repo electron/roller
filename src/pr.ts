@@ -17,8 +17,7 @@ const cleanUpBranch = async (branchName: string) => {
   const github = await getOctokit();
 
   await github.git.deleteRef({
-    owner: REPOS.electron.owner,
-    repo: REPOS.electron.name,
+    ...REPOS.electron,
     ref: `heads/${branchName}`,
   });
 };

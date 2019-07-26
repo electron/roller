@@ -11,16 +11,14 @@ export const getExtraCommits = async (electronBranch, libccCommit): Promise<Comm
   d(`getting extra commits between ${electronBranch}...${libccCommit}`);
   try {
     const currentSubmodule = await github.repos.getContents({
-      owner: REPOS.electron.owner,
-      repo: REPOS.electron.name,
+      ...REPOS.electron,
       path: 'vendor/libchromiumcontent',
       ref: `refs/heads/${electronBranch}`,
     });
     currentLibccCommit = currentSubmodule.data.sha;
   } catch (err) {
     const currentDeps = await github.repos.getContents({
-      owner: REPOS.electron.owner,
-      repo: REPOS.electron.name,
+      ...REPOS.electron,
       path: 'DEPS',
       ref: `refs/heads/${electronBranch}`,
     });
@@ -34,7 +32,7 @@ export const getExtraCommits = async (electronBranch, libccCommit): Promise<Comm
 
   const diff = await github.repos.compareCommits({
     owner: REPOS.libcc.owner,
-    repo: REPOS.libcc.name,
+    repo: REPOS.libcc.repo,
     base: currentLibccCommit,
     head: libccCommit,
   });
