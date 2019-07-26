@@ -47,8 +47,6 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
         targetVersion,
       });
 
-      d(previousDEPSVersion);
-
       if (previousDEPSVersion === newDEPSVersion) {
         d(`version unchanged, skipping PR body update`);
         continue;
