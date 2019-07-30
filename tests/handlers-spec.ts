@@ -1,36 +1,13 @@
-import { getChromiumLkgr, getChromiumTags } from '../src/get-chromium-tags';
-import { handleLibccPush, handleNodeCheck, handleChromiumCheck } from '../src/handlers';
-import { rollChromium } from '../src/roll-chromium';
+
+import { ROLL_TARGETS } from '../src/constants';
+import { handleChromiumCheck, handleNodeCheck } from '../src/handlers';
+import { getChromiumLkgr, getChromiumTags } from '../src/utils/get-chromium-tags';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
-import { ROLL_TARGETS } from '../src/constants';
 
-jest.mock('../src/get-chromium-tags');
-jest.mock('../src/roll-chromium');
+jest.mock('../src/utils/get-chromium-tags');
 jest.mock('../src/utils/octokit');
 jest.mock('../src/utils/roll');
-
-describe('handleLibccPush()', () => {
-  it('rolls chromium for the right branch', async () => {
-    const mockData = { ref: 'electron-3-0-x' };
-    await handleLibccPush(null, mockData as any);
-
-    expect(rollChromium).toHaveBeenCalled();
-  });
-
-  it('does not do anything for anything else', async () => {
-    const mockData = { ref: '💩' };
-    await handleLibccPush(null, mockData as any);
-
-    expect(rollChromium).toHaveBeenCalledTimes(0);
-  });
-
-  it('handles garbage data', async () => {
-    await handleLibccPush(null, '💩' as any);
-
-    expect(rollChromium).toHaveBeenCalledTimes(0);
-  });
-});
 
 describe('handleChromiumCheck()', () => {
   beforeEach(() => {
