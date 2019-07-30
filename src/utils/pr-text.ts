@@ -1,4 +1,4 @@
-import { RollTarget, ROLL_TARGETS } from '../constants';
+import { ROLL_TARGETS, RollTarget } from '../constants';
 
 interface PRTextDetails {
   previousVersion: string;
