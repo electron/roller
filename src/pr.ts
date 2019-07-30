@@ -1,9 +1,9 @@
 import * as debug from 'debug';
 
-import { Commit, PR_USER, REPO_NAME, REPO_OWNER } from './constants';
+import { Commit, PR_USER, REPOS } from './constants';
 import { getOctokit } from './utils/octokit';
 
-const d = debug('roller:raisePR()');
+const d = debug('roller/chromium:raisePR()');
 
 const COMMIT_URL_BASE = 'https://github.com/electron/libchromiumcontent/commit/';
 const ISSUE_URL_BASE = 'https://github.com/electron/libchromiumcontent/issues/';
@@ -17,8 +17,7 @@ const cleanUpBranch = async (branchName: string) => {
   const github = await getOctokit();
 
   await github.git.deleteRef({
-    owner: REPO_OWNER,
-    repo: REPO_NAME,
+    ...REPOS.electron,
     ref: `heads/${branchName}`,
   });
 };
@@ -43,7 +42,7 @@ export const raisePR = async (forkBranchName: string, targetBranch: string, extr
     owner: 'electron',
     repo: 'electron',
     base: targetBranch,
-    head: `${REPO_OWNER}:${forkBranchName}`,
+    head: `${REPOS.electron.owner}:${forkBranchName}`,
     title: prTitle,
     body: `Updating libcc reference to latest.  Changes since the last roll:
 

@@ -1,9 +1,9 @@
 import * as debug from 'debug';
 
-import { Commit } from './constants';
+import { Commit, REPOS } from './constants';
 import { getOctokit } from './utils/octokit';
 
-const d = debug('roller:getExtraCommits()');
+const d = debug('roller/chromium:getExtraCommits()');
 
 export const getExtraCommits = async (electronBranch, libccCommit): Promise<Commit[]> => {
   const github = await getOctokit();
@@ -11,16 +11,14 @@ export const getExtraCommits = async (electronBranch, libccCommit): Promise<Comm
   d(`getting extra commits between ${electronBranch}...${libccCommit}`);
   try {
     const currentSubmodule = await github.repos.getContents({
-      owner: 'electron',
-      repo: 'electron',
+      ...REPOS.electron,
       path: 'vendor/libchromiumcontent',
       ref: `refs/heads/${electronBranch}`,
     });
     currentLibccCommit = currentSubmodule.data.sha;
   } catch (err) {
     const currentDeps = await github.repos.getContents({
-      owner: 'electron',
-      repo: 'electron',
+      ...REPOS.electron,
       path: 'DEPS',
       ref: `refs/heads/${electronBranch}`,
     });
@@ -33,8 +31,7 @@ export const getExtraCommits = async (electronBranch, libccCommit): Promise<Comm
   }
 
   const diff = await github.repos.compareCommits({
-    owner: 'electron',
-    repo: 'libchromiumcontent',
+    ...REPOS.libcc,
     base: currentLibccCommit,
     head: libccCommit,
   });

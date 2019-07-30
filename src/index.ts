@@ -1,4 +1,3 @@
-
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
 import * as GithubWebHook from 'express-github-webhook';
