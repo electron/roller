@@ -13,8 +13,7 @@ const updateDepsFile = async (forkRef: string, libccRef: string) => {
 
   try {
     existing = await github.repos.getContents({
-      owner: REPOS.electron.owner,
-      repo: REPOS.electron.repo,
+      ...REPOS.electron,
       path: 'DEPS',
       ref: forkRef,
     });
@@ -96,8 +95,7 @@ export async function rollChromium(
   // Create new reference in electron-bot/electron for that SHA
   try {
     await github.git.createRef({
-      owner: REPOS.electron.owner,
-      repo: REPOS.electron.repo,
+      ...REPOS.electron,
       ref: forkRef,
       sha: electronSha,
     });

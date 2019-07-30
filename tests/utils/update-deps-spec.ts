@@ -38,8 +38,7 @@ describe('updateDepsFile()', () => {
     await updateDepsFile(this.options);
 
     expect(this.mockOctokit.repos.updateFile).toHaveBeenCalledWith({
-      owner: REPOS.electron.owner,
-      repo: REPOS.electron.repo,
+      ...REPOS.electron,
       path: 'DEPS',
       content: Buffer.from(`'${this.options.depKey}':\n    '${this.options.targetVersion}',`).toString('base64'),
       message: `chore: bump ${this.options.depName} in DEPS to ${this.options.targetVersion}`,

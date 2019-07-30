@@ -22,8 +22,7 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
   const existingPrsForBranch =
     await github.paginate('GET /repos/:owner/:repo/pulls', {
       base: electronBranch.name,
-      owner: REPOS.electron.owner,
-      repo: REPOS.electron.repo,
+      ...REPOS.electron,
       state: 'open',
     }) as PullsListResponseItem[];
 
@@ -79,8 +78,7 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
     d(`creating ref=${newRef} at sha=${electronSha}`);
 
     await github.git.createRef({
-      owner: REPOS.electron.owner,
-      repo: REPOS.electron.repo,
+      ...REPOS.electron,
       ref: newRef,
       sha: electronSha,
     });
@@ -97,8 +95,7 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
     // Raise a PR
     d(`raising a PR for ${branchName} to ${electronBranch.name}`);
     const newPr = await github.pulls.create({
-      owner: REPOS.electron.owner,
-      repo: REPOS.electron.repo,
+      ...REPOS.electron,
       base: electronBranch.name,
       head: `${REPOS.electron.owner}:${branchName}`,
       ...getPRText(rollTarget, {

@@ -13,7 +13,7 @@ export const REPOS = {
   },
 };
 
-export const rollTargets = {
+export const ROLL_TARGETS = {
   node: {
     name: 'node',
     depsKey: 'node_version',

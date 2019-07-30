@@ -24,8 +24,7 @@ export async function updateDepsFile({ depName, depKey, branch, targetVersion }:
     const regexToReplace = new RegExp(`(${depKey}':\n +').+?',`, 'gm');
     const newContent = content.replace(regexToReplace, `$1${targetVersion}',`);
     await github.repos.updateFile({
-      owner: REPOS.electron.owner,
-      repo: REPOS.electron.repo,
+      ...REPOS.electron,
       path: 'DEPS',
       content: Buffer.from(newContent).toString('base64'),
       message: `chore: bump ${depName} in DEPS to ${targetVersion}`,

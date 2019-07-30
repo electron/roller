@@ -31,8 +31,7 @@ export const getExtraCommits = async (electronBranch, libccCommit): Promise<Comm
   }
 
   const diff = await github.repos.compareCommits({
-    owner: REPOS.libcc.owner,
-    repo: REPOS.libcc.repo,
+    ...REPOS.libcc,
     base: currentLibccCommit,
     head: libccCommit,
   });

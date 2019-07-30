@@ -1,7 +1,7 @@
 import * as debug from 'debug';
 import * as semver from 'semver';
 
-import { REPOS, rollTargets } from './constants';
+import { REPOS, ROLL_TARGETS } from './constants';
 import { getChromiumLkgr, getChromiumTags } from './get-chromium-tags';
 import { getExtraCommits } from './get-extra-commits';
 import { raisePR } from './pr';
@@ -78,13 +78,12 @@ export async function handleChromiumCheck(): Promise<void> {
   for (const branch of post4Branches) {
     d(`getting DEPS for ${branch.name}`);
     const depsData = await github.repos.getContents({
-      owner: REPOS.electron.owner,
-      repo: REPOS.electron.repo,
+      ...REPOS.electron,
       path: 'DEPS',
       ref: branch.commit.sha,
     });
     const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
-    const versionRegex = new RegExp(`${rollTargets.chromium.depsKey}':\n +'(.+?)',`, 'm');
+    const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
     const [, chromiumVersion] = versionRegex.exec(deps);
 
     const chromiumMajorVersion = Number(chromiumVersion.split('.')[0]);
@@ -98,7 +97,7 @@ export async function handleChromiumCheck(): Promise<void> {
 
       try {
         await roll({
-          rollTarget: rollTargets.chromium,
+          rollTarget: ROLL_TARGETS.chromium,
           electronBranch: branch,
           targetVersion: latestUpstreamVersion,
         });
@@ -120,14 +119,14 @@ export async function handleChromiumCheck(): Promise<void> {
         ref: 'master',
       });
       const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
-      const hashRegex = new RegExp(`${rollTargets.chromium.depsKey}':\n +'(.+?)',`, 'm');
+      const hashRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
       const [, chromiumHash] = hashRegex.exec(deps);
       const lkgr = await getChromiumLkgr();
       if (chromiumHash !== lkgr.commit) {
         d(`updating master from ${chromiumHash} to ${lkgr.commit}`);
         try {
           await roll({
-            rollTarget: rollTargets.chromium,
+            rollTarget: ROLL_TARGETS.chromium,
             electronBranch: masterBranch,
             targetVersion: lkgr.commit,
           });
@@ -176,7 +175,7 @@ export async function handleNodeCheck(): Promise<void> {
   const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
 
   // find node version from DEPS
-  const versionRegex = new RegExp(`${rollTargets.node.depsKey}':\n +'(.+?)',`, 'm');
+  const versionRegex = new RegExp(`${ROLL_TARGETS.node.depsKey}':\n +'(.+?)',`, 'm');
   const [, depsNodeVersion] = versionRegex.exec(deps);
   const majorVersion = semver.major(semver.clean(depsNodeVersion));
 
@@ -188,7 +187,7 @@ export async function handleNodeCheck(): Promise<void> {
     d(`branch ${masterBranch.name} could upgrade from ${depsNodeVersion} to ${latestUpstreamVersion}`);
     try {
       await roll({
-        rollTarget: rollTargets.node,
+        rollTarget: ROLL_TARGETS.node,
         electronBranch: masterBranch,
         targetVersion: latestUpstreamVersion,
       });
