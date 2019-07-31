@@ -2,62 +2,10 @@ import * as debug from 'debug';
 import * as semver from 'semver';
 
 import { REPOS, ROLL_TARGETS } from './constants';
-import { getChromiumLkgr, getChromiumTags } from './get-chromium-tags';
-import { getExtraCommits } from './get-extra-commits';
-import { raisePR } from './pr';
-import { rollChromium } from './roll-chromium';
-import { branchFromRef } from './utils/branch-from-ref';
+import { compareChromiumVersions } from './utils/compare-chromium-versions';
+import { getChromiumLkgr, getChromiumTags } from './utils/get-chromium-tags';
 import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
-
-/**
- * Handle a push to `/libcc-hook`.
- *
- * @param {*} _
- * @param {(GitdataCreateReferenceParams & ReposMergeParams)} data
- * @returns {Promise void}
- */
-export async function handleLibccPush(
-  _,
-  data?: { ref: string, after: string },
-): Promise<void> {
-  const d = debug('roller/chromium:handleLibccPush()');
-  if (data && data.ref) {
-    d('handling push');
-    const { ref } = data;
-    const branch = branchFromRef(ref);
-
-    if (branch) {
-      d('upgrading chromium in fork');
-      const forkBranchName = await rollChromium(branch, data.after);
-      if (forkBranchName) {
-        d('raising PR');
-        await raisePR(forkBranchName, branch, await getExtraCommits(branch, data.after));
-        return;
-      } else {
-        d('libcc upgrade failed, not raising any PRs');
-        return;
-      }
-    } else {
-      d(`received ${ref}, could not detect target branch, not doing anything`);
-      return;
-    }
-  }
-
-  d(`received unknown request, not doing anything`);
-}
-
-function lexicographical(a: number[], b: number[]) {
-  for (const i in a) {
-    if (a[i] !== b[i]) {
-      return a[i] - b[i];
-    }
-  }
-  return 0;
-}
-function compareVersions(a: string, b: string): number {
-  return lexicographical(a.split('.').map(Number), b.split('.').map(Number));
-}
 
 export async function handleChromiumCheck(): Promise<void> {
   const d = debug('roller/chromium:handleChromiumCheck()');
@@ -90,9 +38,9 @@ export async function handleChromiumCheck(): Promise<void> {
     d(`computing latest upstream version for Chromium ${chromiumMajorVersion}`);
     const upstreamVersions = Object.keys(chromiumTags)
       .filter((v) => Number(v.split('.')[0]) === chromiumMajorVersion)
-      .sort(compareVersions);
+      .sort(compareChromiumVersions);
     const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
-    if (compareVersions(latestUpstreamVersion, chromiumVersion) > 0) {
+    if (compareChromiumVersions(latestUpstreamVersion, chromiumVersion) > 0) {
       d(`branch ${branch.name} could upgrade from ${chromiumVersion} to ${latestUpstreamVersion}`);
 
       try {
