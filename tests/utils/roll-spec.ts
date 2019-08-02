@@ -97,7 +97,9 @@ describe('roll()', () => {
 
     expect(this.mockOctokit.pulls.update).toHaveBeenCalledWith(expect.objectContaining({
       ...REPOS.electron,
-      pull_number: 1
+      pull_number: 1,
+      title: expect.stringContaining(`bump ${ROLL_TARGETS.node.name} to v10.0.0 (${branch.name})`),
+      body: expect.stringContaining('Original-Version: v4.0.0'),
     }));
   });
 

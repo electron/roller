@@ -53,16 +53,17 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
 
       d(`version changed, updating PR body`);
       // TODO(erickzhao): remove "Original-Chromium-Version" once older PRs are closed
+      // and don't forget to change the array destructure a few lines down
       const originalVersionRegex = new RegExp('^Original-Chromium-Version: (\\S+)|^Original-Version: (\\S+)', 'm');
       const captured = originalVersionRegex.exec(pr.body);
-      const [, previousPRVersion] = captured;
+      const [, previousPRVersionOldText, previousPRVersionNewText] = captured;
 
       await github.pulls.update({
         owner: REPOS.electron.owner,
         repo: REPOS.electron.repo,
         pull_number: pr.number,
         ...getPRText(rollTarget, {
-          previousVersion: previousPRVersion,
+          previousVersion: previousPRVersionOldText || previousPRVersionNewText,
           newVersion: newDEPSVersion,
           branchName: electronBranch.name,
         }),
