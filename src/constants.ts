@@ -7,10 +7,6 @@ export const REPOS = {
     owner: 'nodejs',
     repo: 'node',
   },
-  libcc: {
-    owner: 'electron',
-    repo: 'libchromiumcontent',
-  },
 };
 
 export const ROLL_TARGETS = {
