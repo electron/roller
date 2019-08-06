@@ -95,7 +95,25 @@ describe('handleChromiumCheck()', () => {
       await handleChromiumCheck();
 
       expect(roll).not.toHaveBeenCalled();
-    })
+    });
+
+    it('fails if DEPS version invalid', async () => {
+      this.mockOctokit.repos.getContents.mockReturnValue({
+        data: {
+          content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    'someCommitSha',`),
+          sha: '1234',
+        },
+      });
+
+      expect.assertions(2);
+
+      try {
+        await handleChromiumCheck();
+      } catch (e) {
+        expect(roll).not.toBeCalled();
+        expect(e.message).toMatch('One or more upgrade checks failed; see the logs for details');
+      }
+    });
   });
 
   describe('master branch', () => {

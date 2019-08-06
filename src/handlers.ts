@@ -35,6 +35,14 @@ export async function handleChromiumCheck(): Promise<void> {
     const [, chromiumVersion] = versionRegex.exec(deps);
 
     const chromiumMajorVersion = Number(chromiumVersion.split('.')[0]);
+
+    // should be able to parse major version as a number, otherwise invalid
+    if (Number.isNaN(chromiumMajorVersion)) {
+      d(`roll for ${branch.name} failed because ${chromiumVersion} is not a valid version number`);
+      thisIsFine = false;
+      continue;
+    }
+
     d(`computing latest upstream version for Chromium ${chromiumMajorVersion}`);
     const upstreamVersions = Object.keys(chromiumTags)
       .filter((v) => Number(v.split('.')[0]) === chromiumMajorVersion)
