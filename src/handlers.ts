@@ -46,6 +46,8 @@ export async function handleChromiumCheck(): Promise<void> {
     d(`computing latest upstream version for Chromium ${chromiumMajorVersion}`);
     const upstreamVersions = Object.keys(chromiumTags)
       .filter((v) => Number(v.split('.')[0]) === chromiumMajorVersion)
+      // NB. Chromium rolled a 3905 branch on m78 but abandoned it and continued with 3904.
+      .filter((v) => !v.startsWith('78.0.3905.'))
       .sort(compareChromiumVersions);
     const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
     if (compareChromiumVersions(latestUpstreamVersion, chromiumVersion) > 0) {
