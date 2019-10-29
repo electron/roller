@@ -30,12 +30,14 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
     .filter((pr) => pr.user.login === PR_USER && pr.title.includes(rollTarget.name));
 
   if (myPrs.length) {
-    // Update the existing PR (s?)
+    // Update existing PR(s)
     for (const pr of myPrs) {
       d(`found existing PR: #${pr.number}, attempting DEPS update`);
-      const daysOld = (+new Date() - +new Date(pr.created_at)) / 1000 / 60 / 60 / 24;
-      if (daysOld > 10) {
-        d(`PR is ${daysOld} days old, waiting for maintainers to catch up`);
+
+      // Check to see if automatic DEPS roll has been temporarily disabled
+      const hasPauseLabel = pr.labels.some((label) => label.name === 'roller/pause');
+      if (hasPauseLabel) {
+        d(`Automatic updates have been paused for this PR, skipping DEPS roll.`);
         continue;
       }
 

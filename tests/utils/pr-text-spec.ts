@@ -87,7 +87,7 @@ describe('getPRText()', () => {
   it('throws if invalid roll target passed in', () => {
     const target: RollTarget = {
       name: '💩',
-      key: '🔑'
+      depsKey: '🔑'
     };
     const details = {
       newVersion: 'v10.0.0',
