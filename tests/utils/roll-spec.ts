@@ -54,6 +54,10 @@ describe('roll()', () => {
           ref: 'asd'
         },
         body: 'Original-Version: v4.0.0',
+        labels: [
+          { name: 'hello' },
+          { name: 'goodbye' }
+        ],
         created_at: (new Date()).toISOString()
       }]
     );
@@ -85,6 +89,10 @@ describe('roll()', () => {
           ref: 'asd'
         },
         body: 'Original-Version: v4.0.0',
+        labels: [
+          { name: 'hello' },
+          { name: 'goodbye' }
+        ],
         created_at: (new Date()).toISOString()
       }]
     );
@@ -127,7 +135,7 @@ describe('roll()', () => {
     }));
   });
 
-  it('skips PR if existing one is stale', async () => {
+  it('skips PR if existing one has been paused', async () => {
     this.mockOctokit.paginate.mockReturnValue(
       [{
         user: {
@@ -139,6 +147,9 @@ describe('roll()', () => {
           ref: 'asd'
         },
         body: 'Original-Version: v4.0.0',
+        labels: [
+          { name: 'roller/pause' }
+        ],
         created_at: (new Date('December 17, 1995 03:24:00')).toISOString()
       }]
     );
