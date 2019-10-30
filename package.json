@@ -8,7 +8,8 @@
     "lint": "tslint --project '.'",
     "prestart": "tsc",
     "prepare": "tsc",
-    "start": "DEBUG=roller* node lib/index.js",
+    "roll-chromium": "DEBUG=roller* node lib/chromium-cron.js",
+    "roll-node": "DEBUG=roller* node lib/node-cron.js",
     "test": "jest --config=jest.json --coverage"
   },
   "repository": {
