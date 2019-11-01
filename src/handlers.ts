@@ -9,41 +9,51 @@ import { roll } from './utils/roll';
 
 export async function handleChromiumCheck(): Promise<void> {
   const d = debug('roller/chromium:handleChromiumCheck()');
-  d('fetching chromium tags');
+  d('Fetching Chromium tags');
   const chromiumTags = await getChromiumTags();
 
   const github = await getOctokit();
-  d('getting electron branches');
+  d('Fetching electron release branches');
   const branches = await github.repos.listBranches({
     ...REPOS.electron,
     protected: true,
   });
-  const post4Branches = branches.data
+
+  const releaseBranches = branches.data
     .filter((branch) => Number(branch.name.split(/-/)[0]) >= 4);
+  d(`Found ${releaseBranches.length} release branches`);
 
   let thisIsFine = true;
 
-  for (const branch of post4Branches) {
-    d(`getting DEPS for ${branch.name}`);
+  // Roll all non-master release branches
+  for (const branch of releaseBranches) {
+    d(`Fetching DEPS for ${branch.name}`);
     const depsData = await github.repos.getContents({
       ...REPOS.electron,
       path: 'DEPS',
       ref: branch.commit.sha,
     });
+
     const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
     const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
     const [, chromiumVersion] = versionRegex.exec(deps);
 
     const chromiumMajorVersion = Number(chromiumVersion.split('.')[0]);
 
-    // should be able to parse major version as a number, otherwise invalid
+    // We should be able to parse major version as a number
     if (Number.isNaN(chromiumMajorVersion)) {
-      d(`roll for ${branch.name} failed because ${chromiumVersion} is not a valid version number`);
+      const SHAPattern = /\b[0-9a-f]{5,40}\b/;
+      // On newer release branches we may not yet have updated the branch to use tags
+      if (`${chromiumMajorVersion}`.match(SHAPattern)) {
+        d(`${branch.name} roll failed: ${chromiumMajorVersion} should be a tag.`);
+      } else {
+        d(`${branch.name} roll failed: ${chromiumVersion} is not a valid version number`);
+      }
       thisIsFine = false;
       continue;
     }
 
-    d(`computing latest upstream version for Chromium ${chromiumMajorVersion}`);
+    d(`Computing latest upstream version for Chromium ${chromiumMajorVersion}`);
     const upstreamVersions = Object.keys(chromiumTags)
       .filter((v) => Number(v.split('.')[0]) === chromiumMajorVersion)
       // NB. Chromium rolled a 3905 branch on m78 but abandoned it and continued with 3904.
@@ -51,8 +61,7 @@ export async function handleChromiumCheck(): Promise<void> {
       .sort(compareChromiumVersions);
     const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
     if (compareChromiumVersions(latestUpstreamVersion, chromiumVersion) > 0) {
-      d(`branch ${branch.name} could upgrade from ${chromiumVersion} to ${latestUpstreamVersion}`);
-
+      d(`Upgrade possible: ${branch.name} can roll from ${chromiumVersion} to ${latestUpstreamVersion}`);
       try {
         await roll({
           rollTarget: ROLL_TARGETS.chromium,
@@ -60,14 +69,14 @@ export async function handleChromiumCheck(): Promise<void> {
           targetVersion: latestUpstreamVersion,
         });
       } catch (e) {
-        d(`Error rolling ${branch.name} to ${latestUpstreamVersion}`, e);
+        d(`Error rolling ${branch.name} to ${latestUpstreamVersion}: `, e);
         thisIsFine = false;
       }
     }
   }
 
   {
-    d('getting DEPS for master');
+    d('Fetching DEPS for master');
     const masterBranch = branches.data.find((branch) => branch.name === 'master');
     if (!!masterBranch) {
       const depsData = await github.repos.getContents({
@@ -81,7 +90,7 @@ export async function handleChromiumCheck(): Promise<void> {
       const [, chromiumHash] = hashRegex.exec(deps);
       const lkgr = await getChromiumLkgr();
       if (chromiumHash !== lkgr.commit) {
-        d(`updating master from ${chromiumHash} to ${lkgr.commit}`);
+        d(`Updating master from ${chromiumHash} to ${lkgr.commit}`);
         try {
           await roll({
             rollTarget: ROLL_TARGETS.chromium,
@@ -99,7 +108,7 @@ export async function handleChromiumCheck(): Promise<void> {
   }
 
   if (!thisIsFine) {
-    throw new Error(`One or more upgrade checks failed; see the logs for details`);
+    throw new Error(`One or more upgrade checks failed - see logs for more details`);
   }
 }
 
@@ -107,14 +116,14 @@ export async function handleNodeCheck(): Promise<void> {
   const d = debug('roller/node:handleNodeCheck()');
   const github = await getOctokit();
 
-  d('fetching nodejs/node releases');
+  d('Fetching nodejs/node releases');
   const { data: releases } = await github.repos.listReleases({
     owner: REPOS.node.owner,
     repo: REPOS.node.repo,
   });
   const releaseTags = releases.map((r) => r.tag_name);
 
-  d('fetching electron/electron branches');
+  d('Fetching electron/electron branches');
   const { data: branches } = await github.repos.listBranches({
     ...REPOS.electron,
     protected: true,
@@ -123,7 +132,7 @@ export async function handleNodeCheck(): Promise<void> {
   // TODO: Implement node roller rules for release branches
   const masterBranch = branches.find((branch) => branch.name === 'master');
 
-  d(`getting DEPS for branch ${masterBranch} in electron/electron`);
+  d(`Fetching DEPS for branch ${masterBranch.name} in electron/electron`);
   const depsData = await github.repos.getContents({
     owner:  REPOS.electron.owner,
     repo: REPOS.electron.repo,
@@ -137,12 +146,12 @@ export async function handleNodeCheck(): Promise<void> {
   const [, depsNodeVersion] = versionRegex.exec(deps);
   const majorVersion = semver.major(semver.clean(depsNodeVersion));
 
-  d(`computing latest upstream version for Node ${majorVersion}`);
+  d(`Computing latest upstream version for Node ${majorVersion}`);
   const latestUpstreamVersion = semver.maxSatisfying(releaseTags, `^${majorVersion}`);
 
   // only roll for LTS release lines of Node.js (even-numbered major versions)
   if (majorVersion % 2 === 0 && semver.gt(latestUpstreamVersion, depsNodeVersion)) {
-    d(`branch ${masterBranch.name} could upgrade from ${depsNodeVersion} to ${latestUpstreamVersion}`);
+    d(`Upgrade possible: ${masterBranch.name} can roll from ${depsNodeVersion} to ${latestUpstreamVersion}`);
     try {
       await roll({
         rollTarget: ROLL_TARGETS.node,
@@ -151,7 +160,7 @@ export async function handleNodeCheck(): Promise<void> {
       });
     } catch (e) {
       d(`Error rolling ${masterBranch.name} to ${latestUpstreamVersion}`, e);
-      throw new Error(`Upgrade check failed; see the logs for details`);
+      throw new Error(`Upgrade check failed - see logs for more details`);
     }
   }
 }

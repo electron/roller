@@ -32,15 +32,16 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
   if (myPrs.length) {
     // Update existing PR(s)
     for (const pr of myPrs) {
-      d(`found existing PR: #${pr.number}, attempting DEPS update`);
+      d(`Found existing PR: #${pr.number}`);
 
       // Check to see if automatic DEPS roll has been temporarily disabled
       const hasPauseLabel = pr.labels.some((label) => label.name === 'roller/pause');
       if (hasPauseLabel) {
-        d(`Automatic updates have been paused for this PR, skipping DEPS roll.`);
+        d(`Automatic updates have been paused for #${pr.number}, skipping DEPS roll.`);
         continue;
       }
 
+      d(`Attempting DEPS update for #${pr.number}`);
       const { previousDEPSVersion, newDEPSVersion } = await updateDepsFile({
         depName: rollTarget.name,
         depKey: rollTarget.depsKey,
@@ -49,11 +50,11 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
       });
 
       if (previousDEPSVersion === newDEPSVersion) {
-        d(`version unchanged, skipping PR body update`);
+        d(`DEPS version unchanged - skipping PR body update`);
         continue;
       }
 
-      d(`version changed, updating PR body`);
+      d(`DEPS version changed - updating PR body`);
       // TODO(erickzhao): remove "Original-Chromium-Version" once older PRs are closed
       // and don't forget to change the array destructure a few lines down
       const originalVersionRegex = new RegExp('^Original-Chromium-Version: (\\S+)|^Original-Version: (\\S+)', 'm');
@@ -72,14 +73,13 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
       });
     }
   } else {
-    d(`no existing PR found, raising a new PR`);
-    // Create a new ref that the PR will point to
+    d(`No existing PR found - raising a new PR`);
     const electronSha = electronBranch.commit.sha;
     const branchName = `roller/${rollTarget.name}/${electronBranch.name}`;
     const newRef = `refs/heads/${branchName}`;
 
-    d(`creating ref=${newRef} at sha=${electronSha}`);
-
+    // Create a new ref that the PR will point to
+    d(`Creating ref=${newRef} at sha=${electronSha}`);
     await github.git.createRef({
       ...REPOS.electron,
       ref: newRef,
@@ -87,7 +87,7 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
     });
 
     // Update the ref
-    d(`updating the new ref with version=${targetVersion}`);
+    d(`Updating the new ref with version=${targetVersion}`);
     const { previousDEPSVersion } = await updateDepsFile({
       depName: rollTarget.name,
       depKey: rollTarget.depsKey,
@@ -96,7 +96,7 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
     });
 
     // Raise a PR
-    d(`raising a PR for ${branchName} to ${electronBranch.name}`);
+    d(`Raising a PR for ${branchName} to ${electronBranch.name}`);
     const newPr = await github.pulls.create({
       ...REPOS.electron,
       base: electronBranch.name,
@@ -107,7 +107,7 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
         branchName: electronBranch.name,
       }),
     });
-    d(`new PR: ${newPr.data.html_url}`);
+    d(`New PR: ${newPr.data.html_url}`);
     // TODO: add comment with commit list to new PR.
   }
 }
