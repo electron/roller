@@ -111,7 +111,7 @@ describe('handleChromiumCheck()', () => {
         await handleChromiumCheck();
       } catch (e) {
         expect(roll).not.toBeCalled();
-        expect(e.message).toMatch('One or more upgrade checks failed; see the logs for details');
+        expect(e.message).toMatch('One or more upgrade checks failed - see logs for more details');
       }
     });
   });
@@ -193,7 +193,7 @@ describe('handleChromiumCheck()', () => {
     (roll as jest.Mock).mockImplementationOnce(() => {
       throw new Error('');
     })
-    await expect(handleChromiumCheck()).rejects.toThrowError(`One or more upgrade checks failed; see the logs for details`);
+    await expect(handleChromiumCheck()).rejects.toThrowError(`One or more upgrade checks failed - see logs for more details`);
     expect(roll).toHaveBeenCalled();
   })
 });
@@ -287,7 +287,7 @@ describe('handleNodeCheck()', () => {
     (roll as jest.Mock).mockImplementationOnce(() => {
       throw new Error('');
     })
-    await expect(handleNodeCheck()).rejects.toThrowError(`Upgrade check failed; see the logs for details`);
+    await expect(handleNodeCheck()).rejects.toThrowError(`Upgrade check failed - see logs for more details`);
     expect(roll).toHaveBeenCalled();
   });
 })

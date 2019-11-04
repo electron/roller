@@ -10,6 +10,7 @@
     "prepare": "tsc",
     "roll-chromium": "DEBUG=roller* node lib/chromium-cron.js",
     "roll-node": "DEBUG=roller* node lib/node-cron.js",
+    "start": "echo \"Starting roller bot.\" && exit 0",
     "test": "jest --config=jest.json --coverage"
   },
   "repository": {
