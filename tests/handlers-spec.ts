@@ -1,6 +1,6 @@
 
-import { ROLL_TARGETS } from '../src/constants';
-import { handleChromiumCheck, handleNodeCheck } from '../src/handlers';
+import { REPOS, ROLL_TARGETS } from '../src/constants';
+import { handleChromiumCheck, handleNodeCheck, getSupportedBranches } from '../src/handlers';
 import { getChromiumLkgr, getChromiumTags } from '../src/utils/get-chromium-tags';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
@@ -52,6 +52,57 @@ describe('handleChromiumCheck()', () => {
       });
     });
 
+    it('properly fetches supported versions of Electron to roll against', async () => {
+      this.mockOctokit.repos.listBranches.mockReturnValue({
+        data: [
+          {
+            name: '8-x-y',
+            commit: {
+              sha: '1234'
+            }
+          },
+          {
+            name: '7-1-x',
+            commit: {
+              sha: '1234'
+            }
+          },
+          {
+            name: '7-0-x',
+            commit: {
+              sha: '1234'
+            }
+          },
+          {
+            name: '6-1-x',
+            commit: {
+              sha: '1234'
+            }
+          },
+          {
+            name: '6-0-x',
+            commit: {
+              sha: '1234'
+            }
+          },
+          {
+            name: '5-0-x',
+            commit: {
+              sha: '1234'
+            }
+          },
+        ]
+      });
+
+      const { data: branches } = await this.mockOctokit.repos.listBranches({
+        ...REPOS.electron,
+        protected: true,
+      });
+
+      const supported = getSupportedBranches(branches);
+      expect(supported).toEqual(['5-0-x', '6-1-x', '7-1-x', '8-x-y']);
+    });
+
     it('rolls with latest versions from release tags', async () => {
       await handleChromiumCheck();
 
@@ -67,29 +118,6 @@ describe('handleChromiumCheck()', () => {
           content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.5.0.0',`),
           sha: '1234'
         },
-      });
-
-      await handleChromiumCheck();
-
-      expect(roll).not.toHaveBeenCalled();
-    });
-
-    it('takes no action for branches <= 3', async () => {
-      this.mockOctokit.repos.listBranches.mockReturnValue({
-        data: [
-          {
-            name: '3-0-x',
-            commit: {
-              sha: '1234'
-            }
-          },
-          {
-            name: '2-0-x',
-            commit: {
-              sha: '1234'
-            }
-          },
-        ]
       });
 
       await handleChromiumCheck();
@@ -202,15 +230,13 @@ describe('handleNodeCheck()', () => {
   beforeEach(() => {
     this.mockOctokit = {
       repos: {
-        listBranches: jest.fn().mockReturnValue({
-          data: [
-            {
-              name: 'master',
-              commit: {
-                sha: '1234'
-              }
+        getBranch: jest.fn().mockReturnValue({
+          data: {
+            name: 'master',
+            commit: {
+              sha: '1234'
             }
-          ]
+          }
         }),
         listReleases: jest.fn().mockReturnValue({
           data: [
