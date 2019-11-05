@@ -7,6 +7,7 @@ export interface UpdateDepsParams {
   branch: string;
   targetVersion: string;
 }
+
 export async function updateDepsFile({ depName, depKey, branch, targetVersion }: UpdateDepsParams) {
   const github = await getOctokit();
 

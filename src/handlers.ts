@@ -1,11 +1,27 @@
 import * as debug from 'debug';
 import * as semver from 'semver';
 
-import { REPOS, ROLL_TARGETS } from './constants';
+import { NUM_SUPPORTED_VERSIONS, REPOS, ROLL_TARGETS } from './constants';
 import { compareChromiumVersions } from './utils/compare-chromium-versions';
 import { getChromiumLkgr, getChromiumTags } from './utils/get-chromium-tags';
 import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
+
+// Get array of currently supported branches
+export function getSupportedBranches(branches): string[] {
+  const releaseBranches = branches.filter((branch) => {
+    const releasePattern = /^[0-9]+-([0-9]+-x|x-y)$/;
+    return releasePattern.test(branch.name);
+  }).map((b) => b.name);
+
+  const filtered = {};
+  releaseBranches.sort().forEach((branch: string) => {
+    return filtered[branch.split('-')[0]] = branch;
+  });
+
+  const values = Object.keys(filtered).map((key) => filtered[key]);
+  return values.sort().slice(-NUM_SUPPORTED_VERSIONS);
+}
 
 export async function handleChromiumCheck(): Promise<void> {
   const d = debug('roller/chromium:handleChromiumCheck()');
@@ -13,14 +29,14 @@ export async function handleChromiumCheck(): Promise<void> {
   const chromiumTags = await getChromiumTags();
 
   const github = await getOctokit();
-  d('Fetching electron release branches');
-  const branches = await github.repos.listBranches({
+  d('Fetching release branches for electron/electron');
+  const { data: branches } = await github.repos.listBranches({
     ...REPOS.electron,
     protected: true,
   });
 
-  const releaseBranches = branches.data
-    .filter((branch) => Number(branch.name.split(/-/)[0]) >= 4);
+  const supported = getSupportedBranches(branches);
+  const releaseBranches = branches.filter((branch) => supported.includes(branch.name));
   d(`Found ${releaseBranches.length} release branches`);
 
   let thisIsFine = true;
@@ -28,13 +44,13 @@ export async function handleChromiumCheck(): Promise<void> {
   // Roll all non-master release branches
   for (const branch of releaseBranches) {
     d(`Fetching DEPS for ${branch.name}`);
-    const depsData = await github.repos.getContents({
+    const { data: depsData } = await github.repos.getContents({
       ...REPOS.electron,
       path: 'DEPS',
       ref: branch.commit.sha,
     });
 
-    const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
+    const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
     const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
     const [, chromiumVersion] = versionRegex.exec(deps);
 
@@ -77,15 +93,15 @@ export async function handleChromiumCheck(): Promise<void> {
 
   {
     d('Fetching DEPS for master');
-    const masterBranch = branches.data.find((branch) => branch.name === 'master');
+    const masterBranch = branches.find((branch) => branch.name === 'master');
     if (!!masterBranch) {
-      const depsData = await github.repos.getContents({
+      const { data: depsData } = await github.repos.getContents({
         owner: REPOS.electron.owner,
         repo: REPOS.electron.repo,
         path: 'DEPS',
         ref: 'master',
       });
-      const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
+      const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
       const hashRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
       const [, chromiumHash] = hashRegex.exec(deps);
       const lkgr = await getChromiumLkgr();
@@ -123,23 +139,21 @@ export async function handleNodeCheck(): Promise<void> {
   });
   const releaseTags = releases.map((r) => r.tag_name);
 
-  d('Fetching electron/electron branches');
-  const { data: branches } = await github.repos.listBranches({
+  d('Fetching master branch from electron/electron');
+  const { data: masterBranch } = await github.repos.getBranch({
     ...REPOS.electron,
-    protected: true,
+    branch: 'master',
   });
 
-  // TODO: Implement node roller rules for release branches
-  const masterBranch = branches.find((branch) => branch.name === 'master');
-
   d(`Fetching DEPS for branch ${masterBranch.name} in electron/electron`);
-  const depsData = await github.repos.getContents({
+  const { data: depsData } = await github.repos.getContents({
     owner:  REPOS.electron.owner,
     repo: REPOS.electron.repo,
     path: 'DEPS',
     ref: 'master',
   });
-  const deps = Buffer.from(depsData.data.content, 'base64').toString('utf8');
+
+  const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
 
   // find node version from DEPS
   const versionRegex = new RegExp(`${ROLL_TARGETS.node.depsKey}':\n +'(.+?)',`, 'm');

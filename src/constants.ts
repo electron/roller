@@ -9,6 +9,8 @@ export const REPOS = {
   },
 };
 
+export const NUM_SUPPORTED_VERSIONS = 4;
+
 export const ROLL_TARGETS = {
   node: {
     name: 'node',
