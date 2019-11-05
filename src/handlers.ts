@@ -14,12 +14,12 @@ export function getSupportedBranches(branches): string[] {
     return releasePattern.test(branch.name);
   }).map((b) => b.name);
 
-  const filtered = {};
+  const filtered: Record<string, string> = {};
   releaseBranches.sort().forEach((branch: string) => {
     return filtered[branch.split('-')[0]] = branch;
   });
 
-  const values = Object.keys(filtered).map((key) => filtered[key]);
+  const values = Object.values(filtered);
   return values.sort().slice(-NUM_SUPPORTED_VERSIONS);
 }
 
