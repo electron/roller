@@ -8,7 +8,7 @@ import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
 
 // Get array of currently supported branches
-export function getSupportedBranches(branches): string[] {
+export function getSupportedBranches(branches: {name: string}[]): string[] {
   const releaseBranches = branches.filter((branch) => {
     const releasePattern = /^[0-9]+-([0-9]+-x|x-y)$/;
     return releasePattern.test(branch.name);
