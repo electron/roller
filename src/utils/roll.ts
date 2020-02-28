@@ -74,19 +74,21 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
     }
   } else {
     d(`No existing PR found - raising a new PR`);
-    const electronSha = electronBranch.commit.sha;
+    const sha = electronBranch.commit.sha;
     const branchName = `roller/${rollTarget.name}/${electronBranch.name}`;
-    const newRef = `refs/heads/${branchName}`;
+    const ref = `refs/heads/${branchName}`;
 
-    // Create a new ref that the PR will point to
-    d(`Creating ref=${newRef} at sha=${electronSha}`);
-    await github.git.createRef({
-      ...REPOS.electron,
-      ref: newRef,
-      sha: electronSha,
-    });
+    d(`Checking that no orphan ref exists from a previous roll`);
+    const maybeOldRef = await github.git.getRef({ ...REPOS.electron, ref });
+    if (maybeOldRef.status !== 404) {
+      d(`Found orphan ref ${ref} with no open PR - deleting`);
+      await github.git.deleteRef({ ...REPOS.electron, ref });
+    }
 
-    // Update the ref
+    d(`Creating ref=${ref} at sha=${sha}`);
+    await github.git.createRef({ ...REPOS.electron, ref, sha });
+
+    // Update the ref with the new DEPS version.
     d(`Updating the new ref with version=${targetVersion}`);
     const { previousDEPSVersion } = await updateDepsFile({
       depName: rollTarget.name,
