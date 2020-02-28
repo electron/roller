@@ -1,7 +1,7 @@
 import { PullsListResponseItem, ReposListBranchesResponseItem } from '@octokit/rest';
 import * as debug from 'debug';
 
-import { PR_USER , REPOS, RollTarget } from '../constants';
+import { PR_USER, REPOS, RollTarget } from '../constants';
 import { getOctokit } from './octokit';
 import { getPRText } from './pr-text';
 import { updateDepsFile } from './update-deps';
@@ -12,22 +12,28 @@ interface RollParams {
   targetVersion: string;
 }
 
-export async function roll({ rollTarget, electronBranch, targetVersion }: RollParams): Promise<void> {
+export async function roll({
+  rollTarget,
+  electronBranch,
+  targetVersion,
+}: RollParams): Promise<void> {
   const d = debug(`roller/${rollTarget.name}:roll()`);
   const github = await getOctokit();
 
-  d(`roll triggered for electron branch=${electronBranch.name} ${rollTarget.depsKey}=${targetVersion}`);
+  d(
+    `roll triggered for electron branch=${electronBranch.name} ${rollTarget.depsKey}=${targetVersion}`,
+  );
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
-  const existingPrsForBranch =
-    await github.paginate('GET /repos/:owner/:repo/pulls', {
-      base: electronBranch.name,
-      ...REPOS.electron,
-      state: 'open',
-    }) as PullsListResponseItem[];
+  const existingPrsForBranch = (await github.paginate('GET /repos/:owner/:repo/pulls', {
+    base: electronBranch.name,
+    ...REPOS.electron,
+    state: 'open',
+  })) as PullsListResponseItem[];
 
-  const myPrs = existingPrsForBranch
-    .filter((pr) => pr.user.login === PR_USER && pr.title.includes(rollTarget.name));
+  const myPrs = existingPrsForBranch.filter(
+    pr => pr.user.login === PR_USER && pr.title.includes(rollTarget.name),
+  );
 
   if (myPrs.length) {
     // Update existing PR(s)
@@ -35,7 +41,7 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
       d(`Found existing PR: #${pr.number}`);
 
       // Check to see if automatic DEPS roll has been temporarily disabled
-      const hasPauseLabel = pr.labels.some((label) => label.name === 'roller/pause');
+      const hasPauseLabel = pr.labels.some(label => label.name === 'roller/pause');
       if (hasPauseLabel) {
         d(`Automatic updates have been paused for #${pr.number}, skipping DEPS roll.`);
         continue;
@@ -57,7 +63,10 @@ export async function roll({ rollTarget, electronBranch, targetVersion }: RollPa
       d(`DEPS version changed - updating PR body`);
       // TODO(erickzhao): remove "Original-Chromium-Version" once older PRs are closed
       // and don't forget to change the array destructure a few lines down
-      const originalVersionRegex = new RegExp('^Original-Chromium-Version: (\\S+)|^Original-Version: (\\S+)', 'm');
+      const originalVersionRegex = new RegExp(
+        '^Original-Chromium-Version: (\\S+)|^Original-Version: (\\S+)',
+        'm',
+      );
       const captured = originalVersionRegex.exec(pr.body);
       const [, previousPRVersionOldText, previousPRVersionNewText] = captured;
 

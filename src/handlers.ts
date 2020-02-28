@@ -8,15 +8,17 @@ import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
 
 // Get array of currently supported branches
-export function getSupportedBranches(branches: {name: string}[]): string[] {
-  const releaseBranches = branches.filter((branch) => {
-    const releasePattern = /^[0-9]+-([0-9]+-x|x-y)$/;
-    return releasePattern.test(branch.name);
-  }).map((b) => b.name);
+export function getSupportedBranches(branches: { name: string }[]): string[] {
+  const releaseBranches = branches
+    .filter(branch => {
+      const releasePattern = /^[0-9]+-([0-9]+-x|x-y)$/;
+      return releasePattern.test(branch.name);
+    })
+    .map(b => b.name);
 
   const filtered: Record<string, string> = {};
   releaseBranches.sort().forEach((branch: string) => {
-    return filtered[branch.split('-')[0]] = branch;
+    return (filtered[branch.split('-')[0]] = branch);
   });
 
   const values = Object.values(filtered);
@@ -36,7 +38,7 @@ export async function handleChromiumCheck(): Promise<void> {
   });
 
   const supported = getSupportedBranches(branches);
-  const releaseBranches = branches.filter((branch) => supported.includes(branch.name));
+  const releaseBranches = branches.filter(branch => supported.includes(branch.name));
   d(`Found ${releaseBranches.length} release branches`);
 
   let thisIsFine = true;
@@ -71,13 +73,15 @@ export async function handleChromiumCheck(): Promise<void> {
 
     d(`Computing latest upstream version for Chromium ${chromiumMajorVersion}`);
     const upstreamVersions = Object.keys(chromiumTags)
-      .filter((v) => Number(v.split('.')[0]) === chromiumMajorVersion)
+      .filter(v => Number(v.split('.')[0]) === chromiumMajorVersion)
       // NB. Chromium rolled a 3905 branch on m78 but abandoned it and continued with 3904.
-      .filter((v) => !v.startsWith('78.0.3905.'))
+      .filter(v => !v.startsWith('78.0.3905.'))
       .sort(compareChromiumVersions);
     const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
     if (compareChromiumVersions(latestUpstreamVersion, chromiumVersion) > 0) {
-      d(`Upgrade possible: ${branch.name} can roll from ${chromiumVersion} to ${latestUpstreamVersion}`);
+      d(
+        `Upgrade possible: ${branch.name} can roll from ${chromiumVersion} to ${latestUpstreamVersion}`,
+      );
       try {
         await roll({
           rollTarget: ROLL_TARGETS.chromium,
@@ -93,7 +97,7 @@ export async function handleChromiumCheck(): Promise<void> {
 
   {
     d('Fetching DEPS for master');
-    const masterBranch = branches.find((branch) => branch.name === 'master');
+    const masterBranch = branches.find(branch => branch.name === 'master');
     if (!!masterBranch) {
       const { data: depsData } = await github.repos.getContents({
         owner: REPOS.electron.owner,
@@ -137,7 +141,7 @@ export async function handleNodeCheck(): Promise<void> {
     owner: REPOS.node.owner,
     repo: REPOS.node.repo,
   });
-  const releaseTags = releases.map((r) => r.tag_name);
+  const releaseTags = releases.map(r => r.tag_name);
 
   d('Fetching master branch from electron/electron');
   const { data: masterBranch } = await github.repos.getBranch({
@@ -147,7 +151,7 @@ export async function handleNodeCheck(): Promise<void> {
 
   d(`Fetching DEPS for branch ${masterBranch.name} in electron/electron`);
   const { data: depsData } = await github.repos.getContents({
-    owner:  REPOS.electron.owner,
+    owner: REPOS.electron.owner,
     repo: REPOS.electron.repo,
     path: 'DEPS',
     ref: 'master',
@@ -165,7 +169,9 @@ export async function handleNodeCheck(): Promise<void> {
 
   // only roll for LTS release lines of Node.js (even-numbered major versions)
   if (majorVersion % 2 === 0 && semver.gt(latestUpstreamVersion, depsNodeVersion)) {
-    d(`Upgrade possible: ${masterBranch.name} can roll from ${depsNodeVersion} to ${latestUpstreamVersion}`);
+    d(
+      `Upgrade possible: ${masterBranch.name} can roll from ${depsNodeVersion} to ${latestUpstreamVersion}`,
+    );
     try {
       await roll({
         rollTarget: ROLL_TARGETS.node,
