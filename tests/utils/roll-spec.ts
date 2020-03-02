@@ -32,7 +32,9 @@ describe('roll()', () => {
         create: jest.fn().mockReturnValue({data: {html_url: 'https://google.com'}})
       },
       git: {
-        createRef: jest.fn()
+        createRef: jest.fn(),
+        getRef: jest.fn().mockReturnValue({status: 404}),
+        deleteRef: jest.fn()
       }
     };
     (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
