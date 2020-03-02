@@ -8,9 +8,11 @@ let octokit: GitHub;
  * @returns {Promise<GitHub>}
  */
 export async function getOctokit(): Promise<GitHub> {
-  octokit = octokit || new GitHub({
-    auth: process.env.GITHUB_TOKEN,
-  });
+  octokit =
+    octokit ||
+    new GitHub({
+      auth: process.env.GITHUB_TOKEN,
+    });
 
   return octokit;
 }
