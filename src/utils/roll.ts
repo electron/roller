@@ -88,10 +88,14 @@ export async function roll({
     const ref = `refs/heads/${branchName}`;
 
     d(`Checking that no orphan ref exists from a previous roll`);
-    const maybeOldRef = await github.git.getRef({ ...REPOS.electron, ref });
-    if (maybeOldRef.status !== 404) {
-      d(`Found orphan ref ${ref} with no open PR - deleting`);
-      await github.git.deleteRef({ ...REPOS.electron, ref });
+    try {
+      const maybeOldRef = await github.git.getRef({ ...REPOS.electron, ref });
+      if (maybeOldRef.status === 200) {
+        d(`Found orphan ref ${ref} with no open PR - deleting`);
+        await github.git.deleteRef({ ...REPOS.electron, ref });
+      }
+    } catch (error) {
+      d(`No orphan ref exists at ${ref} - proceeding`);
     }
 
     d(`Creating ref=${ref} at sha=${sha}`);
