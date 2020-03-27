@@ -18,7 +18,7 @@ export async function roll({
   targetVersion,
 }: RollParams): Promise<void> {
   const d = debug(`roller/${rollTarget.name}:roll()`);
-  const github = await getOctokit();
+  const github = getOctokit();
 
   d(
     `roll triggered for electron branch=${electronBranch.name} ${rollTarget.depsKey}=${targetVersion}`,
