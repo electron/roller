@@ -7,7 +7,7 @@ let octokit: GitHub;
  *
  * @returns {Promise<GitHub>}
  */
-export async function getOctokit(): Promise<GitHub> {
+export function getOctokit(): GitHub {
   octokit =
     octokit ||
     new GitHub({
