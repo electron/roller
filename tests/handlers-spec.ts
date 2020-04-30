@@ -1,7 +1,7 @@
 
 import { REPOS, ROLL_TARGETS } from '../src/constants';
 import { handleChromiumCheck, handleNodeCheck, getSupportedBranches } from '../src/handlers';
-import { getChromiumLkgr, getChromiumTags } from '../src/utils/get-chromium-tags';
+import { getChromiumMaster, getChromiumTags } from '../src/utils/get-chromium-tags';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
 
@@ -164,12 +164,12 @@ describe('handleChromiumCheck()', () => {
         },
       });
 
-      (getChromiumLkgr as jest.Mock).mockReturnValue({
+      (getChromiumMaster as jest.Mock).mockReturnValue({
         commit: 'new-sha'
       });
     });
 
-    it('updates to the LKGR', async () => {
+    it('updates to master', async () => {
       await handleChromiumCheck();
 
       expect(roll).toHaveBeenCalledWith(expect.objectContaining({
@@ -178,8 +178,8 @@ describe('handleChromiumCheck()', () => {
       }));
     });
 
-    it('takes no action if LKGR is already in DEPS', async () => {
-      (getChromiumLkgr as jest.Mock).mockReturnValue({
+    it('takes no action if master is already in DEPS', async () => {
+      (getChromiumMaster as jest.Mock).mockReturnValue({
         commit: 'old-sha'
       });
       await handleChromiumCheck();

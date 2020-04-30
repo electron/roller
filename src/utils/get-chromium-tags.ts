@@ -52,6 +52,6 @@ export function getChromiumCommits(
   );
 }
 
-export function getChromiumLkgr(): Promise<any> {
-  return getJSON(`https://chromium.googlesource.com/chromium/src/+/refs/heads/lkgr?format=JSON`);
+export function getChromiumMaster(): Promise<any> {
+  return getJSON(`https://chromium.googlesource.com/chromium/src/+/refs/heads/master?format=JSON`);
 }

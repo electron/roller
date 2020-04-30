@@ -14,20 +14,19 @@ describe('getPRText()', () => {
       };
       const prText = getPRText(target, details);
   
-      // correct title
+      // Correct title.
       expect(prText.title)
         .toBe(`chore: bump ${ROLL_TARGETS.node.name} to ${details.newVersion} (${details.branchName})`);
-      
-      // contains short description
+      // Contains short description.
       expect(prText.body)
         .toContain(`Updating Node.js to ${details.newVersion}.`);
-      // contains original node version reference
+      // Contains original Node.js version reference.
       expect(prText.body)
         .toContain(`Original-Version: ${details.previousVersion}`);
-      // contains release notes
+      // Contains release notes.
       expect(prText.body)
         .toContain(`Notes: Updated Node.js to ${details.newVersion}`);
-      // contains link to diff
+      // Contains link to Node.js diff.
       expect(prText.body)
         .toContain(`https://github.com/nodejs/node/compare/${details.previousVersion}...${details.newVersion}`);
     });
@@ -43,22 +42,21 @@ describe('getPRText()', () => {
 
       const prText = getPRText(target, details);
 
-      // correct title
+      // Correct title.
       expect(prText.title)
         .toContain(`chore: bump ${ROLL_TARGETS.chromium.name}`);
-      
-      // contains short description
+      // Contains short description.
       expect(prText.body)
         .toContain(`Updating Chromium`);
-      // contains original chromium version reference
+      // Contains original Chromium version reference
       expect(prText.body)
         .toContain(`Original-Version: ${details.previousVersion}`);
-      // contains link to diff
+      // Contains link to Chromium diff.
       expect(prText.body)
         .toContain(`https://chromium.googlesource.com/chromium/src/+log/${details.previousVersion}..${details.newVersion}?n=10000&pretty=fuller`);
     });
 
-    it('assumes LKGR if version is a commit SHA', () => {
+    it('assumes master if version is a commit SHA', () => {
       const target = ROLL_TARGETS.chromium;
       const details = {
         newVersion: '9F86D081884C7D659A2FEAA0C55',
@@ -68,7 +66,7 @@ describe('getPRText()', () => {
 
       const prText = getPRText(target, details);
 
-      expect(prText.body).toContain('(lkgr)');
+      expect(prText.body).toContain('(master)');
       expect(prText.body).toContain('no-notes');
     });
 
