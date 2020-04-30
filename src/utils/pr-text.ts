@@ -20,15 +20,15 @@ export function getPRText(rollTarget: RollTarget, details: PRTextDetails) {
 function getChromiumPRText(details: PRTextDetails) {
   const { newVersion, previousVersion, branchName } = details;
 
-  const isLKGR = !newVersion.includes('.');
-  const shortVersion = isLKGR ? newVersion.substr(11) : newVersion;
-  const shortPreviousVersion = isLKGR ? previousVersion.substr(11) : previousVersion;
+  const isMaster = !newVersion.includes('.');
+  const shortVersion = isMaster ? newVersion.substr(11) : newVersion;
+  const shortPreviousVersion = isMaster ? previousVersion.substr(11) : previousVersion;
   const diffLink =
     `https://chromium.googlesource.com/chromium/src/+log/` +
     `${previousVersion}..${newVersion}?n=10000&pretty=fuller`;
   return {
     title: `chore: bump ${ROLL_TARGETS.chromium.name} to ${shortVersion} (${branchName})`,
-    body: `Updating Chromium to ${shortVersion}${isLKGR ? ' (lkgr)' : ''}.
+    body: `Updating Chromium to ${shortVersion}${isMaster ? ' (master)' : ''}.
 
 See [all changes in ${shortPreviousVersion}..${shortVersion}](${diffLink})
 
@@ -36,7 +36,7 @@ See [all changes in ${shortPreviousVersion}..${shortVersion}](${diffLink})
 Original-Version: ${previousVersion}
 -->
 
-Notes: ${isLKGR ? 'no-notes' : `Updated Chromium to ${newVersion}.`}`,
+Notes: ${isMaster ? 'no-notes' : `Updated Chromium to ${newVersion}.`}`,
   };
 }
 

@@ -3,7 +3,7 @@ import * as semver from 'semver';
 
 import { NUM_SUPPORTED_VERSIONS, REPOS, ROLL_TARGETS } from './constants';
 import { compareChromiumVersions } from './utils/compare-chromium-versions';
-import { getChromiumLkgr, getChromiumTags } from './utils/get-chromium-tags';
+import { getChromiumMaster, getChromiumTags } from './utils/get-chromium-tags';
 import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
 
@@ -108,17 +108,17 @@ export async function handleChromiumCheck(): Promise<void> {
       const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
       const hashRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
       const [, chromiumHash] = hashRegex.exec(deps);
-      const lkgr = await getChromiumLkgr();
-      if (chromiumHash !== lkgr.commit) {
-        d(`Updating master from ${chromiumHash} to ${lkgr.commit}`);
+      const master = await getChromiumMaster();
+      if (chromiumHash !== master.commit) {
+        d(`Updating master from ${chromiumHash} to ${master.commit}`);
         try {
           await roll({
             rollTarget: ROLL_TARGETS.chromium,
             electronBranch: masterBranch,
-            targetVersion: lkgr.commit,
+            targetVersion: master.commit,
           });
         } catch (e) {
-          d(`Error rolling ${masterBranch.name} to ${lkgr.commit}`, e);
+          d(`Error rolling ${masterBranch.name} to ${master.commit}`, e);
           thisIsFine = false;
         }
       }
