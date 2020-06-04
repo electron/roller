@@ -56,6 +56,18 @@ describe('handleChromiumCheck()', () => {
       this.mockOctokit.repos.listBranches.mockReturnValue({
         data: [
           {
+            name: '10-x-y',
+            commit: {
+              sha: '1234'
+            }
+          },
+          {
+            name: '9-x-y',
+            commit: {
+              sha: '1234'
+            }
+          },
+          {
             name: '8-x-y',
             commit: {
               sha: '1234'
@@ -100,7 +112,7 @@ describe('handleChromiumCheck()', () => {
       });
 
       const supported = getSupportedBranches(branches);
-      expect(supported).toEqual(['5-0-x', '6-1-x', '7-1-x', '8-x-y']);
+      expect(supported).toEqual(['7-1-x', '8-x-y', '9-x-y', '10-x-y']);
     });
 
     it('rolls with latest versions from release tags', async () => {
