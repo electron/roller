@@ -1,7 +1,7 @@
 
 import { REPOS, ROLL_TARGETS } from '../src/constants';
 import { handleChromiumCheck, handleNodeCheck, getSupportedBranches } from '../src/handlers';
-import { getChromiumMaster, getChromiumTags } from '../src/utils/get-chromium-tags';
+import { getChromiumMaster, getChromiumReleases } from '../src/utils/get-chromium-tags';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
 
@@ -39,17 +39,27 @@ describe('handleChromiumCheck()', () => {
           sha: '1234'
         },
       });
-      (getChromiumTags as jest.Mock).mockReturnValue({
-        "1.1.0.0": {
-          "value": "5678"
+      (getChromiumReleases as jest.Mock).mockReturnValue([
+        {
+          "os": "win",
+          "versions": [
+            {
+              "current_version": "1.1.0.0"
+            }
+          ]
         },
-        "1.2.0.0": {
-          "value": "5678"
+        {
+          "os": "mac",
+          "versions": [
+            {
+              "current_version": "2.1.0.0"
+            },
+            {
+              "current_version": "1.2.0.0"
+            }
+          ]
         },
-        "2.1.0.0": {
-          "value": "5678"
-        }
-      });
+      ]);
     });
 
     it('properly fetches supported versions of Electron to roll against', async () => {
@@ -218,17 +228,27 @@ describe('handleChromiumCheck()', () => {
         sha: '1234'
       },
     });
-    (getChromiumTags as jest.Mock).mockReturnValue({
-      "1.1.0.0": {
-        "value": "5678"
+    (getChromiumReleases as jest.Mock).mockReturnValue([
+      {
+        "os": "win",
+        "versions": [
+          {
+            "current_version": "1.1.0.0"
+          }
+        ]
       },
-      "1.2.0.0": {
-        "value": "5678"
+      {
+        "os": "mac",
+        "versions": [
+          {
+            "current_version": "2.1.0.0"
+          },
+          {
+            "current_version": "1.2.0.0"
+          }
+        ]
       },
-      "2.1.0.0": {
-        "value": "5678"
-      }
-    });
+    ]);
 
     (roll as jest.Mock).mockImplementationOnce(() => {
       throw new Error('');
