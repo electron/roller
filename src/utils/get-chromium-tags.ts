@@ -30,11 +30,13 @@ export type OmahaReleaseVersion = {
 
 export type OmahaRelease = {
   os: 'win' | 'mac' | 'linux' | 'webview' | 'android' | 'cros' | 'ios' | 'win64';
-  versions: OmahaReleaseVersion[];
+  channel: 'stable' | 'beta' | 'dev' | 'canary' | 'canary_asan';
+  timestamp: string;
+  version: string;
 };
 
 export function getChromiumReleases(): Promise<OmahaRelease[]> {
-  return getJSON('https://omahaproxy.appspot.com/all.json');
+  return getJSON('https://omahaproxy.appspot.com/history.json');
 }
 
 export interface ChromiumCommit {

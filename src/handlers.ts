@@ -82,20 +82,10 @@ export async function handleChromiumCheck(): Promise<void> {
     }
 
     d(`Computing latest upstream version for Chromium ${chromiumMajorVersion}`);
-    const upstreamVersions = [];
-    for (const r of chromiumReleases) {
-      if (/^win|win64|mac|linux$/.test(r.os)) {
-        for (const v of r.versions) {
-          if (
-            v.channel !== 'canary_asan' &&
-            Number(v.current_version.split('.')[0]) === chromiumMajorVersion
-          ) {
-            upstreamVersions.push(v.current_version);
-          }
-        }
-      }
-    }
-    upstreamVersions.sort(compareChromiumVersions);
+    const upstreamVersions = chromiumReleases
+      .filter(r => /^win|win64|mac|linux$/.test(r.os) && r.channel !== 'canary_asan' && Number(r.version.split('.')[0]) === chromiumMajorVersion)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+      .map(r => r.version);
     const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
     if (compareChromiumVersions(latestUpstreamVersion, chromiumVersion) > 0) {
       d(
