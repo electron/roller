@@ -22,8 +22,21 @@ function getJSON(url: string): Promise<any> {
   return get(url).then(s => JSON.parse(s.slice(s.indexOf('{'))));
 }
 
-export function getChromiumTags(): Promise<object> {
-  return getJSON('https://chromium.googlesource.com/chromium/src/+refs/tags?format=JSON');
+export type OmahaReleaseVersion = {
+  current_version: string;
+  current_reldate: string;
+  channel: string;
+};
+
+export type OmahaRelease = {
+  os: 'win' | 'mac' | 'linux' | 'webview' | 'android' | 'cros' | 'ios' | 'win64';
+  channel: 'stable' | 'beta' | 'dev' | 'canary' | 'canary_asan';
+  timestamp: string;
+  version: string;
+};
+
+export function getChromiumReleases(): Promise<OmahaRelease[]> {
+  return getJSON('https://omahaproxy.appspot.com/history.json');
 }
 
 export interface ChromiumCommit {

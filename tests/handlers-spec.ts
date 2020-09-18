@@ -1,7 +1,7 @@
 
 import { REPOS, ROLL_TARGETS } from '../src/constants';
 import { handleChromiumCheck, handleNodeCheck, getSupportedBranches } from '../src/handlers';
-import { getChromiumMaster, getChromiumTags } from '../src/utils/get-chromium-tags';
+import { getChromiumMaster, getChromiumReleases } from '../src/utils/get-chromium-tags';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
 
@@ -39,17 +39,26 @@ describe('handleChromiumCheck()', () => {
           sha: '1234'
         },
       });
-      (getChromiumTags as jest.Mock).mockReturnValue({
-        "1.1.0.0": {
-          "value": "5678"
+      (getChromiumReleases as jest.Mock).mockReturnValue([
+        {
+          "timestamp": "2020-01-01 01:01:01.000001",
+          "version": "1.1.0.0",
+          "channel": "stable",
+          "os": "win"
         },
-        "1.2.0.0": {
-          "value": "5678"
+        {
+          "timestamp": "2020-01-01 01:01:01.000003",
+          "version": "2.1.0.0",
+          "channel": "beta",
+          "os": "win"
         },
-        "2.1.0.0": {
-          "value": "5678"
-        }
-      });
+        {
+          "timestamp": "2020-01-01 01:01:01.000002",
+          "version": "1.2.0.0",
+          "channel": "stable",
+          "os": "mac"
+        },
+      ]);
     });
 
     it('properly fetches supported versions of Electron to roll against', async () => {
@@ -218,17 +227,26 @@ describe('handleChromiumCheck()', () => {
         sha: '1234'
       },
     });
-    (getChromiumTags as jest.Mock).mockReturnValue({
-      "1.1.0.0": {
-        "value": "5678"
+    (getChromiumReleases as jest.Mock).mockReturnValue([
+      {
+        "timestamp": "2020-01-01 01:01:01.000001",
+        "version": "1.1.0.0",
+        "channel": "stable",
+        "os": "win"
       },
-      "1.2.0.0": {
-        "value": "5678"
+      {
+        "timestamp": "2020-01-01 01:01:01.000003",
+        "version": "2.1.0.0",
+        "channel": "beta",
+        "os": "win"
       },
-      "2.1.0.0": {
-        "value": "5678"
-      }
-    });
+      {
+        "timestamp": "2020-01-01 01:01:01.000002",
+        "version": "1.2.0.0",
+        "channel": "stable",
+        "os": "mac"
+      },
+    ]);
 
     (roll as jest.Mock).mockImplementationOnce(() => {
       throw new Error('');

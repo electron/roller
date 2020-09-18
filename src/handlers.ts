@@ -3,7 +3,7 @@ import * as semver from 'semver';
 
 import { NUM_SUPPORTED_VERSIONS, REPOS, ROLL_TARGETS } from './constants';
 import { compareChromiumVersions } from './utils/compare-chromium-versions';
-import { getChromiumMaster, getChromiumTags } from './utils/get-chromium-tags';
+import { getChromiumMaster, getChromiumReleases } from './utils/get-chromium-tags';
 import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
 
@@ -37,8 +37,8 @@ export function getSupportedBranches(branches: { name: string }[]): string[] {
 
 export async function handleChromiumCheck(): Promise<void> {
   const d = debug('roller/chromium:handleChromiumCheck()');
-  d('Fetching Chromium tags');
-  const chromiumTags = await getChromiumTags();
+  d('Fetching Chromium releases');
+  const chromiumReleases = await getChromiumReleases();
 
   const github = getOctokit();
   d('Fetching release branches for electron/electron');
@@ -82,11 +82,15 @@ export async function handleChromiumCheck(): Promise<void> {
     }
 
     d(`Computing latest upstream version for Chromium ${chromiumMajorVersion}`);
-    const upstreamVersions = Object.keys(chromiumTags)
-      .filter(v => Number(v.split('.')[0]) === chromiumMajorVersion)
-      // NB. Chromium rolled a 3905 branch on m78 but abandoned it and continued with 3904.
-      .filter(v => !v.startsWith('78.0.3905.'))
-      .sort(compareChromiumVersions);
+    const upstreamVersions = chromiumReleases
+      .filter(
+        r =>
+          /^win|win64|mac|linux$/.test(r.os) &&
+          r.channel !== 'canary_asan' &&
+          Number(r.version.split('.')[0]) === chromiumMajorVersion,
+      )
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+      .map(r => r.version);
     const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
     if (compareChromiumVersions(latestUpstreamVersion, chromiumVersion) > 0) {
       d(
