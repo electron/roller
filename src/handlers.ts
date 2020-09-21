@@ -92,7 +92,10 @@ export async function handleChromiumCheck(): Promise<void> {
       .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
       .map(r => r.version);
     const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
-    if (compareChromiumVersions(latestUpstreamVersion, chromiumVersion) > 0) {
+    if (
+      latestUpstreamVersion &&
+      compareChromiumVersions(latestUpstreamVersion, chromiumVersion) > 0
+    ) {
       d(
         `Upgrade possible: ${branch.name} can roll from ${chromiumVersion} to ${latestUpstreamVersion}`,
       );
@@ -106,6 +109,8 @@ export async function handleChromiumCheck(): Promise<void> {
         d(`Error rolling ${branch.name} to ${latestUpstreamVersion}: `, e);
         thisIsFine = false;
       }
+    } else {
+      d(`No upgrade found, ${chromiumVersion} is the most recent known in its release line.`);
     }
   }
 
