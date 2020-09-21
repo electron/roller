@@ -36,7 +36,7 @@ export type OmahaRelease = {
 };
 
 export function getChromiumReleases(): Promise<OmahaRelease[]> {
-  return getJSON('https://omahaproxy.appspot.com/history.json');
+  return get('https://omahaproxy.appspot.com/history.json').then(s => JSON.parse(s));
 }
 
 export interface ChromiumCommit {
