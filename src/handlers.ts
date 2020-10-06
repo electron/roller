@@ -201,5 +201,7 @@ export async function handleNodeCheck(): Promise<void> {
       d(`Error rolling ${masterBranch.name} to ${latestUpstreamVersion}`, e);
       throw new Error(`Upgrade check failed - see logs for more details`);
     }
+  } else {
+    d(`No upgrade found, ${depsNodeVersion} is the most recent known in its release line.`);
   }
 }
