@@ -122,6 +122,12 @@ export async function roll({
         branchName: electronBranch.name,
       }),
     });
+    // Although not completely correct, it's the best we've got :)
+    await github.issues.addLabels({
+      ...REPOS.electron,
+      issue_number: newPr.data.number,
+      labels: ['semver/patch'],
+    });
     d(`New PR: ${newPr.data.html_url}`);
     // TODO: add comment with commit list to new PR.
   }
