@@ -35,6 +35,9 @@ describe('roll()', () => {
         createRef: jest.fn(),
         getRef: jest.fn().mockReturnValue({status: 404}),
         deleteRef: jest.fn()
+      },
+      issues: {
+        addLabels: jest.fn(),
       }
     };
     (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
