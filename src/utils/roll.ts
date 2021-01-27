@@ -31,14 +31,12 @@ export async function roll({
     state: 'open',
   })) as PullsListResponseItem[];
 
-  const myPrs = existingPrsForBranch.filter(
-    pr => pr.user.login === PR_USER && pr.title.includes(rollTarget.name),
-  );
+  const prs = existingPrsForBranch.filter(pr => pr.title.includes(rollTarget.name));
 
-  if (myPrs.length) {
+  if (prs.length) {
     // Update existing PR(s)
-    for (const pr of myPrs) {
-      d(`Found existing PR: #${pr.number}`);
+    for (const pr of prs) {
+      d(`Found existing PR: #${pr.number} opened by ${pr.user.login}`);
 
       // Check to see if automatic DEPS roll has been temporarily disabled
       const hasPauseLabel = pr.labels.some(label => label.name === 'roller/pause');
