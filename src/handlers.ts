@@ -128,7 +128,7 @@ export async function handleChromiumCheck(): Promise<void> {
       const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
       const [, currentVersion] = versionRegex.exec(deps);
       const upstreamVersions = chromiumReleases
-        .filter(r => /^win|win64|mac|linux$/.test(r.os) && r.channel !== 'canary_asan')
+        .filter(r => /^win|win64|mac|linux$/.test(r.os) && r.channel === 'canary')
         .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
         .map(r => r.version);
       const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
