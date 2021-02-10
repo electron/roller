@@ -3,7 +3,7 @@ import * as semver from 'semver';
 
 import { NUM_SUPPORTED_VERSIONS, REPOS, ROLL_TARGETS } from './constants';
 import { compareChromiumVersions } from './utils/compare-chromium-versions';
-import { getChromiumMaster, getChromiumReleases } from './utils/get-chromium-tags';
+import { getChromiumReleases } from './utils/get-chromium-tags';
 import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
 
@@ -125,19 +125,24 @@ export async function handleChromiumCheck(): Promise<void> {
         ref: 'master',
       });
       const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
-      const hashRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
-      const [, chromiumHash] = hashRegex.exec(deps);
-      const master = await getChromiumMaster();
-      if (chromiumHash !== master.commit) {
-        d(`Updating master from ${chromiumHash} to ${master.commit}`);
+      const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
+      const [, currentVersion] = versionRegex.exec(deps);
+      const upstreamVersions = chromiumReleases
+        .filter(r => /^win|win64|mac|linux$/.test(r.os) && r.channel !== 'canary_asan')
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+        .map(r => r.version);
+      const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
+
+      if (currentVersion !== latestUpstreamVersion) {
+        d(`Updating master from ${currentVersion} to ${latestUpstreamVersion}`);
         try {
           await roll({
             rollTarget: ROLL_TARGETS.chromium,
             electronBranch: masterBranch,
-            targetVersion: master.commit,
+            targetVersion: latestUpstreamVersion,
           });
         } catch (e) {
-          d(`Error rolling ${masterBranch.name} to ${master.commit}`, e);
+          d(`Error rolling ${masterBranch.name} to ${latestUpstreamVersion}`, e);
           thisIsFine = false;
         }
       }

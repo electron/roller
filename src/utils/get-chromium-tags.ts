@@ -64,7 +64,3 @@ export function getChromiumCommits(
     `https://chromium.googlesource.com/chromium/src/+log/${fromRef}..${toRef}?format=JSON`,
   );
 }
-
-export function getChromiumMaster(): Promise<any> {
-  return getJSON(`https://chromium.googlesource.com/chromium/src/+/refs/heads/master?format=JSON`);
-}
