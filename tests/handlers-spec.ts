@@ -1,7 +1,7 @@
 
 import { REPOS, ROLL_TARGETS } from '../src/constants';
 import { handleChromiumCheck, handleNodeCheck, getSupportedBranches } from '../src/handlers';
-import { getChromiumMaster, getChromiumReleases } from '../src/utils/get-chromium-tags';
+import { getChromiumReleases } from '../src/utils/get-chromium-tags';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
 
@@ -180,29 +180,58 @@ describe('handleChromiumCheck()', () => {
 
       this.mockOctokit.repos.getContents.mockReturnValue({
         data: {
-          content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    'old-sha',`),
+          content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`),
           sha: '1234'
         },
-      });
-
-      (getChromiumMaster as jest.Mock).mockReturnValue({
-        commit: 'new-sha'
       });
     });
 
     it('updates to master', async () => {
+      (getChromiumReleases as jest.Mock).mockReturnValue([
+        {
+          "timestamp": "2020-01-01 01:01:01.000001",
+          "version": "1.1.0.0",
+          "channel": "stable",
+          "os": "win"
+        },
+        {
+          "timestamp": "2020-01-01 01:01:01.000003",
+          "version": "2.1.0.0",
+          "channel": "beta",
+          "os": "win"
+        },
+        {
+          "timestamp": "2020-01-01 01:01:01.000002",
+          "version": "1.2.0.0",
+          "channel": "stable",
+          "os": "mac"
+        },
+      ]);
+
       await handleChromiumCheck();
 
       expect(roll).toHaveBeenCalledWith(expect.objectContaining({
         rollTarget: ROLL_TARGETS.chromium,
-        targetVersion: 'new-sha',
+        targetVersion: '2.1.0.0',
       }));
     });
 
     it('takes no action if master is already in DEPS', async () => {
-      (getChromiumMaster as jest.Mock).mockReturnValue({
-        commit: 'old-sha'
-      });
+      (getChromiumReleases as jest.Mock).mockReturnValue([
+        {
+          "timestamp": "2020-01-01 01:01:01.000001",
+          "version": "1.1.0.0",
+          "channel": "stable",
+          "os": "win"
+        },
+        {
+          "timestamp": "2020-01-01 01:01:01.000002",
+          "version": "1.1.0.0",
+          "channel": "stable",
+          "os": "mac"
+        },
+      ]);
+
       await handleChromiumCheck();
 
       expect(roll).not.toHaveBeenCalled();
