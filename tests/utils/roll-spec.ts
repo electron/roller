@@ -53,7 +53,7 @@ describe('roll()', () => {
         user: {
           login: PR_USER
         },
-        title: ROLL_TARGETS.node.name,
+        title: `chore: bump ${ROLL_TARGETS.node.name} to foo`,
         number: 1,
         head: {
           ref: 'asd'
@@ -88,7 +88,7 @@ describe('roll()', () => {
         user: {
           login: PR_USER
         },
-        title: ROLL_TARGETS.node.name,
+        title: `chore: bump ${ROLL_TARGETS.node.name} to bar`,
         number: 1,
         head: {
           ref: 'asd'

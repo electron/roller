@@ -31,7 +31,9 @@ export async function roll({
     state: 'open',
   })) as PullsListResponseItem[];
 
-  const prs = existingPrsForBranch.filter(pr => pr.title.startsWith(`chore: bump ${rollTarget.name}`));
+  const prs = existingPrsForBranch.filter(pr =>
+    pr.title.startsWith(`chore: bump ${rollTarget.name}`),
+  );
 
   if (prs.length) {
     // Update existing PR(s)
