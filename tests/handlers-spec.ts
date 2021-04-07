@@ -197,7 +197,7 @@ describe('handleChromiumCheck()', () => {
         {
           "timestamp": "2020-01-01 01:01:01.000003",
           "version": "2.1.0.0",
-          "channel": "beta",
+          "channel": "canary",
           "os": "win"
         },
         {
@@ -221,13 +221,13 @@ describe('handleChromiumCheck()', () => {
         {
           "timestamp": "2020-01-01 01:01:01.000001",
           "version": "1.1.0.0",
-          "channel": "stable",
+          "channel": "canary",
           "os": "win"
         },
         {
           "timestamp": "2020-01-01 01:01:01.000002",
           "version": "1.1.0.0",
-          "channel": "stable",
+          "channel": "canary",
           "os": "mac"
         },
       ]);
