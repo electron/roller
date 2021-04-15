@@ -1,7 +1,7 @@
 import { PullsListResponseItem, ReposListBranchesResponseItem } from '@octokit/rest';
 import * as debug from 'debug';
 
-import { PR_USER, REPOS, RollTarget } from '../constants';
+import { FOUR_DAYS_AGO, PAUSE_LABEL, PR_USER, REPOS, RollTarget, ROLL_TARGETS } from '../constants';
 import { getOctokit } from './octokit';
 import { getPRText } from './pr-text';
 import { updateDepsFile } from './update-deps';
@@ -40,11 +40,23 @@ export async function roll({
     for (const pr of myPrs) {
       d(`Found existing PR: #${pr.number}`);
 
-      // Check to see if automatic DEPS roll has been temporarily disabled
-      const hasPauseLabel = pr.labels.some(label => label.name === 'roller/pause');
+      // Check to see if automatic DEPS roll has been temporarily disabled.
+      const hasPauseLabel = pr.labels.some(label => label.name === PAUSE_LABEL);
       if (hasPauseLabel) {
         d(`Automatic updates have been paused for #${pr.number}, skipping DEPS roll.`);
         continue;
+      }
+
+      // If the roll is older than 4 days, pause the roll automatically.
+      const isChromiumRoll = ROLL_TARGETS.chromium === rollTarget;
+      const timeToPause = +new Date() - +new Date(pr.created_at) > FOUR_DAYS_AGO;
+      if (isChromiumRoll && timeToPause) {
+        await github.issues.addLabels({
+          ...REPOS.electron,
+          issue_number: pr.number,
+          labels: [PAUSE_LABEL],
+        });
+        return;
       }
 
       d(`Attempting DEPS update for #${pr.number}`);

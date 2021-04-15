@@ -38,7 +38,7 @@ describe('roll()', () => {
       },
       issues: {
         addLabels: jest.fn(),
-      }
+      },
     };
     (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
     (updateDepsFile as jest.Mock).mockReturnValue({
@@ -140,6 +140,33 @@ describe('roll()', () => {
     }));
   });
 
+  it('pauses the roll if it is more than 4 days old', async () => {
+    this.mockOctokit.paginate.mockReturnValue(
+      [{
+        user: {
+          login: PR_USER
+        },
+        title: ROLL_TARGETS.chromium.name,
+        number: 1,
+        head: {
+          ref: 'asd'
+        },
+        body: 'Original-Version: v4.0.0',
+        labels: [],
+        created_at: (new Date('December 17, 1995 03:24:00')).toISOString()
+      }]
+    );
+
+    await roll({
+      rollTarget: ROLL_TARGETS.chromium,
+      electronBranch: branch,
+      targetVersion: 'v10.0.0'
+    });
+
+    expect(this.mockOctokit.issues.addLabels).toHaveBeenCalled();
+    expect(this.mockOctokit.pulls.update).not.toHaveBeenCalled();
+  })
+
   it('skips PR if existing one has been paused', async () => {
     this.mockOctokit.paginate.mockReturnValue(
       [{
@@ -155,7 +182,7 @@ describe('roll()', () => {
         labels: [
           { name: 'roller/pause' }
         ],
-        created_at: (new Date('December 17, 1995 03:24:00')).toISOString()
+        created_at: (new Date()).toISOString()
       }]
     );
 
