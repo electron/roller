@@ -12,14 +12,14 @@ export interface UpdateDepsParams {
 export async function updateDepsFile({ depName, depKey, branch, targetVersion }: UpdateDepsParams) {
   const github: Octokit = getOctokit();
 
-  let { data: existing }= await github.repos.getContents({
+  let { data: existing } = await github.repos.getContents({
     ...REPOS.electron,
     path: 'DEPS',
     ref: branch,
   });
 
   // See https://github.com/octokit/rest.js/issues/1516.
-  if (Array.isArray(existing)) existing = existing[0]
+  if (Array.isArray(existing)) existing = existing[0];
 
   const content = Buffer.from(existing.content, 'base64').toString('utf8');
   const previousRegex = new RegExp(`${depKey}':\n +'(.+?)',`, 'm');

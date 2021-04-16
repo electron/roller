@@ -1,7 +1,14 @@
 import { Octokit } from '@octokit/rest';
 import * as debug from 'debug';
 
-import { FOURISH_DAYS_AGO, PAUSE_LABEL, PR_USER, REPOS, RollTarget, ROLL_TARGETS } from '../constants';
+import {
+  FOURISH_DAYS_AGO,
+  PAUSE_LABEL,
+  PR_USER,
+  REPOS,
+  RollTarget,
+  ROLL_TARGETS,
+} from '../constants';
 import { getOctokit } from './octokit';
 import { getPRText } from './pr-text';
 import { updateDepsFile } from './update-deps';
