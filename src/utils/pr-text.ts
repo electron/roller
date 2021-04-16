@@ -1,3 +1,4 @@
+import { SemVer } from 'semver';
 import { ROLL_TARGETS, RollTarget } from '../constants';
 
 interface PRTextDetails {

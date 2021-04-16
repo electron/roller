@@ -1,16 +1,16 @@
-import * as GitHub from '@octokit/rest';
+import { Octokit } from '@octokit/rest';
 
-let octokit: GitHub;
+let octokit: Octokit;
 
 /**
  * Returns an authenticated Octokit.
  *
- * @returns {Promise<GitHub>}
+ * @returns {Promise<Octokit>}
  */
-export function getOctokit(): GitHub {
+export function getOctokit(): Octokit {
   octokit =
     octokit ||
-    new GitHub({
+    new Octokit({
       auth: process.env.GITHUB_TOKEN,
     });
 

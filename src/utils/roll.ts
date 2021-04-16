@@ -1,14 +1,14 @@
-import { PullsListResponseItem, ReposListBranchesResponseItem } from '@octokit/rest';
+import { Octokit } from '@octokit/rest';
 import * as debug from 'debug';
 
-import { FOUR_DAYS_AGO, PAUSE_LABEL, PR_USER, REPOS, RollTarget, ROLL_TARGETS } from '../constants';
+import { FOURISH_DAYS_AGO, PAUSE_LABEL, PR_USER, REPOS, RollTarget, ROLL_TARGETS } from '../constants';
 import { getOctokit } from './octokit';
 import { getPRText } from './pr-text';
 import { updateDepsFile } from './update-deps';
 
 interface RollParams {
   rollTarget: RollTarget;
-  electronBranch: ReposListBranchesResponseItem;
+  electronBranch: Octokit.ReposListBranchesResponseItem;
   targetVersion: string;
 }
 
@@ -29,7 +29,7 @@ export async function roll({
     base: electronBranch.name,
     ...REPOS.electron,
     state: 'open',
-  })) as PullsListResponseItem[];
+  })) as Octokit.PullsListResponseItem[];
 
   const myPrs = existingPrsForBranch.filter(
     pr => pr.user.login === PR_USER && pr.title.includes(rollTarget.name),
@@ -47,10 +47,11 @@ export async function roll({
         continue;
       }
 
-      // If the roll is older than 4 days, pause the roll automatically.
       const isChromiumRoll = ROLL_TARGETS.chromium === rollTarget;
-      const timeToPause = +new Date() - +new Date(pr.created_at) > FOUR_DAYS_AGO;
-      if (isChromiumRoll && timeToPause) {
+      const timeToPause = +new Date() - +new Date(pr.created_at) > FOURISH_DAYS_AGO;
+
+      // If the roll is older than 4 days and it's a Thursday, pause the roll automatically.
+      if (isChromiumRoll && timeToPause && new Date().getDay() === 4) {
         await github.issues.addLabels({
           ...REPOS.electron,
           issue_number: pr.number,

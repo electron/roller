@@ -1,3 +1,4 @@
+import { Octokit } from '@octokit/rest';
 import * as debug from 'debug';
 import * as semver from 'semver';
 
@@ -40,7 +41,7 @@ export async function handleChromiumCheck(): Promise<void> {
   d('Fetching Chromium releases');
   const chromiumReleases = await getChromiumReleases();
 
-  const github = getOctokit();
+  const github: Octokit = getOctokit();
   d('Fetching release branches for electron/electron');
   const { data: branches } = await github.repos.listBranches({
     ...REPOS.electron,
@@ -56,11 +57,13 @@ export async function handleChromiumCheck(): Promise<void> {
   // Roll all non-master release branches
   for (const branch of releaseBranches) {
     d(`Fetching DEPS for ${branch.name}`);
-    const { data: depsData } = await github.repos.getContents({
+    let { data: depsData } = await github.repos.getContents({
       ...REPOS.electron,
       path: 'DEPS',
       ref: branch.commit.sha,
     });
+
+    if (Array.isArray(depsData)) depsData = depsData[0];
 
     const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
     const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
@@ -118,12 +121,16 @@ export async function handleChromiumCheck(): Promise<void> {
     d('Fetching DEPS for master');
     const masterBranch = branches.find(branch => branch.name === 'master');
     if (!!masterBranch) {
-      const { data: depsData } = await github.repos.getContents({
+      let { data: depsData } = await github.repos.getContents({
         owner: REPOS.electron.owner,
         repo: REPOS.electron.repo,
         path: 'DEPS',
         ref: 'master',
       });
+
+      // See https://github.com/octokit/rest.js/issues/1516.
+      if (Array.isArray(depsData)) depsData = depsData[0];
+
       const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
       const hashRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
       const [, chromiumHash] = hashRegex.exec(deps);
@@ -153,7 +160,7 @@ export async function handleChromiumCheck(): Promise<void> {
 
 export async function handleNodeCheck(): Promise<void> {
   const d = debug('roller/node:handleNodeCheck()');
-  const github = getOctokit();
+  const github: Octokit = getOctokit();
 
   d('Fetching nodejs/node releases');
   const { data: releases } = await github.repos.listReleases({
@@ -169,12 +176,15 @@ export async function handleNodeCheck(): Promise<void> {
   });
 
   d(`Fetching DEPS for branch ${masterBranch.name} in electron/electron`);
-  const { data: depsData } = await github.repos.getContents({
+  let { data: depsData } = await github.repos.getContents({
     owner: REPOS.electron.owner,
     repo: REPOS.electron.repo,
     path: 'DEPS',
     ref: 'master',
   });
+
+  // See https://github.com/octokit/rest.js/issues/1516.
+  if (Array.isArray(depsData)) depsData = depsData[0];
 
   const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
 
@@ -195,7 +205,7 @@ export async function handleNodeCheck(): Promise<void> {
       await roll({
         rollTarget: ROLL_TARGETS.node,
         electronBranch: masterBranch,
-        targetVersion: latestUpstreamVersion,
+        targetVersion: latestUpstreamVersion as string,
       });
     } catch (e) {
       d(`Error rolling ${masterBranch.name} to ${latestUpstreamVersion}`, e);

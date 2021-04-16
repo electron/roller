@@ -1,3 +1,4 @@
+import { Octokit } from '@octokit/rest';
 import { REPOS } from '../constants';
 import { getOctokit } from './octokit';
 
@@ -9,15 +10,18 @@ export interface UpdateDepsParams {
 }
 
 export async function updateDepsFile({ depName, depKey, branch, targetVersion }: UpdateDepsParams) {
-  const github = getOctokit();
+  const github: Octokit = getOctokit();
 
-  const existing = await github.repos.getContents({
+  let { data: existing }= await github.repos.getContents({
     ...REPOS.electron,
     path: 'DEPS',
     ref: branch,
   });
 
-  const content = Buffer.from(existing.data.content, 'base64').toString('utf8');
+  // See https://github.com/octokit/rest.js/issues/1516.
+  if (Array.isArray(existing)) existing = existing[0]
+
+  const content = Buffer.from(existing.content, 'base64').toString('utf8');
   const previousRegex = new RegExp(`${depKey}':\n +'(.+?)',`, 'm');
   const [, previousDEPSVersion] = previousRegex.exec(content);
 
@@ -29,7 +33,7 @@ export async function updateDepsFile({ depName, depKey, branch, targetVersion }:
       path: 'DEPS',
       content: Buffer.from(newContent).toString('base64'),
       message: `chore: bump ${depName} in DEPS to ${targetVersion}`,
-      sha: existing.data.sha,
+      sha: existing.sha,
       branch,
     });
   }

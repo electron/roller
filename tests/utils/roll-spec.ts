@@ -141,6 +141,10 @@ describe('roll()', () => {
   });
 
   it('pauses the roll if it is more than 4 days old', async () => {
+    const oldDateNow = Date.now;
+    Date.now = jest.fn(() => +new Date('2020-04-14'));
+    jest.useFakeTimers('modern');
+
     this.mockOctokit.paginate.mockReturnValue(
       [{
         user: {
@@ -157,6 +161,8 @@ describe('roll()', () => {
       }]
     );
 
+    console.info(Date.now())
+
     await roll({
       rollTarget: ROLL_TARGETS.chromium,
       electronBranch: branch,
@@ -165,6 +171,8 @@ describe('roll()', () => {
 
     expect(this.mockOctokit.issues.addLabels).toHaveBeenCalled();
     expect(this.mockOctokit.pulls.update).not.toHaveBeenCalled();
+
+    Date.now = oldDateNow;
   })
 
   it('skips PR if existing one has been paused', async () => {
