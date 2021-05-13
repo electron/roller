@@ -40,7 +40,7 @@ export async function handleChromiumCheck(): Promise<void> {
   d('Fetching Chromium releases');
   const chromiumReleases = await getChromiumReleases();
 
-  const github = getOctokit();
+  const github = await getOctokit();
   d('Fetching release branches for electron/electron');
   const { data: branches } = await github.repos.listBranches({
     ...REPOS.electron,
@@ -158,7 +158,7 @@ export async function handleChromiumCheck(): Promise<void> {
 
 export async function handleNodeCheck(): Promise<void> {
   const d = debug('roller/node:handleNodeCheck()');
-  const github = getOctokit();
+  const github = await getOctokit();
 
   d('Fetching nodejs/node releases');
   const { data: releases } = await github.repos.listReleases({

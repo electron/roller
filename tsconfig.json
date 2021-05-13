@@ -1,12 +1,13 @@
 {
 	"compilerOptions": {
 		"module": "commonjs",
-		"target": "es2018",
+		"target": "es2020",
 		"outDir": "lib",
 		"sourceMap": true,
 		"rootDir": "src",
     "experimentalDecorators": true,
-    "allowJs": true
+    "allowJs": true,
+		"allowSyntheticDefaultImports": true
 	},
 	"exclude": [
 		"node_modules",
