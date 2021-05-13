@@ -85,14 +85,15 @@ export async function roll({
     d(`No existing PR found - raising a new PR`);
     const sha = electronBranch.commit.sha;
     const branchName = `roller/${rollTarget.name}/${electronBranch.name}`;
-    const ref = `refs/heads/${branchName}`;
+    const shortRef = `heads/${branchName}`;
+    const ref = `refs/${shortRef}`;
 
     d(`Checking that no orphan ref exists from a previous roll`);
     try {
-      const maybeOldRef = await github.git.getRef({ ...REPOS.electron, ref });
+      const maybeOldRef = await github.git.getRef({ ...REPOS.electron, ref: shortRef });
       if (maybeOldRef.status === 200) {
         d(`Found orphan ref ${ref} with no open PR - deleting`);
-        await github.git.deleteRef({ ...REPOS.electron, ref });
+        await github.git.deleteRef({ ...REPOS.electron, ref: shortRef });
       }
     } catch (error) {
       d(`No orphan ref exists at ${ref} - proceeding`);
@@ -126,7 +127,7 @@ export async function roll({
     await github.issues.addLabels({
       ...REPOS.electron,
       issue_number: newPr.data.number,
-      labels: ['semver/patch'],
+      labels: ['semver/patch', 'no-backport'],
     });
     d(`New PR: ${newPr.data.html_url}`);
     // TODO: add comment with commit list to new PR.
