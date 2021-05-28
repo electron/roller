@@ -1,4 +1,3 @@
-
 import { REPOS, ROLL_TARGETS } from '../src/constants';
 import { handleChromiumCheck, handleNodeCheck, getSupportedBranches } from '../src/handlers';
 import { getChromiumReleases } from '../src/utils/get-chromium-tags';
@@ -14,7 +13,7 @@ describe('handleChromiumCheck()', () => {
     this.mockOctokit = {
       repos: {
         listBranches: jest.fn(),
-        getContents: jest.fn()
+        getContents: jest.fn(),
       },
     };
     (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
@@ -27,36 +26,36 @@ describe('handleChromiumCheck()', () => {
           {
             name: '4-0-x',
             commit: {
-              sha: '1234'
-            }
-          }
-        ]
+              sha: '1234',
+            },
+          },
+        ],
       });
 
       this.mockOctokit.repos.getContents.mockReturnValue({
         data: {
           content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`),
-          sha: '1234'
+          sha: '1234',
         },
       });
       (getChromiumReleases as jest.Mock).mockReturnValue([
         {
-          "timestamp": "2020-01-01 01:01:01.000001",
-          "version": "1.1.0.0",
-          "channel": "stable",
-          "os": "win"
+          timestamp: '2020-01-01 01:01:01.000001',
+          version: '1.1.0.0',
+          channel: 'stable',
+          os: 'win',
         },
         {
-          "timestamp": "2020-01-01 01:01:01.000003",
-          "version": "2.1.0.0",
-          "channel": "beta",
-          "os": "win"
+          timestamp: '2020-01-01 01:01:01.000003',
+          version: '2.1.0.0',
+          channel: 'beta',
+          os: 'win',
         },
         {
-          "timestamp": "2020-01-01 01:01:01.000002",
-          "version": "1.2.0.0",
-          "channel": "stable",
-          "os": "mac"
+          timestamp: '2020-01-01 01:01:01.000002',
+          version: '1.2.0.0',
+          channel: 'stable',
+          os: 'mac',
         },
       ]);
     });
@@ -67,52 +66,52 @@ describe('handleChromiumCheck()', () => {
           {
             name: '10-x-y',
             commit: {
-              sha: '1234'
-            }
+              sha: '1234',
+            },
           },
           {
             name: '9-x-y',
             commit: {
-              sha: '1234'
-            }
+              sha: '1234',
+            },
           },
           {
             name: '8-x-y',
             commit: {
-              sha: '1234'
-            }
+              sha: '1234',
+            },
           },
           {
             name: '7-1-x',
             commit: {
-              sha: '1234'
-            }
+              sha: '1234',
+            },
           },
           {
             name: '7-0-x',
             commit: {
-              sha: '1234'
-            }
+              sha: '1234',
+            },
           },
           {
             name: '6-1-x',
             commit: {
-              sha: '1234'
-            }
+              sha: '1234',
+            },
           },
           {
             name: '6-0-x',
             commit: {
-              sha: '1234'
-            }
+              sha: '1234',
+            },
           },
           {
             name: '5-0-x',
             commit: {
-              sha: '1234'
-            }
+              sha: '1234',
+            },
           },
-        ]
+        ],
       });
 
       const { data: branches } = await this.mockOctokit.repos.listBranches({
@@ -127,17 +126,19 @@ describe('handleChromiumCheck()', () => {
     it('rolls with latest versions from release tags', async () => {
       await handleChromiumCheck();
 
-      expect(roll).toHaveBeenCalledWith(expect.objectContaining({
-        rollTarget: ROLL_TARGETS.chromium,
-        targetVersion: '1.2.0.0'
-      }));
+      expect(roll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rollTarget: ROLL_TARGETS.chromium,
+          targetVersion: '1.2.0.0',
+        }),
+      );
     });
 
     it('takes no action if no new minor/build/patch available', async () => {
       this.mockOctokit.repos.getContents.mockReturnValue({
         data: {
           content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.5.0.0',`),
-          sha: '1234'
+          sha: '1234',
         },
       });
 
@@ -172,16 +173,16 @@ describe('handleChromiumCheck()', () => {
           {
             name: 'master',
             commit: {
-              sha: '1234'
-            }
-          }
-        ]
+              sha: '1234',
+            },
+          },
+        ],
       });
 
       this.mockOctokit.repos.getContents.mockReturnValue({
         data: {
           content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`),
-          sha: '1234'
+          sha: '1234',
         },
       });
     });
@@ -189,53 +190,130 @@ describe('handleChromiumCheck()', () => {
     it('updates to master', async () => {
       (getChromiumReleases as jest.Mock).mockReturnValue([
         {
-          "timestamp": "2020-01-01 01:01:01.000001",
-          "version": "1.1.0.0",
-          "channel": "stable",
-          "os": "win"
+          timestamp: '2020-01-01 01:01:01.000001',
+          version: '1.1.0.0',
+          channel: 'stable',
+          os: 'win',
         },
         {
-          "timestamp": "2020-01-01 01:01:01.000003",
-          "version": "2.1.0.0",
-          "channel": "canary",
-          "os": "win"
+          timestamp: '2020-01-01 01:01:01.000003',
+          version: '2.1.0.0',
+          channel: 'canary',
+          os: 'win',
         },
         {
-          "timestamp": "2020-01-01 01:01:01.000002",
-          "version": "1.2.0.0",
-          "channel": "stable",
-          "os": "mac"
+          timestamp: '2020-01-01 01:01:01.000002',
+          version: '1.2.0.0',
+          channel: 'stable',
+          os: 'mac',
         },
       ]);
 
       await handleChromiumCheck();
 
-      expect(roll).toHaveBeenCalledWith(expect.objectContaining({
-        rollTarget: ROLL_TARGETS.chromium,
-        targetVersion: '2.1.0.0',
-      }));
+      expect(roll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rollTarget: ROLL_TARGETS.chromium,
+          targetVersion: '2.1.0.0',
+        }),
+      );
     });
 
     it('takes no action if master is already in DEPS', async () => {
       (getChromiumReleases as jest.Mock).mockReturnValue([
         {
-          "timestamp": "2020-01-01 01:01:01.000001",
-          "version": "1.1.0.0",
-          "channel": "canary",
-          "os": "win"
+          timestamp: '2020-01-01 01:01:01.000001',
+          version: '1.1.0.0',
+          channel: 'canary',
+          os: 'win',
         },
         {
-          "timestamp": "2020-01-01 01:01:01.000002",
-          "version": "1.1.0.0",
-          "channel": "canary",
-          "os": "mac"
+          timestamp: '2020-01-01 01:01:01.000002',
+          version: '1.1.0.0',
+          channel: 'canary',
+          os: 'mac',
         },
       ]);
 
       await handleChromiumCheck();
 
       expect(roll).not.toHaveBeenCalled();
-    })
+    });
+  });
+
+  describe('main branch', () => {
+    beforeEach(() => {
+      this.mockOctokit.repos.listBranches.mockReturnValue({
+        data: [
+          {
+            name: 'main',
+            commit: {
+              sha: '1234',
+            },
+          },
+        ],
+      });
+
+      this.mockOctokit.repos.getContents.mockReturnValue({
+        data: {
+          content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`),
+          sha: '1234',
+        },
+      });
+    });
+
+    it('updates to main', async () => {
+      (getChromiumReleases as jest.Mock).mockReturnValue([
+        {
+          timestamp: '2020-01-01 01:01:01.000001',
+          version: '1.1.0.0',
+          channel: 'stable',
+          os: 'win',
+        },
+        {
+          timestamp: '2020-01-01 01:01:01.000003',
+          version: '2.1.0.0',
+          channel: 'canary',
+          os: 'win',
+        },
+        {
+          timestamp: '2020-01-01 01:01:01.000002',
+          version: '1.2.0.0',
+          channel: 'stable',
+          os: 'mac',
+        },
+      ]);
+
+      await handleChromiumCheck();
+
+      expect(roll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rollTarget: ROLL_TARGETS.chromium,
+          targetVersion: '2.1.0.0',
+        }),
+      );
+    });
+
+    it('takes no action if main is already in DEPS', async () => {
+      (getChromiumReleases as jest.Mock).mockReturnValue([
+        {
+          timestamp: '2020-01-01 01:01:01.000001',
+          version: '1.1.0.0',
+          channel: 'canary',
+          os: 'win',
+        },
+        {
+          timestamp: '2020-01-01 01:01:01.000002',
+          version: '1.1.0.0',
+          channel: 'canary',
+          os: 'mac',
+        },
+      ]);
+
+      await handleChromiumCheck();
+
+      expect(roll).not.toHaveBeenCalled();
+    });
   });
 
   it('throws error if roll() process failed', async () => {
@@ -244,45 +322,47 @@ describe('handleChromiumCheck()', () => {
         {
           name: '4-0-x',
           commit: {
-            sha: '1234'
-          }
-        }
-      ]
+            sha: '1234',
+          },
+        },
+      ],
     });
 
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`),
-        sha: '1234'
+        sha: '1234',
       },
     });
     (getChromiumReleases as jest.Mock).mockReturnValue([
       {
-        "timestamp": "2020-01-01 01:01:01.000001",
-        "version": "1.1.0.0",
-        "channel": "stable",
-        "os": "win"
+        timestamp: '2020-01-01 01:01:01.000001',
+        version: '1.1.0.0',
+        channel: 'stable',
+        os: 'win',
       },
       {
-        "timestamp": "2020-01-01 01:01:01.000003",
-        "version": "2.1.0.0",
-        "channel": "beta",
-        "os": "win"
+        timestamp: '2020-01-01 01:01:01.000003',
+        version: '2.1.0.0',
+        channel: 'beta',
+        os: 'win',
       },
       {
-        "timestamp": "2020-01-01 01:01:01.000002",
-        "version": "1.2.0.0",
-        "channel": "stable",
-        "os": "mac"
+        timestamp: '2020-01-01 01:01:01.000002',
+        version: '1.2.0.0',
+        channel: 'stable',
+        os: 'mac',
       },
     ]);
 
     (roll as jest.Mock).mockImplementationOnce(() => {
       throw new Error('');
-    })
-    await expect(handleChromiumCheck()).rejects.toThrowError(`One or more upgrade checks failed - see logs for more details`);
+    });
+    await expect(handleChromiumCheck()).rejects.toThrowError(
+      `One or more upgrade checks failed - see logs for more details`,
+    );
     expect(roll).toHaveBeenCalled();
-  })
+  });
 });
 
 describe('handleNodeCheck()', () => {
@@ -291,29 +371,29 @@ describe('handleNodeCheck()', () => {
       repos: {
         getBranch: jest.fn().mockReturnValue({
           data: {
-            name: 'master',
+            name: 'main',
             commit: {
-              sha: '1234'
-            }
-          }
+              sha: '1234',
+            },
+          },
         }),
         listReleases: jest.fn().mockReturnValue({
           data: [
             {
-              tag_name: 'v11.2.0'
+              tag_name: 'v11.2.0',
             },
             {
-              tag_name: 'v12.0.0'
+              tag_name: 'v12.0.0',
             },
             {
-              tag_name: 'v12.1.0'
+              tag_name: 'v12.1.0',
             },
             {
-              tag_name: 'v12.2.0'
-            }
-          ]
+              tag_name: 'v12.2.0',
+            },
+          ],
         }),
-        getContents: jest.fn()
+        getContents: jest.fn(),
       },
     };
     (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
@@ -323,27 +403,27 @@ describe('handleNodeCheck()', () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.0.0',`),
-        sha: '1234'
+        sha: '1234',
       },
-    })
+    });
     await handleNodeCheck();
 
     expect(roll).toHaveBeenCalledWith({
       rollTarget: ROLL_TARGETS.node,
       electronBranch: expect.objectContaining({
-        name: 'master'
+        name: 'main',
       }),
       targetVersion: 'v12.2.0',
-    })
+    });
   });
 
   it('does not roll for uneven major versions of Node.js', async () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v11.0.0',`),
-        sha: '1234'
+        sha: '1234',
       },
-    })
+    });
     await handleNodeCheck();
 
     expect(roll).not.toHaveBeenCalled();
@@ -353,9 +433,9 @@ describe('handleNodeCheck()', () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.2.0',`),
-        sha: '1234'
+        sha: '1234',
       },
-    })
+    });
     await handleNodeCheck();
 
     expect(roll).not.toHaveBeenCalled();
@@ -365,14 +445,20 @@ describe('handleNodeCheck()', () => {
     this.mockOctokit.repos.getContents.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.0.0',`),
-        sha: '1234'
+        sha: '1234',
       },
     });
 
-    (roll as jest.Mock).mockImplementationOnce(() => {
-      throw new Error('');
-    })
-    await expect(handleNodeCheck()).rejects.toThrowError(`Upgrade check failed - see logs for more details`);
+    (roll as jest.Mock)
+      .mockImplementationOnce(() => {
+        throw new Error('');
+      })
+      .mockImplementationOnce(() => {
+        throw new Error('');
+      });
+    await expect(handleNodeCheck()).rejects.toThrowError(
+      `Upgrade check failed - see logs for more details`,
+    );
     expect(roll).toHaveBeenCalled();
   });
-})
+});
