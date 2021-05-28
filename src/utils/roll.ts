@@ -122,7 +122,7 @@ export async function roll({
     await github.issues.addLabels({
       ...REPOS.electron,
       issue_number: newPr.data.number,
-      labels: ['semver/patch', 'no-backport'],
+      labels: ['semver/patch', 'no-backport', 'backport-check-skip'],
     });
     d(`New PR: ${newPr.data.html_url}`);
     // TODO: add comment with commit list to new PR.
