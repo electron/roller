@@ -14,6 +14,7 @@ describe('handleChromiumCheck()', () => {
       repos: {
         listBranches: jest.fn(),
         getContents: jest.fn(),
+        get: jest.fn(),
       },
     };
     (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
@@ -21,6 +22,12 @@ describe('handleChromiumCheck()', () => {
 
   describe('release branches', () => {
     beforeEach(() => {
+      this.mockOctokit.repos.get.mockReturnValue({
+        data: {
+          default_branch: 'main',
+        },
+      });
+
       this.mockOctokit.repos.listBranches.mockReturnValue({
         data: [
           {
@@ -168,6 +175,12 @@ describe('handleChromiumCheck()', () => {
 
   describe('master branch', () => {
     beforeEach(() => {
+      this.mockOctokit.repos.get.mockReturnValue({
+        data: {
+          default_branch: 'master',
+        },
+      });
+
       this.mockOctokit.repos.listBranches.mockReturnValue({
         data: [
           {
@@ -243,6 +256,12 @@ describe('handleChromiumCheck()', () => {
 
   describe('main branch', () => {
     beforeEach(() => {
+      this.mockOctokit.repos.get.mockReturnValue({
+        data: {
+          default_branch: 'main',
+        },
+      });
+
       this.mockOctokit.repos.listBranches.mockReturnValue({
         data: [
           {
@@ -317,6 +336,12 @@ describe('handleChromiumCheck()', () => {
   });
 
   it('throws error if roll() process failed', async () => {
+    this.mockOctokit.repos.get.mockReturnValue({
+      data: {
+        default_branch: 'main',
+      },
+    });
+
     this.mockOctokit.repos.listBranches.mockReturnValue({
       data: [
         {
@@ -394,6 +419,11 @@ describe('handleNodeCheck()', () => {
           ],
         }),
         getContents: jest.fn(),
+        get: jest.fn().mockReturnValue({
+          data: {
+            default_branch: 'main',
+          },
+        }),
       },
     };
     (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);

@@ -47,6 +47,10 @@ export async function handleChromiumCheck(): Promise<void> {
     protected: true,
   });
 
+  const {
+    data: { default_branch: mainBranchName },
+  } = await github.repos.get(REPOS.electron);
+
   const supported = getSupportedBranches(branches);
   const releaseBranches = branches.filter(branch => supported.includes(branch.name));
   d(`Found ${releaseBranches.length} release branches`);
@@ -115,41 +119,39 @@ export async function handleChromiumCheck(): Promise<void> {
   }
 
   // TODO(main-migration): Simplify once branch rename is complete.
-  for (const mainBranchName of ['main', 'master']) {
-    d(`Fetching DEPS for ${mainBranchName}`);
-    const mainBranch = branches.find(branch => branch.name === mainBranchName);
-    if (mainBranch) {
-      const { data: depsData } = await github.repos.getContents({
-        owner: REPOS.electron.owner,
-        repo: REPOS.electron.repo,
-        path: 'DEPS',
-        ref: mainBranchName,
-      });
-      const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
-      const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
-      const [, currentVersion] = versionRegex.exec(deps);
-      const upstreamVersions = chromiumReleases
-        .filter(r => /^win|win64|mac|linux$/.test(r.os) && r.channel === 'canary')
-        .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-        .map(r => r.version);
-      const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
+  d(`Fetching DEPS for ${mainBranchName}`);
+  const mainBranch = branches.find(branch => branch.name === mainBranchName);
+  if (mainBranch) {
+    const { data: depsData } = await github.repos.getContents({
+      owner: REPOS.electron.owner,
+      repo: REPOS.electron.repo,
+      path: 'DEPS',
+      ref: mainBranchName,
+    });
+    const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
+    const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
+    const [, currentVersion] = versionRegex.exec(deps);
+    const upstreamVersions = chromiumReleases
+      .filter(r => /^win|win64|mac|linux$/.test(r.os) && r.channel === 'canary')
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+      .map(r => r.version);
+    const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
 
-      if (currentVersion !== latestUpstreamVersion) {
-        d(`Updating ${mainBranchName} from ${currentVersion} to ${latestUpstreamVersion}`);
-        try {
-          await roll({
-            rollTarget: ROLL_TARGETS.chromium,
-            electronBranch: mainBranch,
-            targetVersion: latestUpstreamVersion,
-          });
-        } catch (e) {
-          d(`Error rolling ${mainBranch.name} to ${latestUpstreamVersion}`, e);
-          thisIsFine = false;
-        }
+    if (currentVersion !== latestUpstreamVersion) {
+      d(`Updating ${mainBranchName} from ${currentVersion} to ${latestUpstreamVersion}`);
+      try {
+        await roll({
+          rollTarget: ROLL_TARGETS.chromium,
+          electronBranch: mainBranch,
+          targetVersion: latestUpstreamVersion,
+        });
+      } catch (e) {
+        d(`Error rolling ${mainBranch.name} to ${latestUpstreamVersion}`, e);
+        thisIsFine = false;
       }
-    } else {
-      d(`${mainBranchName} branch not found!`);
     }
+  } else {
+    d(`${mainBranchName} branch not found!`);
   }
 
   if (!thisIsFine) {
@@ -168,59 +170,50 @@ export async function handleNodeCheck(): Promise<void> {
   });
   const releaseTags = releases.map(r => r.tag_name);
 
-  // TODO(main-migration): Simplify once branch rename is complete.
-  let caughtErrors = [];
-  for (const mainBranchName of ['main', 'master']) {
+  const {
+    data: { default_branch: mainBranchName },
+  } = await github.repos.get(REPOS.electron);
+
+  d(`Fetching ${mainBranchName} branch from electron/electron`);
+  const { data: mainBranch } = await github.repos.getBranch({
+    ...REPOS.electron,
+    branch: mainBranchName,
+  });
+
+  d(`Fetching DEPS for branch ${mainBranch.name} in electron/electron`);
+  const { data: depsData } = await github.repos.getContents({
+    owner: REPOS.electron.owner,
+    repo: REPOS.electron.repo,
+    path: 'DEPS',
+    ref: mainBranchName,
+  });
+
+  const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
+
+  // find node version from DEPS
+  const versionRegex = new RegExp(`${ROLL_TARGETS.node.depsKey}':\n +'(.+?)',`, 'm');
+  const [, depsNodeVersion] = versionRegex.exec(deps);
+  const majorVersion = semver.major(semver.clean(depsNodeVersion));
+
+  d(`Computing latest upstream version for Node ${majorVersion}`);
+  const latestUpstreamVersion = semver.maxSatisfying(releaseTags, `^${majorVersion}`);
+
+  // only roll for LTS release lines of Node.js (even-numbered major versions)
+  if (majorVersion % 2 === 0 && semver.gt(latestUpstreamVersion, depsNodeVersion)) {
+    d(
+      `Upgrade possible: ${mainBranch.name} can roll from ${depsNodeVersion} to ${latestUpstreamVersion}`,
+    );
     try {
-      d(`Fetching ${mainBranchName} branch from electron/electron`);
-      const { data: mainBranch } = await github.repos.getBranch({
-        ...REPOS.electron,
-        branch: mainBranchName,
+      await roll({
+        rollTarget: ROLL_TARGETS.node,
+        electronBranch: mainBranch,
+        targetVersion: latestUpstreamVersion,
       });
-
-      d(`Fetching DEPS for branch ${mainBranch.name} in electron/electron`);
-      const { data: depsData } = await github.repos.getContents({
-        owner: REPOS.electron.owner,
-        repo: REPOS.electron.repo,
-        path: 'DEPS',
-        ref: mainBranchName,
-      });
-
-      const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
-
-      // find node version from DEPS
-      const versionRegex = new RegExp(`${ROLL_TARGETS.node.depsKey}':\n +'(.+?)',`, 'm');
-      const [, depsNodeVersion] = versionRegex.exec(deps);
-      const majorVersion = semver.major(semver.clean(depsNodeVersion));
-
-      d(`Computing latest upstream version for Node ${majorVersion}`);
-      const latestUpstreamVersion = semver.maxSatisfying(releaseTags, `^${majorVersion}`);
-
-      // only roll for LTS release lines of Node.js (even-numbered major versions)
-      if (majorVersion % 2 === 0 && semver.gt(latestUpstreamVersion, depsNodeVersion)) {
-        d(
-          `Upgrade possible: ${mainBranch.name} can roll from ${depsNodeVersion} to ${latestUpstreamVersion}`,
-        );
-        try {
-          await roll({
-            rollTarget: ROLL_TARGETS.node,
-            electronBranch: mainBranch,
-            targetVersion: latestUpstreamVersion,
-          });
-        } catch (e) {
-          d(`Error rolling ${mainBranch.name} to ${latestUpstreamVersion}`, e);
-          throw new Error(`Upgrade check failed - see logs for more details`);
-        }
-      } else {
-        d(`No upgrade found, ${depsNodeVersion} is the most recent known in its release line.`);
-      }
     } catch (e) {
-      d(`Error when rolling ${mainBranchName}: ${e.stack}`);
-      caughtErrors.push(e);
+      d(`Error rolling ${mainBranch.name} to ${latestUpstreamVersion}`, e);
+      throw new Error(`Upgrade check failed - see logs for more details`);
     }
-  }
-  if (caughtErrors.length === 2) {
-    d(`Both main and master failed, passing the error up`);
-    throw caughtErrors[0];
+  } else {
+    d(`No upgrade found, ${depsNodeVersion} is the most recent known in its release line.`);
   }
 }
