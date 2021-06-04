@@ -1,7 +1,8 @@
 import { PullsListResponseItem, ReposListBranchesResponseItem } from '@octokit/rest';
 import * as debug from 'debug';
 
-import { PR_USER, REPOS, RollTarget } from '../constants';
+import { REPOS, RollTarget } from '../constants';
+import { getExistingRollPrs } from './existing-roll-prs';
 import { getOctokit } from './octokit';
 import { getPRText } from './pr-text';
 import { updateDepsFile } from './update-deps';
@@ -10,12 +11,14 @@ interface RollParams {
   rollTarget: RollTarget;
   electronBranch: ReposListBranchesResponseItem;
   targetVersion: string;
+  existingPrs?: PullsListResponseItem[];
 }
 
 export async function roll({
   rollTarget,
   electronBranch,
   targetVersion,
+  existingPrs,
 }: RollParams): Promise<void> {
   const d = debug(`roller/${rollTarget.name}:roll()`);
   const github = await getOctokit();
@@ -25,15 +28,7 @@ export async function roll({
   );
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
-  const existingPrsForBranch = (await github.paginate('GET /repos/:owner/:repo/pulls', {
-    base: electronBranch.name,
-    ...REPOS.electron,
-    state: 'open',
-  })) as PullsListResponseItem[];
-
-  const prs = existingPrsForBranch.filter(pr =>
-    pr.title.startsWith(`chore: bump ${rollTarget.name}`),
-  );
+  const prs = existingPrs || (await getExistingRollPrs(github, electronBranch.name, rollTarget));
 
   if (prs.length) {
     // Update existing PR(s)

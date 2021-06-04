@@ -3,6 +3,8 @@ import * as semver from 'semver';
 
 import { NUM_SUPPORTED_VERSIONS, REPOS, ROLL_TARGETS } from './constants';
 import { compareChromiumVersions } from './utils/compare-chromium-versions';
+import { getExistingRollPrs } from './utils/existing-roll-prs';
+import { getChromiumMajorForElectronMajor } from './utils/get-chromium-major';
 import { getChromiumReleases } from './utils/get-chromium-tags';
 import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
@@ -56,69 +58,9 @@ export async function handleChromiumCheck(): Promise<void> {
   d(`Found ${releaseBranches.length} release branches`);
 
   let thisIsFine = true;
+  let mainRollTargetVersion: string = '';
 
-  // Roll all non-main release branches
-  for (const branch of releaseBranches) {
-    d(`Fetching DEPS for ${branch.name}`);
-    const { data: depsData } = await github.repos.getContents({
-      ...REPOS.electron,
-      path: 'DEPS',
-      ref: branch.commit.sha,
-    });
-
-    const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
-    const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
-    const [, chromiumVersion] = versionRegex.exec(deps);
-
-    const chromiumMajorVersion = Number(chromiumVersion.split('.')[0]);
-
-    // We should be able to parse major version as a number
-    if (Number.isNaN(chromiumMajorVersion)) {
-      const SHAPattern = /\b[0-9a-f]{5,40}\b/;
-      // On newer release branches we may not yet have updated the branch to use tags
-      if (`${chromiumMajorVersion}`.match(SHAPattern)) {
-        d(`${branch.name} roll failed: ${chromiumMajorVersion} should be a tag.`);
-      } else {
-        d(`${branch.name} roll failed: ${chromiumVersion} is not a valid version number`);
-      }
-      thisIsFine = false;
-      continue;
-    }
-
-    d(`Computing latest upstream version for Chromium ${chromiumMajorVersion}`);
-    const upstreamVersions = chromiumReleases
-      .filter(
-        r =>
-          /^win|win64|mac|linux$/.test(r.os) &&
-          r.channel !== 'canary_asan' &&
-          Number(r.version.split('.')[0]) === chromiumMajorVersion,
-      )
-      .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-      .map(r => r.version);
-    const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
-    if (
-      latestUpstreamVersion &&
-      compareChromiumVersions(latestUpstreamVersion, chromiumVersion) > 0
-    ) {
-      d(
-        `Upgrade possible: ${branch.name} can roll from ${chromiumVersion} to ${latestUpstreamVersion}`,
-      );
-      try {
-        await roll({
-          rollTarget: ROLL_TARGETS.chromium,
-          electronBranch: branch,
-          targetVersion: latestUpstreamVersion,
-        });
-      } catch (e) {
-        d(`Error rolling ${branch.name} to ${latestUpstreamVersion}: `, e);
-        thisIsFine = false;
-      }
-    } else {
-      d(`No upgrade found, ${chromiumVersion} is the most recent known in its release line.`);
-    }
-  }
-
-  // TODO(main-migration): Simplify once branch rename is complete.
+  // Roll the main branch
   d(`Fetching DEPS for ${mainBranchName}`);
   const mainBranch = branches.find(branch => branch.name === mainBranchName);
   if (mainBranch) {
@@ -139,12 +81,14 @@ export async function handleChromiumCheck(): Promise<void> {
 
     if (currentVersion !== latestUpstreamVersion) {
       d(`Updating ${mainBranchName} from ${currentVersion} to ${latestUpstreamVersion}`);
+      const prs = await getExistingRollPrs(github, mainBranch.name, ROLL_TARGETS.chromium);
       try {
         await roll({
           rollTarget: ROLL_TARGETS.chromium,
           electronBranch: mainBranch,
           targetVersion: latestUpstreamVersion,
         });
+        mainRollTargetVersion = latestUpstreamVersion;
       } catch (e) {
         d(`Error rolling ${mainBranch.name} to ${latestUpstreamVersion}`, e);
         thisIsFine = false;
@@ -152,6 +96,72 @@ export async function handleChromiumCheck(): Promise<void> {
     }
   } else {
     d(`${mainBranchName} branch not found!`);
+  }
+
+  // Roll all non-main release branches
+  for (const branch of releaseBranches) {
+    d(`Fetching DEPS for ${branch.name}`);
+    const { data: depsData } = await github.repos.getContents({
+      ...REPOS.electron,
+      path: 'DEPS',
+      ref: branch.commit.sha,
+    });
+
+    const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
+    const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
+    const [, chromiumVersion] = versionRegex.exec(deps);
+
+    const chromiumMajorVersion = getChromiumMajorForElectronMajor(
+      parseInt(branch.name.split('-')[0]),
+    );
+
+    // We should be able to parse major version as a number
+    if (Number.isNaN(chromiumMajorVersion)) {
+      d(`${branch.name} roll failed: ${branch.name} is not a valid versioned release branch`);
+      thisIsFine = false;
+      continue;
+    }
+
+    d(`Computing latest upstream version for Chromium ${chromiumMajorVersion}`);
+    const upstreamVersions = chromiumReleases
+      .filter(
+        r =>
+          /^win|win64|mac|linux$/.test(r.os) &&
+          r.channel !== 'canary_asan' &&
+          Number(r.version.split('.')[0]) === chromiumMajorVersion,
+      )
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+      .map(r => r.version);
+    const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
+    if (
+      latestUpstreamVersion &&
+      compareChromiumVersions(latestUpstreamVersion, chromiumVersion) > 0
+    ) {
+      if (mainRollTargetVersion !== latestUpstreamVersion) {
+        d(
+          `Upgrade possible: ${branch.name} can roll from ${chromiumVersion} to ${latestUpstreamVersion}`,
+        );
+        try {
+          await roll({
+            rollTarget: ROLL_TARGETS.chromium,
+            electronBranch: branch,
+            targetVersion: latestUpstreamVersion,
+          });
+        } catch (e) {
+          d(`Error rolling ${branch.name} to ${latestUpstreamVersion}: `, e);
+          thisIsFine = false;
+        }
+      } else {
+        d(
+          `Upgrade possible: ${branch.name} can take the roll from ${mainBranchName} to ${mainRollTargetVersion}`,
+        );
+        // TODO: Close any open roll for branch
+        // TODO: Label the main roll as target/{branch}
+        // TODO: Remove the no-backport label on the roll
+      }
+    } else {
+      d(`No upgrade found, ${chromiumVersion} is the most recent known in its release line.`);
+    }
   }
 
   if (!thisIsFine) {
