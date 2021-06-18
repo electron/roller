@@ -38,6 +38,7 @@ export async function roll({
   if (prs.length) {
     // Update existing PR(s)
     for (const pr of prs) {
+      if (pr.user.login.startsWith('trop')) continue;
       d(`Found existing PR: #${pr.number} opened by ${pr.user.login}`);
 
       // Check to see if automatic DEPS roll has been temporarily disabled
