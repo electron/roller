@@ -22,7 +22,8 @@ export const ROLL_TARGETS = {
   },
 };
 
-export const PR_USER = 'electron-bot';
+export const BACKPORT_CHECK_SKIP = 'backport-check-skip';
+export const NO_BACKPORT = 'no-backport';
 
 export interface Commit {
   sha: string;

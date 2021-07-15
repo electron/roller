@@ -1,7 +1,7 @@
 import { PullsListResponseItem, ReposListBranchesResponseItem } from '@octokit/rest';
 import * as debug from 'debug';
 
-import { PR_USER, REPOS, RollTarget } from '../constants';
+import { BACKPORT_CHECK_SKIP, NO_BACKPORT, REPOS, RollTarget } from '../constants';
 import { getOctokit } from './octokit';
 import { getPRText } from './pr-text';
 import { updateDepsFile } from './update-deps';
@@ -119,11 +119,15 @@ export async function roll({
         branchName: electronBranch.name,
       }),
     });
+
+    const labels = ['semver/patch'];
+    labels.push(branchName === 'main' ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
+
     // Although not completely correct, it's the best we've got :)
     await github.issues.addLabels({
       ...REPOS.electron,
       issue_number: newPr.data.number,
-      labels: ['semver/patch', 'no-backport', 'backport-check-skip'],
+      labels,
     });
     d(`New PR: ${newPr.data.html_url}`);
     // TODO: add comment with commit list to new PR.
