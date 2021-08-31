@@ -121,7 +121,7 @@ export async function roll({
     });
 
     const labels = ['semver/patch'];
-    labels.push(branchName === 'main' ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
+    labels.push(electronBranch.name === 'main' ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
 
     // Although not completely correct, it's the best we've got :)
     await github.issues.addLabels({
