@@ -7,6 +7,7 @@ jest.mock('../../src/utils/octokit');
 jest.mock('../../src/utils/update-deps');
 
 describe('roll()', () => {
+  let mockOctokit: any;
   const branch = {
     name: 'testBranch',
     commit: {
@@ -25,7 +26,7 @@ describe('roll()', () => {
   };
 
   beforeEach(() => {
-    this.mockOctokit = {
+    mockOctokit = {
       paginate: jest.fn(),
       pulls: {
         update: jest.fn(),
@@ -40,7 +41,7 @@ describe('roll()', () => {
         addLabels: jest.fn(),
       },
     };
-    (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
+    (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
     (updateDepsFile as jest.Mock).mockReturnValue({
       previousDEPSVersion: 'v4.0.0',
       newDEPSVersion: 'v10.0.0',
@@ -48,7 +49,7 @@ describe('roll()', () => {
   });
 
   it('takes no action if versions are identical', async () => {
-    this.mockOctokit.paginate.mockReturnValue([
+    mockOctokit.paginate.mockReturnValue([
       {
         user: {
           login: 'electron-roller[bot]',
@@ -75,12 +76,12 @@ describe('roll()', () => {
       targetVersion: 'v4.0.0',
     });
 
-    expect(this.mockOctokit.pulls.update).not.toHaveBeenCalled();
-    expect(this.mockOctokit.pulls.create).not.toHaveBeenCalled();
+    expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
+    expect(mockOctokit.pulls.create).not.toHaveBeenCalled();
   });
 
   it('takes no action if the PR user is trop', async () => {
-    this.mockOctokit.paginate.mockReturnValue([
+    mockOctokit.paginate.mockReturnValue([
       {
         user: {
           login: 'trop[bot]',
@@ -107,12 +108,12 @@ describe('roll()', () => {
       targetVersion: 'v4.0.0',
     });
 
-    expect(this.mockOctokit.pulls.update).not.toHaveBeenCalled();
-    expect(this.mockOctokit.pulls.create).not.toHaveBeenCalled();
+    expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
+    expect(mockOctokit.pulls.create).not.toHaveBeenCalled();
   });
 
   it('updates a PR if existing PR already exists', async () => {
-    this.mockOctokit.paginate.mockReturnValue([
+    mockOctokit.paginate.mockReturnValue([
       {
         user: {
           login: 'electron-roller[bot]',
@@ -134,7 +135,7 @@ describe('roll()', () => {
       targetVersion: 'v10.0.0',
     });
 
-    expect(this.mockOctokit.pulls.update).toHaveBeenCalledWith(
+    expect(mockOctokit.pulls.update).toHaveBeenCalledWith(
       expect.objectContaining({
         ...REPOS.electron,
         pull_number: 1,
@@ -147,7 +148,7 @@ describe('roll()', () => {
   });
 
   it('creates a new PR if none found', async () => {
-    this.mockOctokit.paginate.mockReturnValue([]);
+    mockOctokit.paginate.mockReturnValue([]);
 
     await roll({
       rollTarget: ROLL_TARGETS.node,
@@ -157,13 +158,13 @@ describe('roll()', () => {
 
     const newBranchName = `roller/${ROLL_TARGETS.node.name}/${branch.name}`;
 
-    expect(this.mockOctokit.git.createRef).toHaveBeenCalledWith({
+    expect(mockOctokit.git.createRef).toHaveBeenCalledWith({
       ...REPOS.electron,
       ref: `refs/heads/${newBranchName}`,
       sha: branch.commit.sha,
     });
 
-    expect(this.mockOctokit.pulls.create).toHaveBeenCalledWith(
+    expect(mockOctokit.pulls.create).toHaveBeenCalledWith(
       expect.objectContaining({
         ...REPOS.electron,
         base: branch.name,
@@ -173,7 +174,7 @@ describe('roll()', () => {
   });
 
   it('skips PR if existing one has been paused', async () => {
-    this.mockOctokit.paginate.mockReturnValue([
+    mockOctokit.paginate.mockReturnValue([
       {
         user: {
           login: 'electron-roller[bot]',
@@ -195,6 +196,6 @@ describe('roll()', () => {
       targetVersion: 'v10.0.0',
     });
 
-    expect(this.mockOctokit.pulls.update).not.toHaveBeenCalled();
+    expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
   });
 });

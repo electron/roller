@@ -11,25 +11,27 @@ export interface UpdateDepsParams {
 export async function updateDepsFile({ depName, depKey, branch, targetVersion }: UpdateDepsParams) {
   const github = await getOctokit();
 
-  const existing = await github.repos.getContents({
+  const { data } = await github.repos.getContent({
     ...REPOS.electron,
     path: 'DEPS',
     ref: branch,
   });
 
-  const content = Buffer.from(existing.data.content, 'base64').toString('utf8');
+  if (!('content' in data)) return;
+
+  const content = Buffer.from(data.content, 'base64').toString('utf8');
   const previousRegex = new RegExp(`${depKey}':\n +'(.+?)',`, 'm');
   const [, previousDEPSVersion] = previousRegex.exec(content);
 
   if (targetVersion !== previousDEPSVersion) {
     const regexToReplace = new RegExp(`(${depKey}':\n +').+?',`, 'gm');
     const newContent = content.replace(regexToReplace, `$1${targetVersion}',`);
-    await github.repos.updateFile({
+    await github.repos.createOrUpdateFileContents({
       ...REPOS.electron,
       path: 'DEPS',
       content: Buffer.from(newContent).toString('base64'),
       message: `chore: bump ${depName} in DEPS to ${targetVersion}`,
-      sha: existing.data.sha,
+      sha: data.sha,
       branch,
     });
   }

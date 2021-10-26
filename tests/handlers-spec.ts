@@ -9,20 +9,22 @@ jest.mock('../src/utils/octokit');
 jest.mock('../src/utils/roll');
 
 describe('handleChromiumCheck()', () => {
+  let mockOctokit: any;
+
   beforeEach(() => {
-    this.mockOctokit = {
+    mockOctokit = {
       repos: {
         listBranches: jest.fn(),
-        getContents: jest.fn(),
+        getContent: jest.fn(),
         get: jest.fn(),
       },
     };
-    (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
+    (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
   });
 
   describe('release branches', () => {
     beforeEach(() => {
-      this.mockOctokit.repos.listBranches.mockReturnValue({
+      mockOctokit.repos.listBranches.mockReturnValue({
         data: [
           {
             name: '4-0-x',
@@ -33,7 +35,7 @@ describe('handleChromiumCheck()', () => {
         ],
       });
 
-      this.mockOctokit.repos.getContents.mockReturnValue({
+      mockOctokit.repos.getContent.mockReturnValue({
         data: {
           content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`),
           sha: '1234',
@@ -62,7 +64,7 @@ describe('handleChromiumCheck()', () => {
     });
 
     it('properly fetches supported versions of Electron to roll against', async () => {
-      this.mockOctokit.repos.listBranches.mockReturnValue({
+      mockOctokit.repos.listBranches.mockReturnValue({
         data: [
           {
             name: '10-x-y',
@@ -121,7 +123,7 @@ describe('handleChromiumCheck()', () => {
         ],
       });
 
-      const { data: branches } = await this.mockOctokit.repos.listBranches({
+      const { data: branches } = await mockOctokit.repos.listBranches({
         ...REPOS.electron,
         protected: true,
       });
@@ -142,7 +144,7 @@ describe('handleChromiumCheck()', () => {
     });
 
     it('takes no action if no new minor/build/patch available', async () => {
-      this.mockOctokit.repos.getContents.mockReturnValue({
+      mockOctokit.repos.getContent.mockReturnValue({
         data: {
           content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.5.0.0',`),
           sha: '1234',
@@ -155,7 +157,7 @@ describe('handleChromiumCheck()', () => {
     });
 
     it('fails if DEPS version invalid', async () => {
-      this.mockOctokit.repos.getContents.mockReturnValue({
+      mockOctokit.repos.getContent.mockReturnValue({
         data: {
           content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    'someCommitSha',`),
           sha: '1234',
@@ -175,7 +177,7 @@ describe('handleChromiumCheck()', () => {
 
   describe('main branch', () => {
     beforeEach(() => {
-      this.mockOctokit.repos.listBranches.mockReturnValue({
+      mockOctokit.repos.listBranches.mockReturnValue({
         data: [
           {
             name: MAIN_BRANCH,
@@ -186,7 +188,7 @@ describe('handleChromiumCheck()', () => {
         ],
       });
 
-      this.mockOctokit.repos.getContents.mockReturnValue({
+      mockOctokit.repos.getContent.mockReturnValue({
         data: {
           content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`),
           sha: '1234',
@@ -249,7 +251,7 @@ describe('handleChromiumCheck()', () => {
   });
 
   it('throws error if roll() process failed', async () => {
-    this.mockOctokit.repos.listBranches.mockReturnValue({
+    mockOctokit.repos.listBranches.mockReturnValue({
       data: [
         {
           name: '4-0-x',
@@ -260,7 +262,7 @@ describe('handleChromiumCheck()', () => {
       ],
     });
 
-    this.mockOctokit.repos.getContents.mockReturnValue({
+    mockOctokit.repos.getContent.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`),
         sha: '1234',
@@ -298,8 +300,10 @@ describe('handleChromiumCheck()', () => {
 });
 
 describe('handleNodeCheck()', () => {
+  let mockOctokit: any;
+
   beforeEach(() => {
-    this.mockOctokit = {
+    mockOctokit = {
       repos: {
         getBranch: jest.fn().mockReturnValue({
           data: {
@@ -325,14 +329,14 @@ describe('handleNodeCheck()', () => {
             },
           ],
         }),
-        getContents: jest.fn(),
+        getContent: jest.fn(),
       },
     };
-    (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
+    (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
   });
 
   it('rolls even major versions of Node.js with latest minor/patch update', async () => {
-    this.mockOctokit.repos.getContents.mockReturnValue({
+    mockOctokit.repos.getContent.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.0.0',`),
         sha: '1234',
@@ -350,7 +354,7 @@ describe('handleNodeCheck()', () => {
   });
 
   it('does not roll for uneven major versions of Node.js', async () => {
-    this.mockOctokit.repos.getContents.mockReturnValue({
+    mockOctokit.repos.getContent.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v11.0.0',`),
         sha: '1234',
@@ -362,7 +366,7 @@ describe('handleNodeCheck()', () => {
   });
 
   it('does not roll if no newer release found', async () => {
-    this.mockOctokit.repos.getContents.mockReturnValue({
+    mockOctokit.repos.getContent.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.2.0',`),
         sha: '1234',
@@ -374,7 +378,7 @@ describe('handleNodeCheck()', () => {
   });
 
   it('throws error if roll() process failed', async () => {
-    this.mockOctokit.repos.getContents.mockReturnValue({
+    mockOctokit.repos.getContent.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.0.0',`),
         sha: '1234',

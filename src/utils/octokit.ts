@@ -1,4 +1,4 @@
-import * as GitHub from '@octokit/rest';
+import { Octokit as GitHub } from '@octokit/rest';
 import {
   AppAuthentication,
   createAppAuth,
