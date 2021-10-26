@@ -1,6 +1,6 @@
 import { handleChromiumCheck } from './handlers';
 
-if (process.mainModule === module) {
+if (require.main === module) {
   handleChromiumCheck().catch(err => {
     console.log('Chromium Cron Failed');
     console.error(err);

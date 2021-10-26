@@ -1,4 +1,4 @@
-import { REPOS, ROLL_TARGETS } from '../src/constants';
+import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from '../src/constants';
 import { handleChromiumCheck, handleNodeCheck, getSupportedBranches } from '../src/handlers';
 import { getChromiumReleases } from '../src/utils/get-chromium-tags';
 import { getOctokit } from '../src/utils/octokit';
@@ -22,12 +22,6 @@ describe('handleChromiumCheck()', () => {
 
   describe('release branches', () => {
     beforeEach(() => {
-      this.mockOctokit.repos.get.mockReturnValue({
-        data: {
-          default_branch: 'main',
-        },
-      });
-
       this.mockOctokit.repos.listBranches.mockReturnValue({
         data: [
           {
@@ -118,6 +112,12 @@ describe('handleChromiumCheck()', () => {
               sha: '1234',
             },
           },
+          {
+            name: MAIN_BRANCH,
+            commit: {
+              sha: '1234',
+            },
+          },
         ],
       });
 
@@ -173,99 +173,12 @@ describe('handleChromiumCheck()', () => {
     });
   });
 
-  describe('master branch', () => {
-    beforeEach(() => {
-      this.mockOctokit.repos.get.mockReturnValue({
-        data: {
-          default_branch: 'master',
-        },
-      });
-
-      this.mockOctokit.repos.listBranches.mockReturnValue({
-        data: [
-          {
-            name: 'master',
-            commit: {
-              sha: '1234',
-            },
-          },
-        ],
-      });
-
-      this.mockOctokit.repos.getContents.mockReturnValue({
-        data: {
-          content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`),
-          sha: '1234',
-        },
-      });
-    });
-
-    it('updates to master', async () => {
-      (getChromiumReleases as jest.Mock).mockReturnValue([
-        {
-          timestamp: '2020-01-01 01:01:01.000001',
-          version: '1.1.0.0',
-          channel: 'stable',
-          os: 'win',
-        },
-        {
-          timestamp: '2020-01-01 01:01:01.000003',
-          version: '2.1.0.0',
-          channel: 'canary',
-          os: 'win',
-        },
-        {
-          timestamp: '2020-01-01 01:01:01.000002',
-          version: '1.2.0.0',
-          channel: 'stable',
-          os: 'mac',
-        },
-      ]);
-
-      await handleChromiumCheck();
-
-      expect(roll).toHaveBeenCalledWith(
-        expect.objectContaining({
-          rollTarget: ROLL_TARGETS.chromium,
-          targetVersion: '2.1.0.0',
-        }),
-      );
-    });
-
-    it('takes no action if master is already in DEPS', async () => {
-      (getChromiumReleases as jest.Mock).mockReturnValue([
-        {
-          timestamp: '2020-01-01 01:01:01.000001',
-          version: '1.1.0.0',
-          channel: 'canary',
-          os: 'win',
-        },
-        {
-          timestamp: '2020-01-01 01:01:01.000002',
-          version: '1.1.0.0',
-          channel: 'canary',
-          os: 'mac',
-        },
-      ]);
-
-      await handleChromiumCheck();
-
-      expect(roll).not.toHaveBeenCalled();
-    });
-  });
-
   describe('main branch', () => {
     beforeEach(() => {
-      this.mockOctokit.repos.get.mockReturnValue({
-        data: {
-          default_branch: 'main',
-        },
-      });
-
       this.mockOctokit.repos.listBranches.mockReturnValue({
         data: [
           {
-            name: 'main',
+            name: MAIN_BRANCH,
             commit: {
               sha: '1234',
             },
@@ -336,12 +249,6 @@ describe('handleChromiumCheck()', () => {
   });
 
   it('throws error if roll() process failed', async () => {
-    this.mockOctokit.repos.get.mockReturnValue({
-      data: {
-        default_branch: 'main',
-      },
-    });
-
     this.mockOctokit.repos.listBranches.mockReturnValue({
       data: [
         {
@@ -396,7 +303,7 @@ describe('handleNodeCheck()', () => {
       repos: {
         getBranch: jest.fn().mockReturnValue({
           data: {
-            name: 'main',
+            name: MAIN_BRANCH,
             commit: {
               sha: '1234',
             },
@@ -419,11 +326,6 @@ describe('handleNodeCheck()', () => {
           ],
         }),
         getContents: jest.fn(),
-        get: jest.fn().mockReturnValue({
-          data: {
-            default_branch: 'main',
-          },
-        }),
       },
     };
     (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
@@ -441,7 +343,7 @@ describe('handleNodeCheck()', () => {
     expect(roll).toHaveBeenCalledWith({
       rollTarget: ROLL_TARGETS.node,
       electronBranch: expect.objectContaining({
-        name: 'main',
+        name: MAIN_BRANCH,
       }),
       targetVersion: 'v12.2.0',
     });
