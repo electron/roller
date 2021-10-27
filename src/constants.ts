@@ -9,6 +9,8 @@ export const REPOS = {
   },
 };
 
+export const MAIN_BRANCH = 'main';
+
 export const NUM_SUPPORTED_VERSIONS = 4;
 
 export const ROLL_TARGETS = {
