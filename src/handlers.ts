@@ -56,11 +56,17 @@ export async function handleChromiumCheck(): Promise<void> {
   // Roll all non-main release branches.
   for (const branch of releaseBranches) {
     d(`Fetching DEPS for ${branch.name}`);
-    const { data: depsData } = await github.repos.getContents({
+    const { data: depsData } = await github.repos.getContent({
       ...REPOS.electron,
       path: 'DEPS',
       ref: branch.commit.sha,
     });
+
+    if (!('content' in depsData)) {
+      d(`Error - incorrectly got array when fetching DEPS content for ${branch}`);
+      thisIsFine = false;
+      continue;
+    }
 
     const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
     const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
@@ -117,12 +123,18 @@ export async function handleChromiumCheck(): Promise<void> {
   const mainBranch = branches.find(branch => branch.name === MAIN_BRANCH);
 
   d(`Fetching DEPS for ${MAIN_BRANCH}`);
-  const { data: depsData } = await github.repos.getContents({
+  const { data: depsData } = await github.repos.getContent({
     owner: REPOS.electron.owner,
     repo: REPOS.electron.repo,
     path: 'DEPS',
     ref: MAIN_BRANCH,
   });
+
+  if (!('content' in depsData)) {
+    d(`Error - incorrectly got array when fetching DEPS content for ${MAIN_BRANCH}`);
+    throw new Error('One or more upgrade checks failed - see logs for more details');
+  }
+
   const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
   const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
   const [, currentVersion] = versionRegex.exec(deps);
@@ -177,12 +189,17 @@ export async function handleNodeCheck(): Promise<void> {
   });
 
   d(`Fetching DEPS for branch ${mainBranch.name} in electron/electron`);
-  const { data: depsData } = await github.repos.getContents({
+  const { data: depsData } = await github.repos.getContent({
     owner: REPOS.electron.owner,
     repo: REPOS.electron.repo,
     path: 'DEPS',
     ref: MAIN_BRANCH,
   });
+
+  if (!('content' in depsData)) {
+    d(`Error - incorrectly got array when fetching DEPS content for ${MAIN_BRANCH}`);
+    throw new Error(`Upgrade check failed - see logs for more details`);
+  }
 
   const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
 

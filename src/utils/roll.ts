@@ -1,10 +1,13 @@
-import { PullsListResponseItem, ReposListBranchesResponseItem } from '@octokit/rest';
+import { RestEndpointMethodTypes } from '@octokit/rest';
 import * as debug from 'debug';
 
 import { BACKPORT_CHECK_SKIP, NO_BACKPORT, REPOS, RollTarget } from '../constants';
 import { getOctokit } from './octokit';
 import { getPRText } from './pr-text';
 import { updateDepsFile } from './update-deps';
+
+type PullsListResponseItem = RestEndpointMethodTypes['pulls']['list']['response']['data'][0];
+type ReposListBranchesResponseItem = RestEndpointMethodTypes['repos']['listBranches']['response']['data'][0];
 
 interface RollParams {
   rollTarget: RollTarget;
@@ -65,6 +68,11 @@ export async function roll({
 
       const re = new RegExp('^Original-Version: (\\S+)', 'm');
       const prVersionText = re.exec(pr.body);
+
+      if (!prVersionText || prVersionText.length === 0) {
+        d('Could not find PR version text in existing PR - exiting');
+        return;
+      }
 
       await github.pulls.update({
         owner: REPOS.electron.owner,

@@ -5,56 +5,61 @@ import { REPOS } from '../../src/constants';
 jest.mock('../../src/utils/octokit');
 
 describe('updateDepsFile()', () => {
+  let mockOctokit: any;
+  let options: any;
+
   beforeEach(() => {
-    this.mockOctokit = {
+    mockOctokit = {
       repos: {
-        getContents: jest.fn().mockImplementation(() => ({
+        getContent: jest.fn().mockImplementation(() => ({
           data: {
             content: Buffer.from("'testKey':\n    'v4.0.0',"),
-            sha: '1234'
+            sha: '1234',
           },
         })),
-        updateFile: jest.fn(),
+        createOrUpdateFileContents: jest.fn(),
       },
     };
-    (getOctokit as jest.Mock).mockReturnValue(this.mockOctokit);
-    this.options = ({
+    (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
+    options = {
       depKey: 'testKey',
       depName: 'testName',
       branch: 'testBranch',
-      targetVersion: 'v10.0.0'
-    } as UpdateDepsParams);
+      targetVersion: 'v10.0.0',
+    } as UpdateDepsParams;
   });
 
   it('returns the previous and new version numbers', async () => {
-    const result = await updateDepsFile(this.options);
+    const result = await updateDepsFile(options);
     expect(result).toEqual({
       previousDEPSVersion: 'v4.0.0',
-      newDEPSVersion: 'v10.0.0'
+      newDEPSVersion: 'v10.0.0',
     });
-  })
+  });
 
   it('attempts to update the DEPS file', async () => {
-    await updateDepsFile(this.options);
+    await updateDepsFile(options);
 
-    expect(this.mockOctokit.repos.updateFile).toHaveBeenCalledWith({
+    expect(mockOctokit.repos.createOrUpdateFileContents).toHaveBeenCalledWith({
       ...REPOS.electron,
       path: 'DEPS',
-      content: Buffer.from(`'${this.options.depKey}':\n    '${this.options.targetVersion}',`).toString('base64'),
-      message: `chore: bump ${this.options.depName} in DEPS to ${this.options.targetVersion}`,
+      content: Buffer.from(`'${options.depKey}':\n    '${options.targetVersion}',`).toString(
+        'base64',
+      ),
+      message: `chore: bump ${options.depName} in DEPS to ${options.targetVersion}`,
       sha: '1234',
-      branch: this.options.branch
+      branch: options.branch,
     });
   });
 
   it('does not update DEPS file if version is unchanged', async () => {
-    const options = ({
-      ...this.options,
-      targetVersion: 'v4.0.0'
-    } as UpdateDepsParams);
+    const updatedOptions = {
+      ...options,
+      targetVersion: 'v4.0.0',
+    } as UpdateDepsParams;
 
-    await updateDepsFile(options);
+    await updateDepsFile(updatedOptions);
 
-    expect(this.mockOctokit.repos.updateFile).not.toHaveBeenCalled();
-  })
+    expect(mockOctokit.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
+  });
 });
