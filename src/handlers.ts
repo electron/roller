@@ -120,7 +120,16 @@ export async function handleChromiumCheck(): Promise<void> {
     }
   }
 
-  const mainBranch = branches.find(branch => branch.name === MAIN_BRANCH);
+  d(`Fetching ${MAIN_BRANCH} branch for electron/electron`);
+  const { data: mainBranch } = await github.repos.getBranch({
+    ...REPOS.electron,
+    branch: MAIN_BRANCH,
+  });
+
+  if (!mainBranch) {
+    d(`Error - ${MAIN_BRANCH} does not exist on ${REPOS.electron.owner}`);
+    throw new Error('One or more upgrade checks failed - see logs for more details');
+  }
 
   d(`Fetching DEPS for ${MAIN_BRANCH}`);
   const { data: depsData } = await github.repos.getContent({
@@ -161,7 +170,7 @@ export async function handleChromiumCheck(): Promise<void> {
         targetVersion: latestUpstreamVersion,
       });
     } catch (e) {
-      d(`Error rolling ${mainBranch.name} to ${latestUpstreamVersion}`, e);
+      d(`Error rolling ${MAIN_BRANCH} to ${latestUpstreamVersion}`, e);
       thisIsFine = false;
     }
   }

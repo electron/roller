@@ -1,7 +1,7 @@
 import { RestEndpointMethodTypes } from '@octokit/rest';
 import * as debug from 'debug';
 
-import { BACKPORT_CHECK_SKIP, NO_BACKPORT, REPOS, RollTarget } from '../constants';
+import { BACKPORT_CHECK_SKIP, MAIN_BRANCH, NO_BACKPORT, REPOS, RollTarget } from '../constants';
 import { getOctokit } from './octokit';
 import { getPRText } from './pr-text';
 import { updateDepsFile } from './update-deps';
@@ -129,7 +129,7 @@ export async function roll({
     });
 
     const labels = ['semver/patch'];
-    labels.push(electronBranch.name === 'main' ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
+    labels.push(electronBranch.name === MAIN_BRANCH ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
 
     // Although not completely correct, it's the best we've got :)
     await github.issues.addLabels({
