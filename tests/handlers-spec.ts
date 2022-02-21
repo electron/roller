@@ -17,6 +17,14 @@ describe('handleChromiumCheck()', () => {
         listBranches: jest.fn(),
         getContent: jest.fn(),
         get: jest.fn(),
+        getBranch: jest.fn().mockReturnValue({
+          data: {
+            name: MAIN_BRANCH,
+            commit: {
+              sha: '1234',
+            },
+          },
+        }),
       },
     };
     (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
