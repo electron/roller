@@ -1,14 +1,10 @@
-import { RestEndpointMethodTypes } from '@octokit/rest';
 import * as debug from 'debug';
 
 import { BACKPORT_CHECK_SKIP, MAIN_BRANCH, NO_BACKPORT, REPOS, RollTarget } from '../constants';
+import { ReposListBranchesResponseItem, PullsListResponseItem } from '../types';
 import { getOctokit } from './octokit';
 import { getPRText } from './pr-text';
 import { updateDepsFile } from './update-deps';
-
-type PullsListResponseItem = RestEndpointMethodTypes['pulls']['list']['response']['data'][0];
-type ReposListBranchesResponseItem = RestEndpointMethodTypes['repos']['listBranches']['response']['data'][0];
-
 interface RollParams {
   rollTarget: RollTarget;
   electronBranch: ReposListBranchesResponseItem;
