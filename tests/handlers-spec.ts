@@ -13,8 +13,13 @@ describe('handleChromiumCheck()', () => {
 
   beforeEach(() => {
     mockOctokit = {
+      paginate: jest.fn(),
       repos: {
-        listBranches: jest.fn(),
+        listBranches: {
+          endpoint: {
+            merge: jest.fn(),
+          },
+        },
         getContent: jest.fn(),
         get: jest.fn(),
         getBranch: jest.fn().mockReturnValue({
@@ -32,16 +37,14 @@ describe('handleChromiumCheck()', () => {
 
   describe('release branches', () => {
     beforeEach(() => {
-      mockOctokit.repos.listBranches.mockReturnValue({
-        data: [
-          {
-            name: '4-0-x',
-            commit: {
-              sha: '1234',
-            },
+      mockOctokit.paginate.mockReturnValue([
+        {
+          name: '4-0-x',
+          commit: {
+            sha: '1234',
           },
-        ],
-      });
+        },
+      ]);
 
       mockOctokit.repos.getContent.mockReturnValue({
         data: {
@@ -72,69 +75,69 @@ describe('handleChromiumCheck()', () => {
     });
 
     it('properly fetches supported versions of Electron to roll against', async () => {
-      mockOctokit.repos.listBranches.mockReturnValue({
-        data: [
-          {
-            name: '10-x-y',
-            commit: {
-              sha: '1234',
-            },
+      mockOctokit.paginate.mockReturnValue([
+        {
+          name: '10-x-y',
+          commit: {
+            sha: '1234',
           },
-          {
-            name: '9-x-y',
-            commit: {
-              sha: '1234',
-            },
+        },
+        {
+          name: '9-x-y',
+          commit: {
+            sha: '1234',
           },
-          {
-            name: '8-x-y',
-            commit: {
-              sha: '1234',
-            },
+        },
+        {
+          name: '8-x-y',
+          commit: {
+            sha: '1234',
           },
-          {
-            name: '7-1-x',
-            commit: {
-              sha: '1234',
-            },
+        },
+        {
+          name: '7-1-x',
+          commit: {
+            sha: '1234',
           },
-          {
-            name: '7-0-x',
-            commit: {
-              sha: '1234',
-            },
+        },
+        {
+          name: '7-0-x',
+          commit: {
+            sha: '1234',
           },
-          {
-            name: '6-1-x',
-            commit: {
-              sha: '1234',
-            },
+        },
+        {
+          name: '6-1-x',
+          commit: {
+            sha: '1234',
           },
-          {
-            name: '6-0-x',
-            commit: {
-              sha: '1234',
-            },
+        },
+        {
+          name: '6-0-x',
+          commit: {
+            sha: '1234',
           },
-          {
-            name: '5-0-x',
-            commit: {
-              sha: '1234',
-            },
+        },
+        {
+          name: '5-0-x',
+          commit: {
+            sha: '1234',
           },
-          {
-            name: MAIN_BRANCH,
-            commit: {
-              sha: '1234',
-            },
+        },
+        {
+          name: MAIN_BRANCH,
+          commit: {
+            sha: '1234',
           },
-        ],
-      });
+        },
+      ]);
 
-      const { data: branches } = await mockOctokit.repos.listBranches({
-        ...REPOS.electron,
-        protected: true,
-      });
+      const branches: { name: string }[] = await mockOctokit.paginate(
+        mockOctokit.repos.listBranches.endpoint.merge({
+          ...REPOS.electron,
+          protected: true,
+        }),
+      );
 
       const supported = getSupportedBranches(branches);
       expect(supported).toEqual(['7-1-x', '8-x-y', '9-x-y', '10-x-y']);
@@ -185,16 +188,14 @@ describe('handleChromiumCheck()', () => {
 
   describe('main branch', () => {
     beforeEach(() => {
-      mockOctokit.repos.listBranches.mockReturnValue({
-        data: [
-          {
-            name: MAIN_BRANCH,
-            commit: {
-              sha: '1234',
-            },
+      mockOctokit.paginate.mockReturnValue([
+        {
+          name: MAIN_BRANCH,
+          commit: {
+            sha: '1234',
           },
-        ],
-      });
+        },
+      ]);
 
       mockOctokit.repos.getContent.mockReturnValue({
         data: {
@@ -259,16 +260,14 @@ describe('handleChromiumCheck()', () => {
   });
 
   it('throws error if roll() process failed', async () => {
-    mockOctokit.repos.listBranches.mockReturnValue({
-      data: [
-        {
-          name: '4-0-x',
-          commit: {
-            sha: '1234',
-          },
+    mockOctokit.paginate.mockReturnValue([
+      {
+        name: '4-0-x',
+        commit: {
+          sha: '1234',
         },
-      ],
-    });
+      },
+    ]);
 
     mockOctokit.repos.getContent.mockReturnValue({
       data: {
