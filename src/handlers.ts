@@ -2,6 +2,7 @@ import * as debug from 'debug';
 import * as semver from 'semver';
 
 import { MAIN_BRANCH, NUM_SUPPORTED_VERSIONS, REPOS, ROLL_TARGETS } from './constants';
+import { ReposListBranchesResponseItem } from './types';
 import { compareChromiumVersions } from './utils/compare-chromium-versions';
 import { getChromiumReleases } from './utils/get-chromium-tags';
 import { getOctokit } from './utils/octokit';
@@ -42,10 +43,12 @@ export async function handleChromiumCheck(): Promise<void> {
 
   const github = await getOctokit();
   d('Fetching release branches for electron/electron');
-  const { data: branches } = await github.repos.listBranches({
-    ...REPOS.electron,
-    protected: true,
-  });
+  const branches: ReposListBranchesResponseItem[] = await github.paginate(
+    github.repos.listBranches.endpoint.merge({
+      ...REPOS.electron,
+      protected: true,
+    }),
+  );
 
   const supported = getSupportedBranches(branches);
   const releaseBranches = branches.filter(branch => supported.includes(branch.name));
