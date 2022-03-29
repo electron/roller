@@ -91,11 +91,10 @@ export async function handleChromiumCheck(): Promise<void> {
     const upstreamVersions = chromiumReleases
       .filter(
         r =>
-          /^win|win64|mac|linux$/.test(r.os) &&
-          r.channel !== 'canary_asan' &&
-          Number(r.version.split('.')[0]) === chromiumMajorVersion,
+          ['Win32', 'Windows', 'Linux', 'Mac'].includes(r.platform) &&
+          r.milestone === chromiumMajorVersion,
       )
-      .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+      .sort((a, b) => a.time - b.time)
       .map(r => r.version);
     const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
     if (
@@ -156,8 +155,10 @@ export async function handleChromiumCheck(): Promise<void> {
   }
 
   const upstreamVersions = chromiumReleases
-    .filter(r => /^win|win64|mac|linux$/.test(r.os) && r.channel === 'canary')
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+    .filter(
+      r => ['Windows', 'Win32', 'Linux', 'Mac'].includes(r.platform) && r.channel === 'Canary',
+    )
+    .sort((a, b) => a.time - b.time)
     .map(r => r.version);
   const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
 
