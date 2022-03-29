@@ -54,22 +54,25 @@ describe('handleChromiumCheck()', () => {
       });
       (getChromiumReleases as jest.Mock).mockReturnValue([
         {
-          timestamp: '2020-01-01 01:01:01.000001',
+          time: 1577869261000,
           version: '1.1.0.0',
-          channel: 'stable',
-          os: 'win',
+          milestone: 1,
+          channel: 'Stable',
+          platform: 'Windows',
         },
         {
-          timestamp: '2020-01-01 01:01:01.000003',
+          time: 1577869261003,
           version: '2.1.0.0',
-          channel: 'beta',
-          os: 'win',
+          milestone: 2,
+          channel: 'Beta',
+          platform: 'Windows',
         },
         {
-          timestamp: '2020-01-01 01:01:01.000002',
+          time: 1577869261002,
           version: '1.2.0.0',
-          channel: 'stable',
-          os: 'mac',
+          milestone: 1,
+          channel: 'Stable',
+          platform: 'Mac',
         },
       ]);
     });
@@ -208,22 +211,25 @@ describe('handleChromiumCheck()', () => {
     it('updates to main', async () => {
       (getChromiumReleases as jest.Mock).mockReturnValue([
         {
-          timestamp: '2020-01-01 01:01:01.000001',
+          time: 1577869261000,
           version: '1.1.0.0',
-          channel: 'stable',
-          os: 'win',
+          milestone: 1,
+          channel: 'Stable',
+          platform: 'Windows',
         },
         {
-          timestamp: '2020-01-01 01:01:01.000003',
+          time: 1577869261003,
           version: '2.1.0.0',
-          channel: 'canary',
-          os: 'win',
+          milestone: 2,
+          channel: 'Canary',
+          platform: 'Windows',
         },
         {
-          timestamp: '2020-01-01 01:01:01.000002',
+          time: 1577869261002,
           version: '1.2.0.0',
-          channel: 'stable',
-          os: 'mac',
+          milestone: 1,
+          channel: 'Stable',
+          platform: 'Mac',
         },
       ]);
 
@@ -240,16 +246,18 @@ describe('handleChromiumCheck()', () => {
     it('takes no action if main is already in DEPS', async () => {
       (getChromiumReleases as jest.Mock).mockReturnValue([
         {
-          timestamp: '2020-01-01 01:01:01.000001',
+          time: 1577869261000,
           version: '1.1.0.0',
-          channel: 'canary',
-          os: 'win',
+          milestone: 1,
+          channel: 'Canary',
+          platform: 'Windows',
         },
         {
-          timestamp: '2020-01-01 01:01:01.000002',
+          time: 1577869261001,
           version: '1.1.0.0',
-          channel: 'canary',
-          os: 'mac',
+          milestone: 1,
+          channel: 'Canary',
+          platform: 'Mac',
         },
       ]);
 
@@ -277,22 +285,25 @@ describe('handleChromiumCheck()', () => {
     });
     (getChromiumReleases as jest.Mock).mockReturnValue([
       {
-        timestamp: '2020-01-01 01:01:01.000001',
+        time: 1577869261000,
         version: '1.1.0.0',
-        channel: 'stable',
-        os: 'win',
+        milestone: 1,
+        channel: 'Stable',
+        platform: 'Windows',
       },
       {
-        timestamp: '2020-01-01 01:01:01.000003',
+        time: 1577869261003,
         version: '2.1.0.0',
-        channel: 'beta',
-        os: 'win',
+        milestone: 2,
+        channel: 'Beta',
+        platform: 'Windows',
       },
       {
-        timestamp: '2020-01-01 01:01:01.000002',
+        time: 1577869261002,
         version: '1.2.0.0',
-        channel: 'stable',
-        os: 'mac',
+        milestone: 1,
+        channel: 'Stable',
+        platform: 'Mac',
       },
     ]);
 
