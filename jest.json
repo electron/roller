@@ -2,7 +2,9 @@
   "transform": {
     ".(js|jsx|ts|tsx)": "ts-jest"
   },
-  "testURL": "http://localhost",
+  "testEnvironmentOptions": {
+    "url": "http://localhost"
+  },
   "testRegex": "(-spec)\\.(ts|tsx)$",
   "bail": true,
   "resetMocks": true,
@@ -16,6 +18,10 @@
     "json",
     "ts",
     "tsx"
+  ],
+  "transformIgnorePatterns": [
+    "/node_modules/",
+    "setup.js"
   ],
   "testPathIgnorePatterns": [
     "/.tmp/"
