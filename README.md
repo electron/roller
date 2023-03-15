@@ -7,6 +7,12 @@ Roller is a service that automates the process of updating major dependencies in
 ## Setup
 
 ```sh
+# Clone this repository
+git clone https://github.com/electron/roller.git
+
+# Go into the repository
+cd roller
+
 # Install dependencies
 npm install
 
