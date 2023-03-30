@@ -31,21 +31,21 @@ export default (robot: Probot) => {
 
     if (!comment.body.startsWith(ROLLER_CMD_PREFIX)) return;
 
-    const branch = comment.body.substring(ROLLER_CMD_PREFIX.length) || null;
-    if (branch.length && !/^\d+-x-y|main$/.test(branch)) {
-      d(`Invalid target branch: ${branch} - must be a release branch or main`);
+    if (!issue.pull_request) {
+      d(`Invalid usage - only roll PRs can be triggered with the roll command`);
       return;
     }
+
+    const pr = await context.octokit.pulls.get(context.repo({ pull_number: issue.number }));
+    const branch = pr.data.head.ref;
 
     const isNodePR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.node.name}`);
     const isChromiumPR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.chromium.name}`);
     if (isChromiumPR) {
-      d(`Chromium roll requested on ${branch ? `branch ${branch}` : 'all branches'}`);
+      d(`Chromium roll requested on ${branch}`);
       context.octokit.issues.createComment({
         ...context.repo(),
-        body: `Checking for new Chromium commits on ${
-          branch ? `branch ${branch}` : 'all branches'
-        }`,
+        body: `Checking for new Chromium commits on ${branch}`,
       });
       handleChromiumCheck(branch).catch(err => console.error(err));
     } else if (isNodePR) {
