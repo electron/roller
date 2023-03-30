@@ -6,14 +6,12 @@ import { getChromiumReleases, Release } from './utils/get-chromium-tags';
 import { getSupportedBranches } from './utils/get-supported-branches';
 import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
-import { ReposListBranchesResponseItem } from './types';
+import { ReposGetBranchResponseItem, ReposListBranchesResponseItem } from './types';
 import { Octokit } from '@octokit/rest';
 
-async function rollReleaseBranch(
-  github: Octokit,
-  branch: ReposListBranchesResponseItem,
-  chromiumReleases: Release[],
-) {
+type BranchItem = ReposGetBranchResponseItem | ReposListBranchesResponseItem;
+
+async function rollReleaseBranch(github: Octokit, branch: BranchItem, chromiumReleases: Release[]) {
   const d = debug(`roller/chromium:rollReleaseBranch('${branch}')`);
 
   d(`Fetching DEPS for ${branch.name}`);
@@ -143,33 +141,45 @@ async function rollMainBranch(github: Octokit, chromiumReleases: Release[]) {
   return true;
 }
 
-export async function handleChromiumCheck(): Promise<void> {
+export async function handleChromiumCheck(target?: string): Promise<void> {
   const d = debug('roller/chromium:handleChromiumCheck()');
   d('Fetching Chromium releases');
   const chromiumReleases = await getChromiumReleases();
 
   const github = await getOctokit();
   d('Fetching release branches for electron/electron');
-  const branches: ReposListBranchesResponseItem[] = await github.paginate(
-    github.repos.listBranches.endpoint.merge({
-      ...REPOS.electron,
-      protected: true,
-    }),
-  );
 
-  const supported = getSupportedBranches(branches);
-  const releaseBranches = branches.filter(branch => supported.includes(branch.name));
-  d(`Found ${releaseBranches.length} release branches`);
-
-  // Roll all non-main release branches.
   let failed = false;
-  for (const branch of releaseBranches) {
-    const rolled = await rollReleaseBranch(github, branch, chromiumReleases);
-    if (!rolled) failed = true;
-  }
+  if (target) {
+    const { data: branch }: { data: ReposGetBranchResponseItem } = await github.repos.getBranch({
+      ...REPOS.electron,
+      branch: target,
+    });
 
-  const rolledMain = await rollMainBranch(github, chromiumReleases);
-  if (!rolledMain) failed = true;
+    if (target === 'main') {
+      if (!(await rollReleaseBranch(github, branch, chromiumReleases))) failed = true;
+    } else {
+      if (!(await rollMainBranch(github, chromiumReleases))) failed = true;
+    }
+  } else {
+    const branches: ReposListBranchesResponseItem[] = await github.paginate(
+      github.repos.listBranches.endpoint.merge({
+        ...REPOS.electron,
+        protected: true,
+      }),
+    );
+
+    const supported = getSupportedBranches(branches);
+    const releaseBranches = branches.filter(branch => supported.includes(branch.name));
+    d(`Found ${releaseBranches.length} release branches`);
+
+    // Roll all non-main release branches.
+    for (const branch of releaseBranches) {
+      if (!(await rollReleaseBranch(github, branch, chromiumReleases))) failed = true;
+    }
+
+    if (!(await rollMainBranch(github, chromiumReleases))) failed = true;
+  }
 
   if (failed) {
     throw new Error('One or more upgrade checks failed - see logs for more details');

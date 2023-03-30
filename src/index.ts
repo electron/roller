@@ -3,7 +3,7 @@ import { Context, Probot } from 'probot';
 import { IssueCommentCreatedEvent, PullRequestClosedEvent } from '@octokit/webhooks-types';
 import { handleNodeCheck } from './node-handler';
 import { handleChromiumCheck } from './chromium-handler';
-import { ROLL_TARGETS } from './constants';
+import { ROLLER_CMD_PREFIX, ROLL_TARGETS } from './constants';
 
 const d = debug('Autorolling On Merge');
 
@@ -29,17 +29,25 @@ export default (robot: Probot) => {
   robot.on('issue_comment.created', async (context: Context) => {
     const { issue, comment } = context.payload as IssueCommentCreatedEvent;
 
-    if (!comment.body.startsWith('/roll')) return;
+    if (!comment.body.startsWith(ROLLER_CMD_PREFIX)) return;
+
+    const branch = comment.body.substring(ROLLER_CMD_PREFIX.length) || null;
+    if (branch.length && !/^\d+-x-y|main$/.test(branch)) {
+      d(`Invalid target branch: ${branch} - must be a release branch or main`);
+      return;
+    }
 
     const isNodePR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.node.name}`);
     const isChromiumPR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.chromium.name}`);
     if (isChromiumPR) {
-      d('Chromium roll requested');
+      d(`Chromium roll requested on ${branch ? `branch ${branch}` : 'all branches'}`);
       context.octokit.issues.createComment({
         ...context.repo(),
-        body: 'Checking for new Chromium commits...',
+        body: `Checking for new Chromium commits on ${
+          branch ? `branch ${branch}` : 'all branches'
+        }`,
       });
-      handleChromiumCheck().catch(err => console.error(err));
+      handleChromiumCheck(branch).catch(err => console.error(err));
     } else if (isNodePR) {
       d('Node.js roll requested');
       context.octokit.issues.createComment({
