@@ -24,7 +24,8 @@ async function rollReleaseBranch(
   });
 
   if (!('content' in depsData)) {
-    throw new Error(`Error - incorrectly got array when fetching DEPS content for ${branch}`);
+    d(`Error - incorrectly got array when fetching DEPS content for ${branch}`);
+    return false;
   }
 
   const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
@@ -38,12 +39,11 @@ async function rollReleaseBranch(
     const SHAPattern = /\b[0-9a-f]{5,40}\b/;
     // On newer release branches we may not yet have updated the branch to use tags
     if (`${chromiumMajorVersion}`.match(SHAPattern)) {
-      throw new Error(`${branch.name} roll failed: ${chromiumMajorVersion} should be a tag.`);
+      d(`${branch.name} roll failed: ${chromiumMajorVersion} should be a tag.`);
     } else {
-      throw new Error(
-        `${branch.name} roll failed: ${chromiumVersion} is not a valid version number`,
-      );
+      d(`${branch.name} roll failed: ${chromiumVersion} is not a valid version number`);
     }
+    return false;
   }
 
   d(`Computing latest upstream version for Chromium ${chromiumMajorVersion}`);
@@ -70,37 +70,18 @@ async function rollReleaseBranch(
         targetVersion: latestUpstreamVersion,
       });
     } catch (e) {
-      throw new Error(`Error rolling ${branch.name} to ${latestUpstreamVersion}: ${e.message}`);
+      d(`Error rolling ${branch.name} to ${latestUpstreamVersion}: ${e.message}`);
+      return false;
     }
   } else {
     d(`No upgrade found, ${chromiumVersion} is the most recent known in its release line.`);
   }
+
+  return true;
 }
 
-export async function handleChromiumCheck(): Promise<void> {
-  const d = debug('roller/chromium:handleChromiumCheck()');
-  d('Fetching Chromium releases');
-  const chromiumReleases = await getChromiumReleases();
-
-  const github = await getOctokit();
-  d('Fetching release branches for electron/electron');
-  const branches: ReposListBranchesResponseItem[] = await github.paginate(
-    github.repos.listBranches.endpoint.merge({
-      ...REPOS.electron,
-      protected: true,
-    }),
-  );
-
-  const supported = getSupportedBranches(branches);
-  const releaseBranches = branches.filter(branch => supported.includes(branch.name));
-  d(`Found ${releaseBranches.length} release branches`);
-
-  let thisIsFine = true;
-
-  // Roll all non-main release branches.
-  for (const branch of releaseBranches) {
-    await rollReleaseBranch(github, branch, chromiumReleases);
-  }
+async function rollMainBranch(github: Octokit, chromiumReleases: Release[]) {
+  const d = debug('roller/chromium:rollMainBranch()');
 
   d(`Fetching ${MAIN_BRANCH} branch for electron/electron`);
   const { data: mainBranch } = await github.repos.getBranch({
@@ -110,7 +91,7 @@ export async function handleChromiumCheck(): Promise<void> {
 
   if (!mainBranch) {
     d(`Error - ${MAIN_BRANCH} does not exist on ${REPOS.electron.owner}`);
-    throw new Error('One or more upgrade checks failed - see logs for more details');
+    return false;
   }
 
   d(`Fetching DEPS for ${MAIN_BRANCH}`);
@@ -123,7 +104,7 @@ export async function handleChromiumCheck(): Promise<void> {
 
   if (!('content' in depsData)) {
     d(`Error - incorrectly got array when fetching DEPS content for ${MAIN_BRANCH}`);
-    throw new Error('One or more upgrade checks failed - see logs for more details');
+    return false;
   }
 
   const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
@@ -134,7 +115,7 @@ export async function handleChromiumCheck(): Promise<void> {
   const chromiumMajorVersion = Number(currentVersion.split('.')[0]);
   if (Number.isNaN(chromiumMajorVersion)) {
     d(`${MAIN_BRANCH} roll failed: ${currentVersion} is not a valid version number`);
-    thisIsFine = false;
+    return false;
   }
 
   const upstreamVersions = chromiumReleases
@@ -155,11 +136,42 @@ export async function handleChromiumCheck(): Promise<void> {
       });
     } catch (e) {
       d(`Error rolling ${MAIN_BRANCH} to ${latestUpstreamVersion}`, e);
-      thisIsFine = false;
+      return false;
     }
   }
 
-  if (!thisIsFine) {
+  return true;
+}
+
+export async function handleChromiumCheck(): Promise<void> {
+  const d = debug('roller/chromium:handleChromiumCheck()');
+  d('Fetching Chromium releases');
+  const chromiumReleases = await getChromiumReleases();
+
+  const github = await getOctokit();
+  d('Fetching release branches for electron/electron');
+  const branches: ReposListBranchesResponseItem[] = await github.paginate(
+    github.repos.listBranches.endpoint.merge({
+      ...REPOS.electron,
+      protected: true,
+    }),
+  );
+
+  const supported = getSupportedBranches(branches);
+  const releaseBranches = branches.filter(branch => supported.includes(branch.name));
+  d(`Found ${releaseBranches.length} release branches`);
+
+  // Roll all non-main release branches.
+  let failed = false;
+  for (const branch of releaseBranches) {
+    const rolled = await rollReleaseBranch(github, branch, chromiumReleases);
+    if (!rolled) failed = true;
+  }
+
+  const rolledMain = await rollMainBranch(github, chromiumReleases);
+  if (!rolledMain) failed = true;
+
+  if (failed) {
     throw new Error('One or more upgrade checks failed - see logs for more details');
   }
 }
