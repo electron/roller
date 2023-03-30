@@ -1,7 +1,8 @@
 import * as debug from 'debug';
 import { Context, Probot } from 'probot';
 import { IssueCommentCreatedEvent, PullRequestClosedEvent } from '@octokit/webhooks-types';
-import { handleChromiumCheck, handleNodeCheck } from './handlers';
+import { handleNodeCheck } from './node-handler';
+import { handleChromiumCheck } from './chromium-handler';
 import { ROLL_TARGETS } from './constants';
 
 const d = debug('Autorolling On Merge');
