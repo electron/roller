@@ -1,5 +1,7 @@
 import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from '../src/constants';
-import { handleChromiumCheck, handleNodeCheck, getSupportedBranches } from '../src/handlers';
+import { getSupportedBranches } from '../src/utils/get-supported-branches';
+import { handleNodeCheck } from '../src/node-handler';
+import { handleChromiumCheck } from '../src/chromium-handler';
 import { getChromiumReleases } from '../src/utils/get-chromium-tags';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
@@ -154,6 +156,15 @@ describe('handleChromiumCheck()', () => {
           rollTarget: ROLL_TARGETS.chromium,
           targetVersion: '1.2.0.0',
         }),
+      );
+    });
+
+    it('fails if an invalid target is passed', async () => {
+      mockOctokit.repos.getBranch.mockReturnValue(null);
+
+      const invalid = 'i-am-not-a-valid-release-branch';
+      expect(handleChromiumCheck(invalid)).rejects.toThrow(
+        'One or more upgrade checks failed - see logs for more details',
       );
     });
 

@@ -27,6 +27,8 @@ export const ROLL_TARGETS = {
 export const BACKPORT_CHECK_SKIP = 'backport-check-skip';
 export const NO_BACKPORT = 'no-backport';
 
+export const ROLLER_CMD_PREFIX = '/roll';
+
 export interface Commit {
   sha: string;
   message: string;
