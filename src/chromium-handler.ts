@@ -12,7 +12,7 @@ import { Octokit } from '@octokit/rest';
 type BranchItem = ReposGetBranchResponseItem | ReposListBranchesResponseItem;
 
 async function rollReleaseBranch(github: Octokit, branch: BranchItem, chromiumReleases: Release[]) {
-  const d = debug(`roller/chromium:rollReleaseBranch('${branch}')`);
+  const d = debug(`roller/chromium:rollReleaseBranch('${branch.name}')`);
 
   d(`Fetching DEPS for ${branch.name}`);
   const { data: depsData } = await github.repos.getContent({
@@ -22,7 +22,7 @@ async function rollReleaseBranch(github: Octokit, branch: BranchItem, chromiumRe
   });
 
   if (!('content' in depsData)) {
-    throw new Error(`Incorrectly received array when fetching DEPS content for ${branch}`);
+    throw new Error(`Incorrectly received array when fetching DEPS content for ${branch.name}`);
   }
 
   const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
@@ -33,15 +33,7 @@ async function rollReleaseBranch(github: Octokit, branch: BranchItem, chromiumRe
 
   // We should be able to parse major version as a number.
   if (Number.isNaN(chromiumMajorVersion)) {
-    const SHAPattern = /\b[0-9a-f]{5,40}\b/;
-    // On newer release branches we may not yet have updated the branch to use tags
-    if (`${chromiumMajorVersion}`.match(SHAPattern)) {
-      throw new Error(`${branch.name} roll failed: ${chromiumMajorVersion} should be a tag.`);
-    } else {
-      throw new Error(
-        `${branch.name} roll failed: ${chromiumVersion} is not a valid version number`,
-      );
-    }
+    throw new Error(`${branch.name} roll failed: ${chromiumVersion} is not a valid version number`);
   }
 
   d(`Computing latest upstream version for Chromium ${chromiumMajorVersion}`);
