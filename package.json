@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "prettier --check \"src/**/*.ts\"",
+    "postinstall": "tsc",
     "prettier:write": "prettier --write \"src/**/*.ts\"",
     "prepare": "husky install",
     "roll-chromium": "DEBUG=roller* node lib/chromium-cron.js",
