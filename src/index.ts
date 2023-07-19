@@ -45,7 +45,7 @@ const handler = (robot: Probot) => {
 
     try {
       if (isChromiumPR) {
-        const branch = pr.head.ref;
+        const branch = pr.base.ref;
         d(`Chromium roll requested on ${branch}`);
         await context.octokit.issues.createComment(
           context.repo({
