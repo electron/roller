@@ -7,7 +7,7 @@ import { ROLLER_CMD_PREFIX, ROLL_TARGETS } from './constants';
 
 const d = debug('Autorolling On Merge');
 
-export default (robot: Probot) => {
+const handler = (robot: Probot) => {
   robot.on('pull_request.closed', async (context: Context) => {
     const { pull_request: pr } = context.payload as PullRequestClosedEvent;
 
@@ -58,3 +58,5 @@ export default (robot: Probot) => {
     }
   });
 };
+
+module.exports = handler;
