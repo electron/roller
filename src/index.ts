@@ -3,7 +3,9 @@ import { Context, Probot } from 'probot';
 import { IssueCommentCreatedEvent, PullRequestClosedEvent } from '@octokit/webhooks-types';
 import { handleNodeCheck } from './node-handler';
 import { handleChromiumCheck } from './chromium-handler';
-import { ROLLER_CMD_PREFIX, ROLL_TARGETS } from './constants';
+import { REPOS, ROLL_TARGETS } from './constants';
+import { getSupportedBranches } from './utils/get-supported-branches';
+import { ReposListBranchesResponseItem } from './types';
 
 const d = debug('Autorolling On Merge');
 
@@ -29,23 +31,22 @@ const handler = (robot: Probot) => {
   robot.on('issue_comment.created', async (context: Context) => {
     const { issue, comment } = context.payload as IssueCommentCreatedEvent;
 
-    if (!comment.body.startsWith(ROLLER_CMD_PREFIX)) return;
+    const branchMatch = comment.body.match(/^\/roll (main|\d+-x-y)$/);
+    if (!branchMatch || !branchMatch[0]) {
+      return;
+    }
 
     if (!issue.pull_request) {
       d(`Invalid usage - only roll PRs can be triggered with the roll command`);
       return;
     }
 
-    const { data: pr } = await context.octokit.pulls.get(
-      context.repo({ pull_number: issue.number }),
-    );
-
+    const branch = branchMatch[0];
     const isNodePR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.node.name}`);
     const isChromiumPR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.chromium.name}`);
 
     try {
       if (isChromiumPR) {
-        const branch = pr.base.ref;
         d(`Chromium roll requested on ${branch}`);
         await context.octokit.issues.createComment(
           context.repo({
@@ -65,7 +66,7 @@ const handler = (robot: Probot) => {
         await handleNodeCheck();
       }
     } catch (error) {
-      d(`Failed to check for possible roll on ${pr.number}: ${error.message}`);
+      d(`Failed to check for possible roll on ${issue.number}: ${error.message}`);
     }
   });
 };
