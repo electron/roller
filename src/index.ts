@@ -41,19 +41,24 @@ const handler = (robot: Probot) => {
 
     const isNodePR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.node.name}`);
     const isChromiumPR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.chromium.name}`);
+
     if (isChromiumPR) {
       d(`Chromium roll requested on ${branch}`);
-      context.octokit.issues.createComment({
-        ...context.repo(),
-        body: `Checking for new Chromium commits on ${branch}`,
-      });
+      context.octokit.issues.createComment(
+        context.repo({
+          issue_number: issue.number,
+          body: `Checking for new Chromium commits on ${branch}`,
+        }),
+      );
       handleChromiumCheck(branch).catch(err => console.error(err));
     } else if (isNodePR) {
       d('Node.js roll requested');
-      context.octokit.issues.createComment({
-        ...context.repo(),
-        body: 'Checking for new Node commits...',
-      });
+      context.octokit.issues.createComment(
+        context.repo({
+          issue_number: issue.number,
+          body: 'Checking for new Node.js commits...',
+        }),
+      );
       handleNodeCheck().catch(err => console.error(err));
     }
   });
