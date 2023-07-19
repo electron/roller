@@ -36,30 +36,36 @@ const handler = (robot: Probot) => {
       return;
     }
 
-    const pr = await context.octokit.pulls.get(context.repo({ pull_number: issue.number }));
-    const branch = pr.data.head.ref;
+    const { data: pr } = await context.octokit.pulls.get(
+      context.repo({ pull_number: issue.number }),
+    );
 
     const isNodePR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.node.name}`);
     const isChromiumPR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.chromium.name}`);
 
-    if (isChromiumPR) {
-      d(`Chromium roll requested on ${branch}`);
-      context.octokit.issues.createComment(
-        context.repo({
-          issue_number: issue.number,
-          body: `Checking for new Chromium commits on ${branch}`,
-        }),
-      );
-      handleChromiumCheck(branch).catch(err => console.error(err));
-    } else if (isNodePR) {
-      d('Node.js roll requested');
-      context.octokit.issues.createComment(
-        context.repo({
-          issue_number: issue.number,
-          body: 'Checking for new Node.js commits...',
-        }),
-      );
-      handleNodeCheck().catch(err => console.error(err));
+    try {
+      if (isChromiumPR) {
+        const branch = pr.head.ref;
+        d(`Chromium roll requested on ${branch}`);
+        await context.octokit.issues.createComment(
+          context.repo({
+            issue_number: issue.number,
+            body: `Checking for new Chromium commits on \`${branch}\``,
+          }),
+        );
+        await handleChromiumCheck(branch);
+      } else if (isNodePR) {
+        d('Node.js roll requested');
+        await context.octokit.issues.createComment(
+          context.repo({
+            issue_number: issue.number,
+            body: 'Checking for new Node.js commits...',
+          }),
+        );
+        await handleNodeCheck();
+      }
+    } catch (error) {
+      d(`Failed to check for possible roll on ${pr.number}: ${error.message}`);
     }
   });
 };
