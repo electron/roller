@@ -5,10 +5,10 @@ import { handleNodeCheck } from './node-handler';
 import { handleChromiumCheck } from './chromium-handler';
 import { ROLLER_CMD_PREFIX, ROLL_TARGETS } from './constants';
 
-const d = debug('Autorolling On Merge');
-
 const handler = (robot: Probot) => {
   robot.on('pull_request.closed', async (context: Context) => {
+    const d = debug('Autorolling On Merge');
+
     const { pull_request: pr } = context.payload as PullRequestClosedEvent;
 
     if (!pr.merged) return;
@@ -16,17 +16,23 @@ const handler = (robot: Probot) => {
     const isNodePR = pr.title.startsWith(`chore: bump ${ROLL_TARGETS.node.name}`);
     const isChromiumPR = pr.title.startsWith(`chore: bump ${ROLL_TARGETS.chromium.name}`);
 
-    // If a roller PR is merged, we should automatically make the next PR.
-    if (isChromiumPR) {
-      d('Chromium PR merged - opening a new one');
-      handleChromiumCheck().catch(err => console.error(err));
-    } else if (isNodePR) {
-      d('Node.js PR merged - opening a new one');
-      handleNodeCheck().catch(err => console.error(err));
+    try {
+      if (isChromiumPR) {
+        d('Chromium PR merged - opening a new one');
+        await handleChromiumCheck();
+      } else if (isNodePR) {
+        d('Node.js PR merged - opening a new one');
+        await handleNodeCheck();
+      }
+    } catch (error) {
+      const type = isChromiumPR ? 'Chromium' : 'Node.js';
+      d(`Failed to autoroll new ${type} PR to ${pr.base.ref}: ${error.message}`);
     }
   });
 
   robot.on('issue_comment.created', async (context: Context) => {
+    const d = debug('Manual Roll');
+
     const { issue, comment } = context.payload as IssueCommentCreatedEvent;
 
     if (!comment.body.startsWith(ROLLER_CMD_PREFIX)) return;
