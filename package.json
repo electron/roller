@@ -1,6 +1,7 @@
 {
   "name": "roller",
   "version": "1.0.0",
+  "private": true,
   "description": "automate the submodule update process",
   "main": "index.js",
   "scripts": {
