@@ -26,7 +26,7 @@ export async function yamlRoll({
   const github = await getOctokit();
 
   try {
-    d(`roll triggered for  ${rollTarget.key.join()}=${targetValue}`);
+    d(`roll triggered for  ${rollTarget.keys.join()}=${targetValue}`);
 
     const sha = electronBranch.commit.sha;
     const filePath = '.circleci/config.yml';
@@ -46,7 +46,7 @@ export async function yamlRoll({
       const content = Buffer.from(response.data.content, 'base64').toString();
 
       const yamlData = jsyaml.load(content);
-      const keys = rollTarget.key;
+      const keys = rollTarget.keys;
 
       // Traverse the YAML data to the nested key and value
       let currentLevel = yamlData;
@@ -62,7 +62,7 @@ export async function yamlRoll({
       const previousValue = currentLevel as string;
       const lastKey = keys[keys.length - 1];
       if (targetValue === previousValue[lastKey]) {
-        d(`No roll needed - ${rollTarget.key.join('.')} is already at ${targetValue}`);
+        d(`No roll needed - ${rollTarget.keys.join('.')} is already at ${targetValue}`);
         return;
       }
 
@@ -84,7 +84,7 @@ export async function yamlRoll({
         owner,
         repo,
         path: filePath,
-        message: `chore: bump ${rollTarget.key.join(
+        message: `chore: bump ${rollTarget.keys.join(
           '.',
         )} in .circleci/circleci.yml to ${targetValue}`,
         content: Buffer.from(newYamlData).toString('base64'),

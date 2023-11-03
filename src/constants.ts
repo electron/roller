@@ -24,7 +24,7 @@ export const NODE_ORB_REPOS = {
   },
   electronPackager: {
     owner: 'electron',
-    repo: 'electron-packager',
+    repo: 'packager',
   },
   fiddle: {
     owner: 'electron',
@@ -109,7 +109,7 @@ export const ROLL_TARGETS = {
 export const YAML_ROLL_TARGETS = {
   nodeOrb: {
     name: 'node-orb',
-    key: ['orb', 'node'],
+    keys: ['orb', 'node'],
   },
 };
 
@@ -128,7 +128,7 @@ export interface RollTarget {
 
 export interface YamlRollTarget {
   name: string;
-  key: string[];
+  keys: string[];
 }
 
 export interface repository {

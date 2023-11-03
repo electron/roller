@@ -1,5 +1,6 @@
 import { yamlRoll } from '../../src/utils/roll-yaml';
 import { getOctokit } from '../../src/utils/octokit';
+import { YamlRollTarget, repository } from '../../src/constants';
 
 jest.mock('../../src/utils/octokit');
 
@@ -43,12 +44,12 @@ describe('yamlRoll()', () => {
   });
 
   it('should not update the YAML file if the target value is the same as the current value', async () => {
-    const rollTarget = {
+    const rollTarget: YamlRollTarget = {
       name: 'node-orb',
-      key: ['orb', 'node'],
+      keys: ['orb', 'node'],
     };
     const targetValue = 'v1.0.0';
-    const repository = {
+    const repository: repository = {
       owner: 'electron',
       repo: 'forge',
     };
@@ -71,12 +72,12 @@ describe('yamlRoll()', () => {
   });
 
   it('should update the YAML file and create a pull request', async () => {
-    const rollTarget = {
+    const rollTarget: YamlRollTarget = {
       name: 'node-orb',
-      key: ['orb', 'node'],
+      keys: ['orb', 'node'],
     };
     const targetValue = 'v2.0.0';
-    const repository = {
+    const repository: repository = {
       owner: 'electron',
       repo: 'forge',
     };
@@ -103,7 +104,7 @@ describe('yamlRoll()', () => {
       owner: repository.owner,
       repo: repository.repo,
       path: '.circleci/config.yml',
-      message: `chore: bump ${rollTarget.key.join(
+      message: `chore: bump ${rollTarget.keys.join(
         '.',
       )} in .circleci/circleci.yml to ${targetValue}`,
       content: Buffer.from('orb:\n  node: v2.0.0\n').toString('base64'),
