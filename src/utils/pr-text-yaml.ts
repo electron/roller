@@ -1,8 +1,8 @@
 import { YAML_ROLL_TARGETS, YamlRollTarget } from '../constants';
 
 interface PRTextDetails {
-  previousVersion: string;
-  newVersion: string;
+  previousValue: string;
+  newValue: string;
   branchName: string;
 }
 
@@ -16,14 +16,14 @@ export function getYamlPRText(rollTarget: YamlRollTarget, details: PRTextDetails
 }
 
 function getNodeOrbPRText(details: PRTextDetails) {
-  const { newVersion, previousVersion, branchName } = details;
+  const { newValue, previousValue, branchName } = details;
 
   return {
-    title: `chore: bump ${YAML_ROLL_TARGETS.nodeOrb.name} to ${newVersion} (${branchName}))`,
-    body: `Updating node-orb to ${newVersion} (${branchName})
+    title: `chore: bump ${YAML_ROLL_TARGETS.nodeOrb.name} to ${newValue} (${branchName}))`,
+    body: `Updating node-orb to ${newValue} (${branchName})
 
 <!--
-Original-Version: ${previousVersion}
+Original-Version: ${previousValue}
 -->
 
 Notes: no-notes`,

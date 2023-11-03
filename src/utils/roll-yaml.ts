@@ -3,7 +3,7 @@ import * as jsyaml from 'js-yaml';
 
 import { YamlRollTarget } from '../constants';
 import { getOctokit } from './octokit';
-import { getYamlPRText } from './yaml-pr-text';
+import { getYamlPRText } from './pr-text-yaml';
 
 export interface YamlRollParams {
   rollTarget: YamlRollTarget;
@@ -48,19 +48,32 @@ export async function yamlRoll({
       const yamlData = jsyaml.load(content);
       const keys = rollTarget.key;
 
-      // Traverse the YAML data to the nested key and replace key value with new value
+      // Traverse the YAML data to the nested key and value
       let currentLevel = yamlData;
       for (let i = 0; i < keys.length - 1; i++) {
-        currentLevel = currentLevel[rollTarget.key[i]];
+        if (currentLevel[keys[i]] && typeof currentLevel[keys[i]] === 'object') {
+          currentLevel = currentLevel[keys[i]];
+        } else {
+          d(`Key "${keys[i]}" not found.`);
+          throw new Error(`Key "${keys[i]}" not found.`);
+        }
       }
-      const previousVersion = currentLevel as string;
-
-      if (targetValue === previousVersion) {
+      // don't set the new value if the current value is already the target value
+      const previousValue = currentLevel as string;
+      const lastKey = keys[keys.length - 1];
+      if (targetValue === previousValue[lastKey]) {
         d(`No roll needed - ${rollTarget.key.join('.')} is already at ${targetValue}`);
         return;
       }
-    
-      currentLevel[keys[keys.length - 1]] = targetValue;
+
+      // set the new value
+      if (currentLevel[lastKey] !== undefined) {
+        currentLevel[lastKey] = targetValue;
+      } else {
+        d(`Key "${lastKey}" not found.`);
+        throw new Error(`Key "${lastKey}" not found.`);
+      }
+
       const newYamlData = jsyaml.dump(yamlData);
 
       d(`Creating ref=${ref} at sha=${sha}`);
@@ -84,8 +97,8 @@ export async function yamlRoll({
         base: electronBranch.name,
         head: `${owner}:${branchName}`,
         ...getYamlPRText(rollTarget, {
-          previousVersion,
-          newVersion: targetValue,
+          previousValue: previousValue,
+          newValue: targetValue,
           branchName: electronBranch.name,
         }),
       });

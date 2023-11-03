@@ -14,11 +14,11 @@ export const REPOS = {
 };
 
 export const NODE_ORB_REPOS = {
-  electron: {
+  fiddle: {
     owner: 'electron',
     repo: 'fiddle',
   },
-  node: {
+  forge: {
     owner: 'electron',
     repo: 'forge',
   },
