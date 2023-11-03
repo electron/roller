@@ -14,6 +14,18 @@ export const REPOS = {
 };
 
 export const NODE_ORB_REPOS = {
+  asar: {
+    owner: 'electron',
+    repo: 'asar',
+  },
+  docsParser: {
+    owner: 'electron',
+    repo: 'docs-parser',
+  },
+  electronPackager: {
+    owner: 'electron',
+    repo: 'electron-packager',
+  },
   fiddle: {
     owner: 'electron',
     repo: 'fiddle',
@@ -22,6 +34,55 @@ export const NODE_ORB_REPOS = {
     owner: 'electron',
     repo: 'forge',
   },
+  get: {
+    owner: 'electron',
+    repo: 'get',
+  },
+  nodeMinidump: {
+    owner: 'electron',
+    repo: 'node-minidump',
+  },
+  nodeRcedit: {
+    owner: 'electron',
+    repo: 'node-rcedit',
+  },
+  notarize: {
+    owner: 'electron',
+    repo: 'notarize',
+  },
+  osxSign: {
+    owner: 'electron',
+    repo: 'osx-sign',
+  },
+  rebuild: {
+    owner: 'electron',
+    repo: 'rebuild',
+  },
+  releases: {
+    owner: 'electron',
+    repo: 'remote',
+  },
+  symbolicateMac: {
+    owner: 'electron',
+    repo: 'symbolicate-mac',
+  },
+  typescriptDefinitions: {
+    owner: 'electron',
+    repo: 'typescript-definitions',
+  },
+  updateElectronApp: {
+    owner: 'electron',
+    repo: 'update-electron-app',
+  },
+  updateElectronJsOrg: {
+    owner: 'electron',
+    repo: 'update.electronjs.org',
+  },
+  windowsInstaller: {
+    owner: 'electron',
+    repo: `windows-installer`,
+  },
+
   [Symbol.iterator]: function*() {
     const repos = Object.values(this);
     for (const repo of repos) {

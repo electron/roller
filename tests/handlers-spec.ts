@@ -1,7 +1,14 @@
-import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from '../src/constants';
+import {
+  MAIN_BRANCH,
+  NODE_ORB_REPOS,
+  REPOS,
+  ROLL_TARGETS,
+  YAML_ROLL_TARGETS,
+} from '../src/constants';
 import { getSupportedBranches } from '../src/utils/get-supported-branches';
 import { handleNodeCheck } from '../src/node-handler';
 import { handleChromiumCheck } from '../src/chromium-handler';
+import { rollMainBranch } from '../src/node-orb-handler';
 import { getChromiumReleases } from '../src/utils/get-chromium-tags';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
@@ -425,5 +432,59 @@ describe('handleNodeCheck()', () => {
       `Upgrade check failed - see logs for more details`,
     );
     expect(roll).toHaveBeenCalled();
+  });
+});
+
+describe('node-orb', () => {
+  let mockOctokit: any;
+  const branch = {
+    name: 'main',
+    commit: {
+      sha: '123',
+    },
+    protected: true,
+    protection: {
+      enabled: false,
+      required_status_checks: {
+        enforcement_level: '',
+        contexts: [],
+      },
+    },
+    protection_url: 'asdasd',
+  };
+
+  beforeEach(() => {
+    mockOctokit = {
+      pulls: {
+        create: jest.fn().mockReturnValue({ data: { html_url: 'https://google.com' } }),
+      },
+      git: {
+        createRef: jest.fn(),
+      },
+      repos: {
+        getContent: jest.fn().mockReturnValue({
+          data: {
+            type: 'file',
+            content: Buffer.from('orb:\n  node: v1.0.0\n').toString('base64'),
+          },
+        }),
+        createOrUpdateFileContents: jest.fn(),
+        getLatestRelease: jest.fn().mockReturnValue({
+          data: {
+            tag_name: 'v2.0.0',
+          },
+        }),
+        getBranch: jest.fn().mockReturnValue({
+          data: branch,
+        }),
+      },
+    };
+    (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
+  });
+
+  it('rolls main branch of each repo', async () => {
+    await rollMainBranch();
+    const numReposUsingNodeOrb = Object.keys(NODE_ORB_REPOS).length;
+    expect(mockOctokit.repos.getContent).toHaveBeenCalledTimes(numReposUsingNodeOrb);
   });
 });

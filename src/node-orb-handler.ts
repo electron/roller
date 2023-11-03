@@ -4,7 +4,7 @@ import { MAIN_BRANCH, NODE_ORB_REPOS, REPOS, YAML_ROLL_TARGETS, YamlRollTarget }
 import { getOctokit } from './utils/octokit';
 import { yamlRoll } from './utils/roll-yaml';
 
-async function rollMainBranch() {
+export async function rollMainBranch() {
   const d = debug(`roller/node-orb:rollMainBranch()`);
   const github = await getOctokit();
 
@@ -37,5 +37,3 @@ async function rollMainBranch() {
     }
   }
 }
-
-module.exports = rollMainBranch;

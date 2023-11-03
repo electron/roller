@@ -70,7 +70,7 @@ describe('yamlRoll()', () => {
     expect(mockOctokit.pulls.create).not.toHaveBeenCalled();
   });
 
-  it.only('should update the YAML file and create a pull request', async () => {
+  it('should update the YAML file and create a pull request', async () => {
     const rollTarget = {
       name: 'node-orb',
       key: ['orb', 'node'],
