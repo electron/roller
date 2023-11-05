@@ -1,14 +1,9 @@
-import {
-  MAIN_BRANCH,
-  NODE_ORB_REPOS,
-  REPOS,
-  ROLL_TARGETS,
-  YAML_ROLL_TARGETS,
-} from '../src/constants';
+import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from '../src/constants';
+import * as orbHandler from '../src/orb-handler';
+import * as rollOrb from '../src/utils/roll-orb';
 import { getSupportedBranches } from '../src/utils/get-supported-branches';
 import { handleNodeCheck } from '../src/node-handler';
 import { handleChromiumCheck } from '../src/chromium-handler';
-import { rollMainBranch } from '../src/node-orb-handler';
 import { getChromiumReleases } from '../src/utils/get-chromium-tags';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
@@ -454,7 +449,34 @@ describe('node-orb', () => {
   };
 
   beforeEach(() => {
+    // mockReturnValue getReleveantReposList to return a list of repos that use the node orb
+    jest.spyOn(rollOrb, 'rollOrb');
+    jest.spyOn(orbHandler, 'getRelevantReposList').mockImplementation(async () => {
+      return [
+        {
+          repo: 'fiddle',
+          owner: 'electron',
+        },
+        {
+          repo: 'forge',
+          owner: 'electron',
+        },
+      ];
+    });
+
     mockOctokit = {
+      paginate: jest.fn().mockReturnValue([
+        {
+          name: 'fiddle',
+          owner: 'electron',
+          archived: false,
+        },
+        {
+          name: 'forge',
+          owner: 'electron',
+          archived: false,
+        },
+      ]),
       pulls: {
         create: jest.fn().mockReturnValue({ data: { html_url: 'https://google.com' } }),
       },
@@ -465,13 +487,13 @@ describe('node-orb', () => {
         getContent: jest.fn().mockReturnValue({
           data: {
             type: 'file',
-            content: Buffer.from('orb:\n  node: v1.0.0\n').toString('base64'),
+            content: Buffer.from('orbs:\n  node: electronjs/node@1.0.0\n').toString('base64'),
           },
         }),
         createOrUpdateFileContents: jest.fn(),
         getLatestRelease: jest.fn().mockReturnValue({
           data: {
-            tag_name: 'v2.0.0',
+            tag_name: '2.0.0',
           },
         }),
         getBranch: jest.fn().mockReturnValue({
@@ -483,8 +505,8 @@ describe('node-orb', () => {
   });
 
   it('rolls main branch of each repo', async () => {
-    await rollMainBranch();
-    const numReposUsingNodeOrb = Object.keys(NODE_ORB_REPOS).length;
-    expect(mockOctokit.repos.getContent).toHaveBeenCalledTimes(numReposUsingNodeOrb);
+    await orbHandler.rollMainBranch();
+    const numReposUsingNodeOrb = 2;
+    expect(rollOrb.rollOrb).toHaveBeenCalledTimes(numReposUsingNodeOrb);
   });
 });

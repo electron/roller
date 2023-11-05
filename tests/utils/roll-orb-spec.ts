@@ -1,10 +1,10 @@
-import { yamlRoll } from '../../src/utils/roll-yaml';
+import { rollOrb } from '../../src/utils/roll-orb';
 import { getOctokit } from '../../src/utils/octokit';
-import { YamlRollTarget, repository } from '../../src/constants';
+import { Repository, OrbTarget } from '../../src/constants';
 
 jest.mock('../../src/utils/octokit');
 
-describe('yamlRoll()', () => {
+describe('rollOrb()', () => {
   let mockOctokit: any;
   const branch = {
     name: 'main',
@@ -34,7 +34,7 @@ describe('yamlRoll()', () => {
         getContent: jest.fn().mockReturnValue({
           data: {
             type: 'file',
-            content: Buffer.from('orb:\n  node: v1.0.0\n').toString('base64'),
+            content: Buffer.from('orbs:\n  node: electronjs/node@1.0.0\n').toString('base64'),
           },
         }),
         createOrUpdateFileContents: jest.fn(),
@@ -44,17 +44,18 @@ describe('yamlRoll()', () => {
   });
 
   it('should not update the YAML file if the target value is the same as the current value', async () => {
-    const rollTarget: YamlRollTarget = {
-      name: 'node-orb',
-      keys: ['orb', 'node'],
+    const orbTarget: OrbTarget = {
+      name: 'electronjs/node',
+      owner: 'electron',
+      repo: 'node-orb',
     };
-    const targetValue = 'v1.0.0';
-    const repository: repository = {
+    const targetValue = '1.0.0';
+    const repository: Repository = {
       owner: 'electron',
       repo: 'forge',
     };
-    await yamlRoll({
-      rollTarget,
+    await rollOrb({
+      orbTarget,
       electronBranch: branch,
       targetValue,
       repository,
@@ -72,17 +73,19 @@ describe('yamlRoll()', () => {
   });
 
   it('should update the YAML file and create a pull request', async () => {
-    const rollTarget: YamlRollTarget = {
-      name: 'node-orb',
-      keys: ['orb', 'node'],
+    const orbTarget: OrbTarget = {
+      name: 'electronjs/node',
+      owner: 'electron',
+      repo: 'node-orb',
     };
-    const targetValue = 'v2.0.0';
-    const repository: repository = {
+
+    const targetValue = '2.0.0';
+    const repository: Repository = {
       owner: 'electron',
       repo: 'forge',
     };
-    await yamlRoll({
-      rollTarget,
+    await rollOrb({
+      orbTarget: orbTarget,
       electronBranch: branch,
       targetValue,
       repository,
@@ -97,18 +100,16 @@ describe('yamlRoll()', () => {
     expect(mockOctokit.git.createRef).toHaveBeenCalledWith({
       owner: repository.owner,
       repo: repository.repo,
-      ref: `refs/heads/roller/${rollTarget.name}/${branch.name}`,
+      ref: `refs/heads/roller/${orbTarget.name}/${branch.name}`,
       sha: branch.commit.sha,
     });
     expect(mockOctokit.repos.createOrUpdateFileContents).toHaveBeenCalledWith({
       owner: repository.owner,
       repo: repository.repo,
       path: '.circleci/config.yml',
-      message: `chore: bump ${rollTarget.keys.join(
-        '.',
-      )} in .circleci/circleci.yml to ${targetValue}`,
-      content: Buffer.from('orb:\n  node: v2.0.0\n').toString('base64'),
-      branch: `roller/${rollTarget.name}/${branch.name}`,
+      message: `chore: bump ${orbTarget.name} in .circleci/circleci.yml to ${targetValue}`,
+      content: Buffer.from('orbs:\n  node: electronjs/node@2.0.0\n').toString('base64'),
+      branch: `roller/${orbTarget.name}/${branch.name}`,
     });
     expect(mockOctokit.pulls.create).toHaveBeenCalled();
   });

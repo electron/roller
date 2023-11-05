@@ -7,89 +7,10 @@ export const REPOS = {
     owner: 'nodejs',
     repo: 'node',
   },
-  nodeOrb: {
-    owner: 'electron',
-    repo: 'node-orb',
-  },
 };
 
-export const NODE_ORB_REPOS = {
-  asar: {
-    owner: 'electron',
-    repo: 'asar',
-  },
-  docsParser: {
-    owner: 'electron',
-    repo: 'docs-parser',
-  },
-  electronPackager: {
-    owner: 'electron',
-    repo: 'packager',
-  },
-  fiddle: {
-    owner: 'electron',
-    repo: 'fiddle',
-  },
-  forge: {
-    owner: 'electron',
-    repo: 'forge',
-  },
-  get: {
-    owner: 'electron',
-    repo: 'get',
-  },
-  nodeMinidump: {
-    owner: 'electron',
-    repo: 'node-minidump',
-  },
-  nodeRcedit: {
-    owner: 'electron',
-    repo: 'node-rcedit',
-  },
-  notarize: {
-    owner: 'electron',
-    repo: 'notarize',
-  },
-  osxSign: {
-    owner: 'electron',
-    repo: 'osx-sign',
-  },
-  rebuild: {
-    owner: 'electron',
-    repo: 'rebuild',
-  },
-  releases: {
-    owner: 'electron',
-    repo: 'remote',
-  },
-  symbolicateMac: {
-    owner: 'electron',
-    repo: 'symbolicate-mac',
-  },
-  typescriptDefinitions: {
-    owner: 'electron',
-    repo: 'typescript-definitions',
-  },
-  updateElectronApp: {
-    owner: 'electron',
-    repo: 'update-electron-app',
-  },
-  updateElectronJsOrg: {
-    owner: 'electron',
-    repo: 'update.electronjs.org',
-  },
-  windowsInstaller: {
-    owner: 'electron',
-    repo: `windows-installer`,
-  },
-
-  [Symbol.iterator]: function*() {
-    const repos = Object.values(this);
-    for (const repo of repos) {
-      yield repo as repository;
-    }
-  },
-};
+export const ORBS = 'orbs';
+export const ORB_OWNER = 'electron';
 
 export const MAIN_BRANCH = 'main';
 
@@ -106,12 +27,13 @@ export const ROLL_TARGETS = {
   },
 };
 
-export const YAML_ROLL_TARGETS = {
-  nodeOrb: {
-    name: 'node-orb',
-    keys: ['orb', 'node'],
+export const ORB_TARGETS = [
+  {
+    name: 'electronjs/node',
+    owner: 'electron',
+    repo: 'node-orb',
   },
-};
+];
 
 export const BACKPORT_CHECK_SKIP = 'backport-check-skip';
 export const NO_BACKPORT = 'no-backport';
@@ -126,12 +48,13 @@ export interface RollTarget {
   depsKey: string;
 }
 
-export interface YamlRollTarget {
+export interface OrbTarget {
   name: string;
-  keys: string[];
+  owner: string;
+  repo: string;
 }
 
-export interface repository {
+export interface Repository {
   owner: string;
   repo: string;
 }

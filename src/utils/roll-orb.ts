@@ -1,12 +1,12 @@
 import * as debug from 'debug';
 import * as jsyaml from 'js-yaml';
 
-import { YamlRollTarget } from '../constants';
+import { ORBS, OrbTarget } from '../constants';
 import { getOctokit } from './octokit';
-import { getYamlPRText } from './pr-text-yaml';
+import { getOrbPRText } from './pr-text-orb';
 
-export interface YamlRollParams {
-  rollTarget: YamlRollTarget;
+export interface RollOrbParams {
+  orbTarget: OrbTarget;
   electronBranch;
   targetValue: string;
   repository: {
@@ -15,18 +15,18 @@ export interface YamlRollParams {
   };
 }
 
-// Rolls a key in a .circleci/circleci.yml file to a new version
-export async function yamlRoll({
-  rollTarget,
+// Rolls an orb in a .circleci/circleci.yml file to a new version
+export async function rollOrb({
+  orbTarget: rollTarget,
   electronBranch,
   targetValue,
   repository,
-}: YamlRollParams): Promise<any> {
-  const d = debug(`roller/${rollTarget.name}:yamlRoll()`);
+}: RollOrbParams): Promise<any> {
+  const d = debug(`roller/${rollTarget.name}:rollOrb()`);
   const github = await getOctokit();
 
   try {
-    d(`roll triggered for  ${rollTarget.keys.join()}=${targetValue}`);
+    d(`roll triggered for  ${rollTarget.name}=${targetValue}`);
 
     const sha = electronBranch.commit.sha;
     const filePath = '.circleci/config.yml';
@@ -44,35 +44,30 @@ export async function yamlRoll({
 
     if ('type' in response.data && 'content' in response.data && response.data.type == 'file') {
       const content = Buffer.from(response.data.content, 'base64').toString();
-
       const yamlData = jsyaml.load(content);
-      const keys = rollTarget.keys;
 
-      // Traverse the YAML data to the nested key and value
-      let currentLevel = yamlData;
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (currentLevel[keys[i]] && typeof currentLevel[keys[i]] === 'object') {
-          currentLevel = currentLevel[keys[i]];
-        } else {
-          d(`Key "${keys[i]}" not found.`);
-          throw new Error(`Key "${keys[i]}" not found.`);
+      let curr = yamlData[ORBS];
+      // find the key whos value includes `orbTarget.name`
+      let targetKey;
+      for (const key of Object.keys(curr)) {
+        if (curr[key].includes(rollTarget.name)) {
+          targetKey = key;
+          break;
         }
       }
-      // don't set the new value if the current value is already the target value
-      const previousValue = currentLevel as string;
-      const lastKey = keys[keys.length - 1];
-      if (targetValue === previousValue[lastKey]) {
-        d(`No roll needed - ${rollTarget.keys.join('.')} is already at ${targetValue}`);
-        return;
+
+      if (targetKey === undefined) {
+        d(`Key for ${rollTarget.name} not found.`);
+        throw new Error(`Key for "${rollTarget.name}" not found.`);
       }
 
-      // set the new value
-      if (currentLevel[lastKey] !== undefined) {
-        currentLevel[lastKey] = targetValue;
-      } else {
-        d(`Key "${lastKey}" not found.`);
-        throw new Error(`Key "${lastKey}" not found.`);
+      // don't set the new value if the current value is already the target value
+      const previousVersion = curr[targetKey].split('@')[1];
+      if (targetValue === previousVersion) {
+        d(`No roll needed - ${rollTarget.name} is already at ${targetValue}`);
+        return;
       }
+      curr[targetKey] = `${rollTarget.name}@${targetValue}`;
 
       const newYamlData = jsyaml.dump(yamlData);
 
@@ -84,9 +79,7 @@ export async function yamlRoll({
         owner,
         repo,
         path: filePath,
-        message: `chore: bump ${rollTarget.keys.join(
-          '.',
-        )} in .circleci/circleci.yml to ${targetValue}`,
+        message: `chore: bump ${rollTarget.name} in .circleci/circleci.yml to ${targetValue}`,
         content: Buffer.from(newYamlData).toString('base64'),
         branch: branchName,
       });
@@ -96,9 +89,9 @@ export async function yamlRoll({
         ...repository,
         base: electronBranch.name,
         head: `${owner}:${branchName}`,
-        ...getYamlPRText(rollTarget, {
-          previousValue: previousValue,
-          newValue: targetValue,
+        ...getOrbPRText(rollTarget, {
+          previousVersion: previousVersion,
+          newVersion: targetValue,
           branchName: electronBranch.name,
         }),
       });

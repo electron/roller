@@ -12,7 +12,7 @@
     "prepare": "husky install",
     "roll-chromium": "DEBUG=roller* node lib/chromium-cron.js",
     "roll-node": "DEBUG=roller* node lib/node-cron.js",
-    "roll-node-orb": "DEBUG=roller* node lib/node-orb-handler.js",
+    "roll-orb": "DEBUG=roller* node lib/orb-command.js",
     "start": "DEBUG=roller* probot run ./lib/index.js",
     "test": "jest --config=jest.json --coverage"
   },
