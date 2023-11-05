@@ -1,10 +1,10 @@
 import * as debug from 'debug';
 
-import { MAIN_BRANCH, REPOS, ORB_TARGETS, ORB_OWNER } from './constants';
+import { MAIN_BRANCH, ORB_TARGETS, ORB_OWNER } from './constants';
 import { getOctokit } from './utils/octokit';
 import { rollOrb } from './utils/roll-orb';
 
-// use octokit and find a list of repos that are under the electron org and are not archived
+// return a list of repositories with a .circleci/config.yml that are under the `electron` namespace and are unarchived
 export async function getRelevantReposList() {
   const d = debug(`roller/orb-handler:getRelevantReposList()`);
   const github = await getOctokit();
@@ -43,6 +43,8 @@ export async function getRelevantReposList() {
   return repos.filter(repo => repo !== null);
 }
 
+// Rolls each orb defined in ORB_TARGETS in constants.ts to the latest version
+// across all relevant repositories in the electron organization
 export async function rollMainBranch() {
   const d = debug(`roller/orb-handler:rollMainBranch()`);
   const github = await getOctokit();
@@ -53,7 +55,9 @@ export async function rollMainBranch() {
       owner: orbTarget.owner,
       repo: orbTarget.repo,
     });
-    const latestReleaseTagName = latestRelease.tag_name;
+    const latestReleaseTagName = latestRelease.tag_name.startsWith('v')
+      ? latestRelease.tag_name.slice(1)
+      : latestRelease.tag_name;
 
     const repos = await getRelevantReposList();
     for (const repo of repos) {

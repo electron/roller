@@ -107,7 +107,7 @@ describe('rollOrb()', () => {
       owner: repository.owner,
       repo: repository.repo,
       path: '.circleci/config.yml',
-      message: `chore: bump ${orbTarget.name} in .circleci/circleci.yml to ${targetValue}`,
+      message: `chore: bump ${orbTarget.name} in .circleci/config.yml to ${targetValue}`,
       content: Buffer.from('orbs:\n  node: electronjs/node@2.0.0\n').toString('base64'),
       branch: `roller/${orbTarget.name}/${branch.name}`,
     });
