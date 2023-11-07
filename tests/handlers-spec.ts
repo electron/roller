@@ -476,6 +476,11 @@ describe('node-orb', () => {
           owner: 'electron',
           archived: false,
         },
+        {
+          name: 'archivedRepo',
+          owner: 'electron',
+          archived: true,
+        },
       ]),
       pulls: {
         create: jest.fn().mockReturnValue({ data: { html_url: 'https://google.com' } }),
@@ -504,9 +509,9 @@ describe('node-orb', () => {
     (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
   });
 
-  it('rolls main branch of each repo', async () => {
+  it('rolls relevant repos only', async () => {
     await orbHandler.rollMainBranch();
-    const numReposUsingNodeOrb = 2;
-    expect(rollOrb.rollOrb).toHaveBeenCalledTimes(numReposUsingNodeOrb);
+    const relevantRepos = 2;
+    expect(rollOrb.rollOrb).toHaveBeenCalledTimes(relevantRepos);
   });
 });
