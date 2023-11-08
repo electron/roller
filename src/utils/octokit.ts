@@ -17,15 +17,6 @@ const getAuthProvider = () =>
     clientSecret: process.env.CLIENT_SECRET,
   });
 
-export async function getAppOctokit(): Promise<GitHub> {
-  appOctokit =
-    appOctokit ||
-    new GitHub({
-      auth: ((await getAuthProvider()({ type: 'app' })) as AppAuthentication).token,
-    });
-  return appOctokit;
-}
-
 /**
  * Returns an authenticated Octokit.
  *
