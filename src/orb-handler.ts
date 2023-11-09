@@ -6,7 +6,7 @@ import { rollOrb } from './utils/roll-orb';
 
 // return a list of repositories with a .circleci/config.yml that are under the `electron` namespace and are unarchived
 export async function getRelevantReposList() {
-  const d = debug(`roller/orb-handler:getRelevantReposList()`);
+  const d = debug(`roller/orb:getRelevantReposList()`);
   const github = await getOctokit();
   const filePath = '.circleci/config.yml';
 
@@ -14,7 +14,7 @@ export async function getRelevantReposList() {
   const reposList = await (
     await github.paginate('GET /orgs/{org}/repos', {
       org: REPO_OWNER,
-      type: 'all',
+      type: 'sources',
     })
   ).filter(repo => {
     return !repo.archived;
@@ -46,8 +46,9 @@ export async function getRelevantReposList() {
 // Rolls each orb defined in ORB_TARGETS in constants.ts to the latest version
 // across all relevant repositories in the electron organization
 export async function rollMainBranch() {
-  const d = debug(`roller/orb-handler:rollMainBranch()`);
+  const d = debug(`roller/orb:rollMainBranch()`);
   const github = await getOctokit();
+  const repos = await getRelevantReposList();
 
   for (const orbTarget of ORB_TARGETS) {
     d(`Fetching latest version of ${orbTarget.name}`);
@@ -59,7 +60,6 @@ export async function rollMainBranch() {
       ? latestRelease.tag_name.slice(1)
       : latestRelease.tag_name;
 
-    const repos = await getRelevantReposList();
     for (const repo of repos) {
       d(`Fetching ${MAIN_BRANCH} branch from ${repo.owner}/${repo.repo}`);
       const { data: mainBranch } = await github.repos.getBranch({
@@ -71,7 +71,7 @@ export async function rollMainBranch() {
       try {
         await rollOrb({
           orbTarget: orbTarget,
-          electronBranch: mainBranch,
+          sha: mainBranch.commit.sha,
           targetValue: latestReleaseTagName,
           repository: repo,
         });

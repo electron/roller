@@ -56,7 +56,7 @@ describe('rollOrb()', () => {
     };
     await rollOrb({
       orbTarget,
-      electronBranch: branch,
+      sha: branch.commit.sha,
       targetValue,
       repository,
     });
@@ -86,7 +86,7 @@ describe('rollOrb()', () => {
     };
     await rollOrb({
       orbTarget: orbTarget,
-      electronBranch: branch,
+      sha: branch.commit.sha,
       targetValue,
       repository,
     });
@@ -100,7 +100,7 @@ describe('rollOrb()', () => {
     expect(mockOctokit.git.createRef).toHaveBeenCalledWith({
       owner: repository.owner,
       repo: repository.repo,
-      ref: `refs/heads/roller/${orbTarget.name}/${branch.name}`,
+      ref: `refs/heads/roller/orb/${orbTarget.name}/${branch.name}`,
       sha: branch.commit.sha,
     });
     expect(mockOctokit.repos.createOrUpdateFileContents).toHaveBeenCalledWith({
@@ -109,7 +109,7 @@ describe('rollOrb()', () => {
       path: '.circleci/config.yml',
       message: `chore: bump ${orbTarget.name} in .circleci/config.yml to ${targetValue}`,
       content: Buffer.from('orbs:\n  node: electronjs/node@2.0.0\n').toString('base64'),
-      branch: `roller/${orbTarget.name}/${branch.name}`,
+      branch: `roller/orb/${orbTarget.name}/${branch.name}`,
     });
     expect(mockOctokit.pulls.create).toHaveBeenCalled();
   });

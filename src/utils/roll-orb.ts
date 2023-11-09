@@ -1,36 +1,25 @@
 import * as debug from 'debug';
 import * as yaml from 'yaml';
 
-import { ORB_KEY, OrbTarget } from '../constants';
+import { MAIN_BRANCH, ORB_KEY, OrbTarget } from '../constants';
 import { getOctokit } from './octokit';
 import { getOrbPRText } from './pr-text-orb';
-
-export interface RollOrbParams {
-  orbTarget: OrbTarget;
-  electronBranch;
-  targetValue: string;
-  repository: {
-    owner: string;
-    repo: string;
-  };
-}
 
 // Rolls an orb in a .circleci/config.yml file to a new version
 export async function rollOrb({
   orbTarget: rollTarget,
-  electronBranch,
+  sha,
   targetValue,
   repository,
-}: RollOrbParams): Promise<any> {
-  const d = debug(`roller/${rollTarget.name}:rollOrb()`);
+}): Promise<any> {
+  const d = debug(`roller/orb/${rollTarget.name}:rollOrb()`);
   const github = await getOctokit();
 
   try {
     d(`roll triggered for  ${rollTarget.name}=${targetValue}`);
 
-    const sha = electronBranch.commit.sha;
     const filePath = '.circleci/config.yml';
-    const branchName = `roller/${rollTarget.name}/${electronBranch.name}`;
+    const branchName = `roller/orb/${rollTarget.name}/${MAIN_BRANCH}`;
     const shortRef = `heads/${branchName}`;
     const ref = `refs/${shortRef}`;
     const { owner, repo } = repository;
@@ -82,12 +71,12 @@ export async function rollOrb({
       d(`Raising a PR for ${branchName} to ${repo}`);
       await github.pulls.create({
         ...repository,
-        base: electronBranch.name,
+        base: MAIN_BRANCH,
         head: `${owner}:${branchName}`,
         ...getOrbPRText(rollTarget, {
           previousVersion: previousVersion,
           newVersion: targetValue,
-          branchName: electronBranch.name,
+          branchName: MAIN_BRANCH,
         }),
       });
     }
