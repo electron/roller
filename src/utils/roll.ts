@@ -94,6 +94,7 @@ export async function roll({
       if (maybeOldRef.status === 200) {
         d(`Found orphan ref ${ref} with no open PR - deleting`);
         await github.git.deleteRef({ ...REPOS.electron, ref: shortRef });
+        await new Promise<void>(r => setTimeout(r, 2000));
       }
     } catch (error) {
       d(`No orphan ref exists at ${ref} - proceeding`);
