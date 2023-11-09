@@ -1,6 +1,6 @@
 import * as debug from 'debug';
 
-import { MAIN_BRANCH, ORB_TARGETS, ORB_OWNER } from './constants';
+import { MAIN_BRANCH, ORB_TARGETS, REPO_OWNER } from './constants';
 import { getOctokit } from './utils/octokit';
 import { rollOrb } from './utils/roll-orb';
 
@@ -13,7 +13,7 @@ export async function getRelevantReposList() {
   d("fetching list of repos in the electron organization that aren't archived");
   const reposList = await (
     await github.paginate('GET /orgs/{org}/repos', {
-      org: ORB_OWNER,
+      org: REPO_OWNER,
       type: 'all',
     })
   ).filter(repo => {
@@ -25,14 +25,14 @@ export async function getRelevantReposList() {
     reposList.map(async repo => {
       try {
         await github.repos.getContent({
-          owner: ORB_OWNER,
+          owner: REPO_OWNER,
           repo: repo.name,
           path: filePath,
         });
 
         return {
           repo: repo.name,
-          owner: ORB_OWNER,
+          owner: REPO_OWNER,
         };
       } catch (e) {
         d('Error getting content for repo - ignoring', repo.name, e);

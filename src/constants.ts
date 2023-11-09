@@ -9,8 +9,8 @@ export const REPOS = {
   },
 };
 
-export const ORBS = 'orbs';
-export const ORB_OWNER = 'electron';
+export const ORB_KEY = 'orbs';
+export const REPO_OWNER = 'electron';
 
 export const MAIN_BRANCH = 'main';
 

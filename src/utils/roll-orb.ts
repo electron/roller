@@ -1,7 +1,7 @@
 import * as debug from 'debug';
-import * as jsyaml from 'js-yaml';
+import * as yaml from 'yaml';
 
-import { ORBS, OrbTarget } from '../constants';
+import { ORB_KEY, OrbTarget } from '../constants';
 import { getOctokit } from './octokit';
 import { getOrbPRText } from './pr-text-orb';
 
@@ -43,17 +43,13 @@ export async function rollOrb({
 
     if ('type' in response.data && 'content' in response.data && response.data.type == 'file') {
       const content = Buffer.from(response.data.content, 'base64').toString();
-      const yamlData = jsyaml.load(content);
-      let curr = yamlData[ORBS];
+      const yamlData = yaml.parse(content);
+      let curr = yamlData[ORB_KEY];
 
       // attempt to find the orb in .circleci/config.yml whos value includes `orbTarget.name`
-      let targetKey;
-      for (const key of Object.keys(curr)) {
-        if (curr[key].includes(rollTarget.name)) {
-          targetKey = key;
-          break;
-        }
-      }
+      const targetKey = Object.entries(curr as string).find(([_, value]) =>
+        value.startsWith(`${rollTarget.name}@`),
+      )?.[0];
 
       if (targetKey === undefined) {
         d(`Key for ${rollTarget.name} not found.`);
@@ -68,7 +64,7 @@ export async function rollOrb({
       }
       curr[targetKey] = `${rollTarget.name}@${targetValue}`;
 
-      const newYamlData = jsyaml.dump(yamlData);
+      const newYamlData = yaml.stringify(yamlData);
 
       d(`Creating ref=${ref} at sha=${sha}`);
       await github.git.createRef({ owner, repo, ref, sha });
