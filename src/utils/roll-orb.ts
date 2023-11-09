@@ -52,8 +52,8 @@ export async function rollOrb({
       )?.[0];
 
       if (targetKey === undefined) {
-        d(`Key for ${rollTarget.name} not found.`);
-        throw new Error(`Key for "${rollTarget.name}" not found.`);
+        d(`Key for ${rollTarget.name} not found - skipping.`);
+        return;
       }
 
       // don't set the new value if the version is up to date
