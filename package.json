@@ -45,7 +45,8 @@
     "@octokit/webhooks-types": "^4.13.1",
     "debug": "^3.1.0",
     "probot": "^12.2.8",
-    "semver": "^7.5.2"
+    "semver": "^7.5.2",
+    "yaml": "^2.3.4"
   },
   "lint-staged": {
     "*.ts": "prettier --write"
