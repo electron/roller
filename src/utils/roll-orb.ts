@@ -33,7 +33,7 @@ export async function rollOrb({
     if ('type' in response.data && 'content' in response.data && response.data.type == 'file') {
       const content = Buffer.from(response.data.content, 'base64').toString();
       const yamlData = yaml.parse(content);
-      let curr = yamlData[ORB_KEY];
+      const curr = yamlData[ORB_KEY];
 
       // attempt to find the orb in .circleci/config.yml whos value includes `orbTarget.name`
       const targetKey = Object.entries(curr as string).find(([_, value]) =>
@@ -45,15 +45,23 @@ export async function rollOrb({
         return;
       }
 
-      // don't set the new value if the version is up to date
-      const previousVersion = curr[targetKey].split('@')[1];
+      const previousValue = curr[targetKey];
+      const previousVersion = previousValue.split('@')[1];
       if (targetValue === previousVersion) {
         d(`No roll needed - ${rollTarget.name} is already at ${targetValue}`);
         return;
       }
-      curr[targetKey] = `${rollTarget.name}@${targetValue}`;
-
-      const newYamlData = yaml.stringify(yamlData);
+      const currentValueRegex = new RegExp(`${rollTarget.name}@${previousVersion}`, 'g');
+      let newYamlData: string;
+      // If there is exactly one occurrence of the target string, we can get away with
+      // doing a simple string replacement and avoid any potential formatting issues,
+      // otherwise we need to stringify the full config which might change formatting
+      if ((content.match(currentValueRegex) || []).length === 1) {
+        newYamlData = content.replace(currentValueRegex, `${rollTarget.name}@${targetValue}`);
+      } else {
+        curr[targetKey] = `${rollTarget.name}@${targetValue}`;
+        newYamlData = yaml.stringify(yamlData);
+      }
 
       d(`Creating ref=${ref} at sha=${sha}`);
       await github.git.createRef({ owner, repo, ref, sha });
@@ -74,7 +82,7 @@ export async function rollOrb({
         base: MAIN_BRANCH,
         head: `${owner}:${branchName}`,
         ...getOrbPRText(rollTarget, {
-          previousVersion: previousVersion,
+          previousVersion,
           newVersion: targetValue,
           branchName: MAIN_BRANCH,
         }),
