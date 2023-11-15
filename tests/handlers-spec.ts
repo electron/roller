@@ -511,7 +511,7 @@ describe('node-orb', () => {
 
   it('rolls relevant repos only', async () => {
     await orbHandler.rollMainBranch();
-    const relevantRepos = 2;
+    const relevantRepos = 4;
     expect(rollOrb.rollOrb).toHaveBeenCalledTimes(relevantRepos);
   });
 });

@@ -33,6 +33,11 @@ export const ORB_TARGETS = [
     owner: 'electron',
     repo: 'node-orb',
   },
+  {
+    name: 'continuousauth/npm',
+    owner: 'continuousauth',
+    repo: 'npm-orb',
+  },
 ];
 
 export const BACKPORT_CHECK_SKIP = 'backport-check-skip';
