@@ -25,12 +25,15 @@ export async function rollOrb({ orbTarget, sha, targetValue, repository }): Prom
   });
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
-  const existingPrsForBranch = (await github.paginate('GET /repos/:owner/:repo/pulls', {
-    head: branchName,
-    owner,
-    repo,
-    state: 'open',
-  })) as PullsListResponseItem[];
+  let existingPrsForBranch: PullsListResponseItem[] = [];
+  try {
+    existingPrsForBranch = (await github.paginate('GET /repos/:owner/:repo/pulls', {
+      head: branchName,
+      owner,
+      repo,
+      state: 'open',
+    })) as PullsListResponseItem[];
+  } catch {}
 
   const prs = existingPrsForBranch.filter(pr =>
     pr.title.startsWith(`chore: bump ${orbTarget.name}`),
