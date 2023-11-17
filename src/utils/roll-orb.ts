@@ -84,7 +84,7 @@ export async function rollOrb({ orbTarget, sha, targetValue, repository }): Prom
       if (!('content' in data)) return;
 
       try {
-        await github.git.getRef({ owner, repo, ref });
+        await github.git.getRef({ owner, repo, ref: shortRef });
         d(`Ref ${ref} already exists`);
       } catch {
         d(`Creating ref=${ref} at sha=${sha}`);
