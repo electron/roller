@@ -49,7 +49,7 @@ export async function rollOrb({ orbTarget, sha, targetValue, repository }): Prom
 
       d(`Attempting orb update for #${pr.number}`);
 
-      const previousVersion = await updateConfigFile(data, orbTarget, targetValue);
+      const previousVersion = await updateConfigFile(orbTarget, targetValue);
 
       if (previousVersion === targetValue) {
         d(`orb version unchanged - skipping PR body update`);
@@ -91,7 +91,7 @@ export async function rollOrb({ orbTarget, sha, targetValue, repository }): Prom
         await github.git.createRef({ owner, repo, ref, sha });
       }
 
-      const previousVersion = await updateConfigFile(data, orbTarget, targetValue);
+      const previousVersion = await updateConfigFile(orbTarget, targetValue);
 
       d(`Raising a PR for ${branchName} to ${repo}`);
       await github.pulls.create({
@@ -109,9 +109,16 @@ export async function rollOrb({ orbTarget, sha, targetValue, repository }): Prom
     }
   }
 
-  async function updateConfigFile(data, rollTarget, targetValue) {
-    if ('type' in data && 'content' in data && data.type == 'file') {
-      const content = Buffer.from(data.content, 'base64').toString();
+  async function updateConfigFile(rollTarget, targetValue) {
+    const { data: localData } = await github.repos.getContent({
+      owner,
+      repo,
+      path: filePath,
+      ref: branchName,
+    });
+
+    if ('type' in localData && 'content' in localData && localData.type == 'file') {
+      const content = Buffer.from(localData.content, 'base64').toString();
       const yamlData = yaml.parse(content);
       const curr = yamlData[ORB_KEY];
 
@@ -150,7 +157,7 @@ export async function rollOrb({ orbTarget, sha, targetValue, repository }): Prom
         message: `chore: bump ${rollTarget.name} in .circleci/config.yml to ${targetValue}`,
         content: Buffer.from(newYamlData).toString('base64'),
         branch: branchName,
-        sha: data.sha,
+        sha: localData.sha,
       });
 
       return previousVersion;
