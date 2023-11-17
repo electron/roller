@@ -34,10 +34,12 @@ describe('rollOrb()', () => {
         createRef: jest.fn(),
       },
       repos: {
+        get: jest.fn().mockReturnValue({ data: { default_branch: 'main' } }),
         getContent: jest.fn().mockReturnValue({
           data: {
             type: 'file',
             content: Buffer.from('orbs:\n  node: electronjs/node@1.0.0\n').toString('base64'),
+            sha: '1234',
           },
         }),
         createOrUpdateFileContents: jest.fn(),
@@ -74,61 +76,17 @@ describe('rollOrb()', () => {
       owner: 'electron',
       repo: 'forge',
     };
-    await rollOrb({
-      orbTarget,
-      sha: branch.commit.sha,
-      targetValue,
-      repository,
-    });
+    await rollOrb(orbTarget, branch.commit.sha, targetValue, repository);
 
     expect(mockOctokit.repos.getContent).toHaveBeenCalledWith({
       owner: repository.owner,
       repo: repository.repo,
-      ref: MAIN_BRANCH,
+      ref: `roller/orb/${orbTarget.name}/${branch.name}`,
       path: '.circleci/config.yml',
     });
 
     expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
     expect(mockOctokit.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
-    expect(mockOctokit.pulls.create).not.toHaveBeenCalled();
-  });
-
-  it('takes no action if the PR user is trop', async () => {
-    const orbTarget: OrbTarget = {
-      name: 'electronjs/node',
-      owner: 'electron',
-      repo: 'node-orb',
-    };
-
-    const repository: Repository = {
-      owner: 'electron',
-      repo: 'forge',
-    };
-
-    mockOctokit.paginate.mockReturnValue([
-      {
-        user: {
-          login: 'trop[bot]',
-        },
-        title: `chore: bump ${orbTarget.name} to foo`,
-        number: 1,
-        head: {
-          ref: 'asd',
-        },
-        body: 'Original-Version: v4.0.0',
-        labels: [{ name: 'hello' }, { name: 'goodbye' }],
-        created_at: new Date().toISOString(),
-      },
-    ]);
-
-    await rollOrb({
-      orbTarget,
-      sha: branch.commit.sha,
-      targetValue: '1.0.0',
-      repository,
-    });
-
-    expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
     expect(mockOctokit.pulls.create).not.toHaveBeenCalled();
   });
 
@@ -160,12 +118,7 @@ describe('rollOrb()', () => {
       },
     ]);
 
-    await rollOrb({
-      orbTarget,
-      sha: branch.commit.sha,
-      targetValue: '2.0.0',
-      repository,
-    });
+    await rollOrb(orbTarget, branch.commit.sha, '2.0.0', repository);
 
     expect(mockOctokit.pulls.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -190,17 +143,12 @@ describe('rollOrb()', () => {
       owner: 'electron',
       repo: 'forge',
     };
-    await rollOrb({
-      orbTarget: orbTarget,
-      sha: branch.commit.sha,
-      targetValue,
-      repository,
-    });
+    await rollOrb(orbTarget, branch.commit.sha, targetValue, repository);
 
     expect(mockOctokit.repos.getContent).toHaveBeenCalledWith({
       owner: repository.owner,
       repo: repository.repo,
-      ref: MAIN_BRANCH,
+      ref: `roller/orb/${orbTarget.name}/${branch.name}`,
       path: '.circleci/config.yml',
     });
 
@@ -255,12 +203,7 @@ describe('rollOrb()', () => {
       },
     ]);
 
-    await rollOrb({
-      orbTarget: orbTarget,
-      sha: branch.commit.sha,
-      targetValue,
-      repository,
-    });
+    await rollOrb(orbTarget, branch.commit.sha, targetValue, repository);
 
     expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
   });

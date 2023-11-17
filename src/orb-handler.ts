@@ -3,6 +3,7 @@ import * as debug from 'debug';
 import { MAIN_BRANCH, ORB_TARGETS, REPO_OWNER } from './constants';
 import { getOctokit } from './utils/octokit';
 import { rollOrb } from './utils/roll-orb';
+import { roll } from './utils/roll';
 
 // return a list of repositories with a .circleci/config.yml that are under the `electron` namespace and are unarchived
 export async function getRelevantReposList() {
@@ -70,12 +71,7 @@ export async function rollMainBranch() {
       });
 
       try {
-        await rollOrb({
-          orbTarget,
-          sha: mainBranch.commit.sha,
-          targetValue: latestReleaseTagName,
-          repository: repo,
-        });
+        await rollOrb(orbTarget, mainBranch.commit.sha, latestReleaseTagName, repo);
       } catch (e) {
         d(`Error rolling ${repo.owner}/${repo.repo} to ${latestReleaseTagName}`, e);
         throw new Error(
