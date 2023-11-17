@@ -70,7 +70,7 @@ export async function rollMainBranch() {
 
       try {
         await rollOrb({
-          orbTarget: orbTarget,
+          orbTarget,
           sha: mainBranch.commit.sha,
           targetValue: latestReleaseTagName,
           repository: repo,

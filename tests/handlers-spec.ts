@@ -450,7 +450,7 @@ describe('node-orb', () => {
 
   beforeEach(() => {
     // mockReturnValue getReleveantReposList to return a list of repos that use the node orb
-    jest.spyOn(rollOrb, 'rollOrb');
+    jest.spyOn(rollOrb, 'rollOrb').mockImplementation(async () => {});
     jest.spyOn(orbHandler, 'getRelevantReposList').mockImplementation(async () => {
       return [
         {

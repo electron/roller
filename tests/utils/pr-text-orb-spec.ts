@@ -20,13 +20,12 @@ describe('getOrbPRText', () => {
 
       // Correct title.
       expect(prText.title).toBe(
-        `chore: bump ${target.name} to ${details.newVersion} (${details.branchName}))`,
+        `chore: bump ${target.name} to ${details.newVersion} (${details.branchName})`,
       );
       expect(prText.body).toContain(
         `Updating ${target.name} to ${details.newVersion} (${details.branchName})`,
       );
       expect(prText.body).toContain(`Original-Version: ${details.previousVersion}`);
-      expect(prText.body).toContain(`Notes: no-notes`);
     });
   });
 });

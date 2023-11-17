@@ -1,37 +1,118 @@
 import * as debug from 'debug';
 import * as yaml from 'yaml';
 
-import { MAIN_BRANCH, ORB_KEY, OrbTarget } from '../constants';
+import { MAIN_BRANCH, ORB_KEY } from '../constants';
 import { getOctokit } from './octokit';
 import { getOrbPRText } from './pr-text-orb';
+import { PullsListResponseItem } from '../types';
 
 // Rolls an orb in a .circleci/config.yml file to a new version
-export async function rollOrb({
-  orbTarget: rollTarget,
-  sha,
-  targetValue,
-  repository,
-}): Promise<any> {
-  const d = debug(`roller/orb/${rollTarget.name}:rollOrb()`);
+export async function rollOrb({ orbTarget, sha, targetValue, repository }): Promise<any> {
+  const d = debug(`roller/orb/${orbTarget.name}:rollOrb()`);
   const github = await getOctokit();
 
-  try {
-    d(`roll triggered for  ${rollTarget.name}=${targetValue}`);
+  const filePath = '.circleci/config.yml';
+  const branchName = `roller/orb/${orbTarget.name}/${MAIN_BRANCH}`;
+  const shortRef = `heads/${branchName}`;
+  const ref = `refs/${shortRef}`;
+  const { owner, repo } = repository;
 
-    const filePath = '.circleci/config.yml';
-    const branchName = `roller/orb/${rollTarget.name}/${MAIN_BRANCH}`;
-    const shortRef = `heads/${branchName}`;
-    const ref = `refs/${shortRef}`;
-    const { owner, repo } = repository;
+  const { data } = await github.repos.getContent({
+    owner,
+    repo,
+    path: filePath,
+    ref: MAIN_BRANCH,
+  });
 
-    const response = await github.repos.getContent({
-      owner,
-      repo,
-      path: filePath,
-    });
+  // Look for a pre-existing PR that targets this branch to see if we can update that.
+  const existingPrsForBranch = (await github.paginate('GET /repos/:owner/:repo/pulls', {
+    base: MAIN_BRANCH,
+    ...orbTarget,
+    state: 'open',
+  })) as PullsListResponseItem[];
 
-    if ('type' in response.data && 'content' in response.data && response.data.type == 'file') {
-      const content = Buffer.from(response.data.content, 'base64').toString();
+  const prs = existingPrsForBranch.filter(pr =>
+    pr.title.startsWith(`chore: bump ${orbTarget.name}`),
+  );
+
+  if (prs.length) {
+    // Update existing PR(s)
+    for (const pr of prs) {
+      if (pr.user.login.startsWith('trop')) continue;
+      d(`Found existing PR: #${pr.number} opened by ${pr.user.login}`);
+
+      // Check to see if automatic orb roll has been temporarily disabled
+      const hasPauseLabel = pr.labels.some(label => label.name === 'roller/pause');
+      if (hasPauseLabel) {
+        d(`Automatic updates have been paused for #${pr.number}, skipping orb roll.`);
+        continue;
+      }
+
+      d(`Attempting orb update for #${pr.number}`);
+
+      const previousVersion = await updateConfigFile(data, orbTarget, targetValue);
+
+      if (previousVersion === targetValue) {
+        d(`orb version unchanged - skipping PR body update`);
+        continue;
+      }
+
+      d(`orb version changed - updating PR body`);
+
+      const re = new RegExp('^Original-Version: (\\S+)', 'm');
+      const prVersionText = re.exec(pr.body);
+
+      if (!prVersionText || prVersionText.length === 0) {
+        d('Could not find PR version text in existing PR - exiting');
+        return;
+      }
+
+      await github.pulls.update({
+        owner,
+        repo,
+        pull_number: pr.number,
+        ...getOrbPRText(orbTarget, {
+          previousVersion,
+          newVersion: targetValue,
+          branchName: MAIN_BRANCH,
+        }),
+      });
+    }
+  } else {
+    try {
+      d(`roll triggered for  ${orbTarget.name}=${targetValue}`);
+
+      if (!('content' in data)) return;
+
+      d(`Creating ref=${ref} at sha=${sha}`);
+      await github.git.createRef({ owner, repo, ref, sha });
+
+      const { previousVersion } = await updateConfigFile(data, orbTarget, targetValue);
+
+      d(`Raising a PR for ${branchName} to ${repo}`);
+      await github.pulls.create({
+        ...repository,
+        base: MAIN_BRANCH,
+        head: `${owner}:${branchName}`,
+        ...getOrbPRText(orbTarget, {
+          previousVersion,
+          newVersion: targetValue,
+          branchName: MAIN_BRANCH,
+        }),
+      });
+    } catch (e) {
+      d(`Error rolling ${repository.owner}/${repository.repo} to ${targetValue}`, e);
+      if (e.status !== 404) {
+        throw new Error(
+          `Failed to roll ${repository.owner}/${repository.repo} to ${targetValue}: ${e.message}`,
+        );
+      }
+    }
+  }
+
+  async function updateConfigFile(data, rollTarget, targetValue) {
+    if ('type' in data && 'content' in data && data.type == 'file') {
+      const content = Buffer.from(data.content, 'base64').toString();
       const yamlData = yaml.parse(content);
       const curr = yamlData[ORB_KEY];
 
@@ -49,7 +130,7 @@ export async function rollOrb({
       const previousVersion = previousValue.split('@')[1];
       if (targetValue === previousVersion) {
         d(`No roll needed - ${rollTarget.name} is already at ${targetValue}`);
-        return;
+        return previousVersion;
       }
       const currentValueRegex = new RegExp(`${rollTarget.name}@${previousVersion}`, 'g');
       let newYamlData: string;
@@ -62,10 +143,6 @@ export async function rollOrb({
         curr[targetKey] = `${rollTarget.name}@${targetValue}`;
         newYamlData = yaml.stringify(yamlData);
       }
-
-      d(`Creating ref=${ref} at sha=${sha}`);
-      await github.git.createRef({ owner, repo, ref, sha });
-
       d(`Updating the new ref with value=${targetValue}`);
       await github.repos.createOrUpdateFileContents({
         owner,
@@ -74,24 +151,10 @@ export async function rollOrb({
         message: `chore: bump ${rollTarget.name} in .circleci/config.yml to ${targetValue}`,
         content: Buffer.from(newYamlData).toString('base64'),
         branch: branchName,
+        sha: data.sha,
       });
 
-      d(`Raising a PR for ${branchName} to ${repo}`);
-      await github.pulls.create({
-        ...repository,
-        base: MAIN_BRANCH,
-        head: `${owner}:${branchName}`,
-        ...getOrbPRText(rollTarget, {
-          previousVersion,
-          newVersion: targetValue,
-          branchName: MAIN_BRANCH,
-        }),
-      });
+      return previousVersion;
     }
-  } catch (e) {
-    d(`Error rolling ${repository.owner}/${repository.repo} to ${targetValue}`, e);
-    throw new Error(
-      `Failed to roll ${repository.owner}/${repository.repo} to ${targetValue}: ${e.message}`,
-    );
   }
 }
