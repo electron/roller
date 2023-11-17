@@ -26,7 +26,7 @@ export async function rollOrb({ orbTarget, sha, targetValue, repository }): Prom
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
   const existingPrsForBranch = (await github.paginate('GET /repos/:owner/:repo/pulls', {
-    base: MAIN_BRANCH,
+    head: branchName,
     ...orbTarget,
     state: 'open',
   })) as PullsListResponseItem[];
@@ -38,7 +38,6 @@ export async function rollOrb({ orbTarget, sha, targetValue, repository }): Prom
   if (prs.length) {
     // Update existing PR(s)
     for (const pr of prs) {
-      if (pr.user.login.startsWith('trop')) continue;
       d(`Found existing PR: #${pr.number} opened by ${pr.user.login}`);
 
       // Check to see if automatic orb roll has been temporarily disabled
@@ -84,10 +83,15 @@ export async function rollOrb({ orbTarget, sha, targetValue, repository }): Prom
 
       if (!('content' in data)) return;
 
-      d(`Creating ref=${ref} at sha=${sha}`);
-      await github.git.createRef({ owner, repo, ref, sha });
+      try {
+        await github.git.getRef({ owner, repo, ref });
+        d(`Ref ${ref} already exists`);
+      } catch {
+        d(`Creating ref=${ref} at sha=${sha}`);
+        await github.git.createRef({ owner, repo, ref, sha });
+      }
 
-      const { previousVersion } = await updateConfigFile(data, orbTarget, targetValue);
+      const previousVersion = await updateConfigFile(data, orbTarget, targetValue);
 
       d(`Raising a PR for ${branchName} to ${repo}`);
       await github.pulls.create({
@@ -102,11 +106,6 @@ export async function rollOrb({ orbTarget, sha, targetValue, repository }): Prom
       });
     } catch (e) {
       d(`Error rolling ${repository.owner}/${repository.repo} to ${targetValue}`, e);
-      if (e.status !== 404) {
-        throw new Error(
-          `Failed to roll ${repository.owner}/${repository.repo} to ${targetValue}: ${e.message}`,
-        );
-      }
     }
   }
 

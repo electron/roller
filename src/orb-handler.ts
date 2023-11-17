@@ -35,6 +35,7 @@ export async function getRelevantReposList() {
           owner: REPO_OWNER,
         };
       } catch (e) {
+        if (e.status === 404) return null;
         d('Error getting content for repo - ignoring', repo.name, e);
         return null;
       }
