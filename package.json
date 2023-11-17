@@ -12,6 +12,7 @@
     "prepare": "husky install",
     "roll-chromium": "DEBUG=roller* node lib/chromium-cron.js",
     "roll-node": "DEBUG=roller* node lib/node-cron.js",
+    "roll-orb": "DEBUG=roller* node lib/orb-cron.js",
     "start": "DEBUG=roller* probot run ./lib/index.js",
     "test": "jest --config=jest.json --coverage"
   },
@@ -44,7 +45,8 @@
     "@octokit/webhooks-types": "^4.13.1",
     "debug": "^3.1.0",
     "probot": "^12.2.8",
-    "semver": "^7.5.2"
+    "semver": "^7.5.2",
+    "yaml": "^2.3.4"
   },
   "lint-staged": {
     "*.ts": "prettier --write"

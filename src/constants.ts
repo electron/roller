@@ -9,6 +9,9 @@ export const REPOS = {
   },
 };
 
+export const ORB_KEY = 'orbs';
+export const REPO_OWNER = 'electron';
+
 export const MAIN_BRANCH = 'main';
 
 export const NUM_SUPPORTED_VERSIONS = 4;
@@ -24,6 +27,19 @@ export const ROLL_TARGETS = {
   },
 };
 
+export const ORB_TARGETS = [
+  {
+    name: 'electronjs/node',
+    owner: 'electron',
+    repo: 'node-orb',
+  },
+  {
+    name: 'continuousauth/npm',
+    owner: 'continuousauth',
+    repo: 'npm-orb',
+  },
+];
+
 export const BACKPORT_CHECK_SKIP = 'backport-check-skip';
 export const NO_BACKPORT = 'no-backport';
 
@@ -35,4 +51,15 @@ export interface Commit {
 export interface RollTarget {
   name: string;
   depsKey: string;
+}
+
+export interface OrbTarget {
+  name: string;
+  owner: string;
+  repo: string;
+}
+
+export interface Repository {
+  owner: string;
+  repo: string;
 }

@@ -24,4 +24,5 @@ npm start
 
 This service has no user facing interfaces or commands. Updates to major dependencies
 including Node.js and Chromium will be automatically PRed as DEPS updates
-into `electron/electron`.
+into `electron/electron`. Updates to the organization's node orbs will be automatically
+PRed into relevant repositories.
