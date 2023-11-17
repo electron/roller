@@ -114,7 +114,7 @@ export async function rollOrb({ orbTarget, sha, targetValue, repository }): Prom
       owner,
       repo,
       path: filePath,
-      ref: MAIN_BRANCH,
+      ref: branchName,
     });
 
     if ('type' in localData && 'content' in localData && localData.type == 'file') {
