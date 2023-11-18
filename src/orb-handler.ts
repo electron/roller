@@ -8,12 +8,12 @@ import { roll } from './utils/roll';
 // return a list of repositories with a .circleci/config.yml that are under the `electron` namespace and are unarchived
 export async function getRelevantReposList() {
   const d = debug(`roller/orb:getRelevantReposList()`);
-  const github = await getOctokit();
+  const octokit = await getOctokit();
   const filePath = '.circleci/config.yml';
 
   d("fetching list of repos in the electron organization that aren't archived");
   const reposList = await (
-    await github.paginate('GET /orgs/{org}/repos', {
+    await octokit.paginate('GET /orgs/{org}/repos', {
       org: REPO_OWNER,
       type: 'sources',
     })
@@ -25,7 +25,7 @@ export async function getRelevantReposList() {
   const repos = await Promise.all(
     reposList.map(async repo => {
       try {
-        await github.repos.getContent({
+        await octokit.repos.getContent({
           owner: REPO_OWNER,
           repo: repo.name,
           path: filePath,
@@ -49,12 +49,12 @@ export async function getRelevantReposList() {
 // across all relevant repositories in the electron organization
 export async function rollMainBranch() {
   const d = debug(`roller/orb:rollMainBranch()`);
-  const github = await getOctokit();
+  const octokit = await getOctokit();
   const repos = await getRelevantReposList();
 
   for (const orbTarget of ORB_TARGETS) {
     d(`Fetching latest version of ${orbTarget.name}`);
-    const { data: latestRelease } = await github.repos.getLatestRelease({
+    const { data: latestRelease } = await octokit.repos.getLatestRelease({
       owner: orbTarget.owner,
       repo: orbTarget.repo,
     });
@@ -63,10 +63,10 @@ export async function rollMainBranch() {
       : latestRelease.tag_name;
 
     for (const repo of repos) {
-      const repoData = await github.repos.get(repo);
+      const repoData = await octokit.repos.get(repo);
       const defaultBranchName = repoData.data.default_branch;
       d(`Fetching ${defaultBranchName} branch from ${repo.owner}/${repo.repo}`);
-      const { data: mainBranch } = await github.repos.getBranch({
+      const { data: mainBranch } = await octokit.repos.getBranch({
         owner: repo.owner,
         repo: repo.repo,
         branch: defaultBranchName,

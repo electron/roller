@@ -1,7 +1,6 @@
 import { rollOrb } from '../../src/utils/roll-orb';
 import { getOctokit } from '../../src/utils/octokit';
 import { Repository, OrbTarget, MAIN_BRANCH } from '../../src/constants';
-import { roll } from '../../src/utils/roll';
 
 jest.mock('../../src/utils/octokit');
 
@@ -34,7 +33,6 @@ describe('rollOrb()', () => {
         createRef: jest.fn(),
       },
       repos: {
-        get: jest.fn().mockReturnValue({ data: { default_branch: 'main' } }),
         getContent: jest.fn().mockReturnValue({
           data: {
             type: 'file',
@@ -71,12 +69,12 @@ describe('rollOrb()', () => {
       },
     ]);
 
-    const targetValue = '1.0.0';
+    const targetOrbVersion = '1.0.0';
     const repository: Repository = {
       owner: 'electron',
       repo: 'forge',
     };
-    await rollOrb(orbTarget, branch.commit.sha, targetValue, repository);
+    await rollOrb(orbTarget, branch.commit.sha, targetOrbVersion, repository, MAIN_BRANCH);
 
     expect(mockOctokit.repos.getContent).toHaveBeenCalledWith({
       owner: repository.owner,
@@ -118,7 +116,7 @@ describe('rollOrb()', () => {
       },
     ]);
 
-    await rollOrb(orbTarget, branch.commit.sha, '2.0.0', repository);
+    await rollOrb(orbTarget, branch.commit.sha, '2.0.0', repository, MAIN_BRANCH);
 
     expect(mockOctokit.pulls.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -138,12 +136,12 @@ describe('rollOrb()', () => {
       repo: 'node-orb',
     };
 
-    const targetValue = '2.0.0';
+    const targetOrbVersion = '2.0.0';
     const repository: Repository = {
       owner: 'electron',
       repo: 'forge',
     };
-    await rollOrb(orbTarget, branch.commit.sha, targetValue, repository);
+    await rollOrb(orbTarget, branch.commit.sha, targetOrbVersion, repository, MAIN_BRANCH);
 
     expect(mockOctokit.repos.getContent).toHaveBeenCalledWith({
       owner: repository.owner,
@@ -161,8 +159,9 @@ describe('rollOrb()', () => {
     expect(mockOctokit.repos.createOrUpdateFileContents).toHaveBeenCalledWith({
       owner: repository.owner,
       repo: repository.repo,
+      sha: '1234',
       path: '.circleci/config.yml',
-      message: `chore: bump ${orbTarget.name} in .circleci/config.yml to ${targetValue}`,
+      message: `chore: bump ${orbTarget.name} in .circleci/config.yml to ${targetOrbVersion}`,
       content: Buffer.from('orbs:\n  node: electronjs/node@2.0.0\n').toString('base64'),
       branch: `roller/orb/${orbTarget.name}/${branch.name}`,
     });
@@ -182,7 +181,7 @@ describe('rollOrb()', () => {
       repo: 'node-orb',
     };
 
-    const targetValue = '2.0.0';
+    const targetOrbVersion = '2.0.0';
     const repository: Repository = {
       owner: 'electron',
       repo: 'forge',
@@ -203,7 +202,7 @@ describe('rollOrb()', () => {
       },
     ]);
 
-    await rollOrb(orbTarget, branch.commit.sha, targetValue, repository);
+    await rollOrb(orbTarget, branch.commit.sha, targetOrbVersion, repository, MAIN_BRANCH);
 
     expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
   });

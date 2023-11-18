@@ -1,5 +1,5 @@
 import * as debug from 'debug';
-import * as yaml from 'yaml';
+import * as yamljs from 'yaml';
 
 import { ORB_KEY, OrbTarget, Repository } from '../constants';
 import { getOctokit } from './octokit';
@@ -9,13 +9,13 @@ import { PullsListResponseItem } from '../types';
 // Rolls an orb in a .circleci/config.yml file to a new version
 export async function rollOrb(
   orbTarget: OrbTarget,
-  sha: string,
-  targetValue: string,
+  defaultBranchHeadSha: string,
+  targetOrbVersion: string,
   repository: Repository,
   defaultBranchName: string,
 ): Promise<any> {
   const d = debug(`roller/orb/${orbTarget.name}:rollOrb()`);
-  const github = await getOctokit();
+  const octokit = await getOctokit();
   const filePath = '.circleci/config.yml';
 
   const { owner, repo } = repository;
@@ -24,11 +24,15 @@ export async function rollOrb(
   const ref = `refs/${shortRef}`;
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
-  const existingPrsForBranch = (await github.paginate('GET /repos/:owner/:repo/pulls', {
-    head: branchName,
-    ...orbTarget,
-    state: 'open',
-  })) as PullsListResponseItem[];
+  let existingPrsForBranch: PullsListResponseItem[] = [];
+  try {
+    existingPrsForBranch = (await octokit.paginate('GET /repos/:owner/:repo/pulls', {
+      head: branchName,
+      owner,
+      repo,
+      state: 'open',
+    })) as PullsListResponseItem[];
+  } catch {}
 
   const prs = existingPrsForBranch.filter(pr =>
     pr.title.startsWith(`chore: bump ${orbTarget.name}`),
@@ -47,25 +51,26 @@ export async function rollOrb(
       }
 
       d(`Attempting orb update for #${pr.number}`);
-      const configData = await getConfigData();
-      const updateConfigParams = {
-        ...configData,
-        ...getTargetKeyAndPreviousVersion(configData.yamlData),
-      };
+      const configData = await getCircleConfigFile();
+      const targetKeyAndPreviousVersion = getTargetKeyAndPreviousVersion(configData.yaml);
 
       // if any of the above are null, we can't proceed
-      if (Object.values(updateConfigParams).some(v => v === null)) {
+      if (!targetKeyAndPreviousVersion) {
         d(`updateConfigParams not complete - skipping.`);
         return;
       }
+      const updateConfigParams = {
+        ...configData,
+        ...targetKeyAndPreviousVersion,
+      };
 
-      if (updateConfigParams.previousVersion === targetValue) {
+      if (updateConfigParams.previousVersion === targetOrbVersion) {
         d(`orb version unchanged - skipping PR body update`);
         continue;
       }
 
-      d(`updating orb version to ${targetValue}`);
-      updateConfigFile(orbTarget, targetValue, updateConfigParams);
+      d(`updating orb version to ${targetOrbVersion}`);
+      updateConfigFile(orbTarget, targetOrbVersion, updateConfigParams);
 
       d(`orb version changed - updating PR body`);
       const re = new RegExp('^Original-Version: (\\S+)', 'm');
@@ -76,77 +81,74 @@ export async function rollOrb(
         return;
       }
 
-      await github.pulls.update({
+      await octokit.pulls.update({
         owner,
         repo,
         pull_number: pr.number,
         ...getOrbPRText(orbTarget, {
           previousVersion: updateConfigParams.previousVersion,
-          newVersion: targetValue,
+          newVersion: targetOrbVersion,
           branchName: defaultBranchName,
         }),
       });
     }
   } else {
     try {
-      d(`roll triggered for  ${orbTarget.name}=${targetValue}`);
+      d(`roll triggered for  ${orbTarget.name}=${targetOrbVersion}`);
 
-      const configData = await getConfigData();
-      const updateConfigParams = {
-        ...configData,
-        ...getTargetKeyAndPreviousVersion(configData.yamlData),
-      };
+      const configData = await getCircleConfigFile();
+      const targetKeyAndPreviousVersion = getTargetKeyAndPreviousVersion(configData.yaml);
 
       // if any of the above are null, we can't proceed
-      if (Object.values(updateConfigParams).some(v => v === null)) {
+      if (!targetKeyAndPreviousVersion) {
         d(`updateConfigParams not complete - skipping.`);
         return;
       }
 
-      if (updateConfigParams.previousVersion === targetValue) {
+      const updateConfigParams = {
+        ...configData,
+        ...targetKeyAndPreviousVersion,
+      };
+
+      if (updateConfigParams.previousVersion === targetOrbVersion) {
         d(`orb version unchanged - skipping PR body update`);
         return;
       }
 
       try {
-        await github.git.getRef({ owner, repo, ref: shortRef });
+        await octokit.git.getRef({ owner, repo, ref: shortRef });
         d(`Ref ${ref} already exists`);
       } catch {
-        d(`Creating ref=${ref} at sha=${sha}`);
-        await github.git.createRef({ owner, repo, ref, sha });
+        d(`Creating ref=${ref} at sha=${defaultBranchHeadSha}`);
+        await octokit.git.createRef({ owner, repo, ref, sha: defaultBranchHeadSha });
       }
 
-      await updateConfigFile(orbTarget, targetValue, updateConfigParams);
+      await updateConfigFile(orbTarget, targetOrbVersion, updateConfigParams);
 
       d(`Raising a PR for ${branchName} to ${repo}`);
-      await github.pulls.create({
+      await octokit.pulls.create({
         ...repository,
         base: defaultBranchName,
         head: `${owner}:${branchName}`,
         ...getOrbPRText(orbTarget, {
           previousVersion: updateConfigParams.previousVersion,
-          newVersion: targetValue,
+          newVersion: targetOrbVersion,
           branchName: defaultBranchName,
         }),
       });
     } catch (e) {
-      d(`Error rolling ${repository.owner}/${repository.repo} to ${targetValue}`, e);
+      d(`Error rolling ${repository.owner}/${repository.repo} to ${targetOrbVersion}`, e);
     }
   }
 
-  function getTargetKeyAndPreviousVersion(
-    yamlData,
-  ): {
-    previousVersion: string;
-    targetKey: string;
-  } {
-    const curr = yamlData[ORB_KEY];
+  function getTargetKeyAndPreviousVersion(yaml) {
+    const curr = yaml[ORB_KEY];
     // attempt to find the orb in .circleci/config.yml whos value includes `orbTarget.name`
-    const targetKey = Object.entries(curr as string).find(([_, value]) =>
+    const targetKey: string = Object.entries(curr as string).find(([_, value]) =>
       value.startsWith(`${orbTarget.name}@`),
     )?.[0];
 
-    if (targetKey === undefined) {
+    if (!targetKey) {
       d(`Key for ${orbTarget.name} not found - skipping.`);
       return null;
     }
@@ -159,50 +161,54 @@ export async function rollOrb(
     };
   }
 
-  async function getConfigData() {
-    const { data: localData } = await github.repos.getContent({
+  async function getCircleConfigFile() {
+    const { data: githubFile } = await octokit.repos.getContent({
       owner,
       repo,
       path: filePath,
       ref: branchName,
     });
 
-    if (!('content' in localData)) {
+    if (!('content' in githubFile)) {
       throw new Error(`Incorrectly received array when fetching content for ${repo}`);
     }
 
-    const content = Buffer.from(localData.content, 'base64').toString();
+    const rawContent = Buffer.from(githubFile.content, 'base64').toString();
     return {
-      yamlData: yaml.parse(content),
-      localData: localData,
-      content,
+      yaml: yamljs.parse(rawContent),
+      githubFile,
+      rawContent,
     };
   }
 
-  async function updateConfigFile(orbTarget: OrbTarget, targetValue: string, updateConfigParams) {
-    const { yamlData, localData, content, previousVersion, targetKey } = updateConfigParams;
+  async function updateConfigFile(
+    orbTarget: OrbTarget,
+    targetOrbVersion: string,
+    updateConfigParams,
+  ) {
+    const { yaml, githubFile, rawContent, previousVersion, targetKey } = updateConfigParams;
     const currentValueRegex = new RegExp(`${orbTarget.name}@${previousVersion}`, 'g');
-    const curr = yamlData[ORB_KEY];
-    let newYamlData: string;
+    const curr = yaml[ORB_KEY];
+    let newYaml: string;
 
     // If there is exactly one occurrence of the target string, we can get away with
     // doing a simple string replacement and avoid any potential formatting issues,
     // otherwise we need to stringify the full config which might change formatting
-    if ((content.match(currentValueRegex) || []).length === 1) {
-      newYamlData = content.replace(currentValueRegex, `${orbTarget.name}@${targetValue}`);
+    if ((rawContent.match(currentValueRegex) || []).length === 1) {
+      newYaml = rawContent.replace(currentValueRegex, `${orbTarget.name}@${targetOrbVersion}`);
     } else {
-      curr[targetKey] = `${orbTarget.name}@${targetValue}`;
-      newYamlData = yaml.stringify(yamlData);
+      curr[targetKey] = `${orbTarget.name}@${targetOrbVersion}`;
+      newYaml = yamljs.stringify(yaml);
     }
-    d(`Updating the new ref with value=${targetValue}`);
-    await github.repos.createOrUpdateFileContents({
+    d(`Updating the new ref with value=${targetOrbVersion}`);
+    await octokit.repos.createOrUpdateFileContents({
       owner,
       repo,
       path: filePath,
-      message: `chore: bump ${orbTarget.name} in .circleci/config.yml to ${targetValue}`,
-      content: Buffer.from(newYamlData).toString('base64'),
+      message: `chore: bump ${orbTarget.name} in .circleci/config.yml to ${targetOrbVersion}`,
+      content: Buffer.from(newYaml).toString('base64'),
       branch: branchName,
-      sha: localData.sha,
+      sha: githubFile.sha,
     });
   }
 }

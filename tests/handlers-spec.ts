@@ -489,6 +489,7 @@ describe('node-orb', () => {
         createRef: jest.fn(),
       },
       repos: {
+        get: jest.fn().mockReturnValue({ data: { default_branch: 'main' } }),
         getContent: jest.fn().mockReturnValue({
           data: {
             type: 'file',
