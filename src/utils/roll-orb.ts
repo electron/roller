@@ -12,15 +12,14 @@ export async function rollOrb(
   sha: string,
   targetValue: string,
   repository: Repository,
+  defaultBranchName: string,
 ): Promise<any> {
   const d = debug(`roller/orb/${orbTarget.name}:rollOrb()`);
   const github = await getOctokit();
   const filePath = '.circleci/config.yml';
 
   const { owner, repo } = repository;
-  const repoData = await github.repos.get({ owner, repo });
-  const DEFAULT_BRANCH = repoData.data.default_branch;
-  const branchName = `roller/orb/${orbTarget.name}/${DEFAULT_BRANCH}`;
+  const branchName = `roller/orb/${orbTarget.name}/${defaultBranchName}`;
   const shortRef = `heads/${branchName}`;
   const ref = `refs/${shortRef}`;
 
@@ -84,7 +83,7 @@ export async function rollOrb(
         ...getOrbPRText(orbTarget, {
           previousVersion: updateConfigParams.previousVersion,
           newVersion: targetValue,
-          branchName: DEFAULT_BRANCH,
+          branchName: defaultBranchName,
         }),
       });
     }
@@ -122,12 +121,12 @@ export async function rollOrb(
       d(`Raising a PR for ${branchName} to ${repo}`);
       await github.pulls.create({
         ...repository,
-        base: DEFAULT_BRANCH,
+        base: defaultBranchName,
         head: `${owner}:${branchName}`,
         ...getOrbPRText(orbTarget, {
           previousVersion: updateConfigParams.previousVersion,
           newVersion: targetValue,
-          branchName: DEFAULT_BRANCH,
+          branchName: defaultBranchName,
         }),
       });
     } catch (e) {

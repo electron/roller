@@ -1,6 +1,6 @@
 import * as debug from 'debug';
 
-import { MAIN_BRANCH, ORB_TARGETS, REPO_OWNER } from './constants';
+import { ORB_TARGETS, REPO_OWNER } from './constants';
 import { getOctokit } from './utils/octokit';
 import { rollOrb } from './utils/roll-orb';
 import { roll } from './utils/roll';
@@ -63,15 +63,23 @@ export async function rollMainBranch() {
       : latestRelease.tag_name;
 
     for (const repo of repos) {
-      d(`Fetching ${MAIN_BRANCH} branch from ${repo.owner}/${repo.repo}`);
+      const repoData = await github.repos.get(repo);
+      const defaultBranchName = repoData.data.default_branch;
+      d(`Fetching ${defaultBranchName} branch from ${repo.owner}/${repo.repo}`);
       const { data: mainBranch } = await github.repos.getBranch({
         owner: repo.owner,
         repo: repo.repo,
-        branch: MAIN_BRANCH,
+        branch: defaultBranchName,
       });
 
       try {
-        await rollOrb(orbTarget, mainBranch.commit.sha, latestReleaseTagName, repo);
+        await rollOrb(
+          orbTarget,
+          mainBranch.commit.sha,
+          latestReleaseTagName,
+          repo,
+          defaultBranchName,
+        );
       } catch (e) {
         d(`Error rolling ${repo.owner}/${repo.repo} to ${latestReleaseTagName}`, e);
         throw new Error(
