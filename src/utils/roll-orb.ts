@@ -145,6 +145,11 @@ export async function rollOrb(
 
   function getTargetKeyAndPreviousVersion(yaml) {
     const curr = yaml[ORB_KEY];
+
+    if (!curr) {
+      d(`No orbs found in .circleci/config.yml - skipping.`);
+      return null;
+    }
     // attempt to find the orb in .circleci/config.yml whos value includes `orbTarget.name`
     const targetKey: string = Object.entries(curr as string).find(([_, value]) =>
       value.startsWith(`${orbTarget.name}@`),
