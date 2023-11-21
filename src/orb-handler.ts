@@ -1,9 +1,29 @@
 import * as debug from 'debug';
 
-import { ORB_TARGETS, REPO_OWNER } from './constants';
+import * as semver from 'semver';
+import { ORB_TARGETS, OrbTarget, REPO_OWNER } from './constants';
 import { getOctokit } from './utils/octokit';
 import { rollOrb } from './utils/roll-orb';
-import { roll } from './utils/roll';
+
+async function getLatestTagForOrb(orbTarget: OrbTarget) {
+  const octokit = await getOctokit();
+  // return a list of tags for the repo, filter out any that aren't valid semver
+  const tags = await (
+    await octokit.paginate('GET /repos/{owner}/{repo}/tags', {
+      owner: orbTarget.owner,
+      repo: orbTarget.repo,
+    })
+  )
+    .map(tag => tag.name)
+    .map(tag => semver.valid(tag))
+    .map(tag => semver.clean(tag))
+    .filter(tag => tag !== null);
+
+  if (!tags.length) {
+    throw new Error(`Failed to get the current release version from tags.`);
+  }
+  return semver.rsort(tags)[0];
+}
 
 // return a list of repositories with a .circleci/config.yml that are under the `electron` namespace and are unarchived
 export async function getRelevantReposList() {
@@ -54,10 +74,19 @@ export async function rollMainBranch() {
 
   for (const orbTarget of ORB_TARGETS) {
     d(`Fetching latest version of ${orbTarget.name}`);
-    const { data: latestRelease } = await octokit.repos.getLatestRelease({
-      owner: orbTarget.owner,
-      repo: orbTarget.repo,
-    });
+    let latestRelease;
+    try {
+      const { data } = await octokit.repos.getLatestRelease({
+        owner: orbTarget.owner,
+        repo: orbTarget.repo,
+      });
+      latestRelease = data;
+    } catch (e) {
+      if (e.status === 404) {
+        latestRelease = getLatestTagForOrb(orbTarget);
+      }
+    }
+
     const latestReleaseTagName = latestRelease.tag_name.startsWith('v')
       ? latestRelease.tag_name.slice(1)
       : latestRelease.tag_name;
