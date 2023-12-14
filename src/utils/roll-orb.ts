@@ -70,7 +70,7 @@ export async function rollOrb(
       }
 
       d(`updating orb version to ${targetOrbVersion}`);
-      updateConfigFile(orbTarget, targetOrbVersion, updateConfigParams);
+      await updateConfigFile(orbTarget, targetOrbVersion, updateConfigParams);
 
       d(`orb version changed - updating PR body`);
       const re = new RegExp('^Original-Version: (\\S+)', 'm');
