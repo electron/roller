@@ -146,7 +146,7 @@ describe('rollOrb()', () => {
     expect(mockOctokit.repos.getContent).toHaveBeenCalledWith({
       owner: repository.owner,
       repo: repository.repo,
-      ref: `roller/orb/${orbTarget.name}/${branch.name}`,
+      ref: undefined,
       path: '.circleci/config.yml',
     });
 
