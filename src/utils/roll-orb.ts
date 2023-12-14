@@ -51,7 +51,7 @@ export async function rollOrb(
       }
 
       d(`Attempting orb update for #${pr.number}`);
-      const configData = await getCircleConfigFile();
+      const configData = await getCircleConfigFile(branchName);
       const targetKeyAndPreviousVersion = getTargetKeyAndPreviousVersion(configData.yaml);
 
       // if any of the above are null, we can't proceed
@@ -110,7 +110,6 @@ export async function rollOrb(
       // if any of the above are null, we can't proceed
       if (!targetKeyAndPreviousVersion) {
         d(`updateConfigParams not complete - skipping.`);
-        await octokit.git.deleteRef({ owner, repo, ref: shortRef });
         return;
       }
 
@@ -120,9 +119,16 @@ export async function rollOrb(
       };
 
       if (updateConfigParams.previousVersion === targetOrbVersion) {
-        d(`orb version unchanged - skipping PR body update`);
-        await octokit.git.deleteRef({ owner, repo, ref: shortRef });
+        d(`orb version unchanged - skipping`);
         return;
+      }
+
+      try {
+        await octokit.git.getRef({ owner, repo, ref: shortRef });
+        d(`Ref ${ref} already exists`);
+      } catch {
+        d(`Creating ref=${ref} at sha=${defaultBranchHeadSha}`);
+        await octokit.git.createRef({ owner, repo, ref, sha: defaultBranchHeadSha });
       }
 
       await updateConfigFile(orbTarget, targetOrbVersion, updateConfigParams);
@@ -168,12 +174,12 @@ export async function rollOrb(
     };
   }
 
-  async function getCircleConfigFile() {
+  async function getCircleConfigFile(contentRef?: string) {
     const { data: githubFile } = await octokit.repos.getContent({
       owner,
       repo,
       path: filePath,
-      ref: branchName,
+      ref: contentRef,
     });
 
     if (!('content' in githubFile)) {
