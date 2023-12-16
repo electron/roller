@@ -44,7 +44,7 @@
     "@octokit/rest": "^18.12.0",
     "@octokit/webhooks-types": "^4.13.1",
     "debug": "^3.1.0",
-    "probot": "^12.2.8",
+    "probot": "^12.3.3",
     "semver": "^7.5.2",
     "yaml": "^2.3.4"
   },
