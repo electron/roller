@@ -20,6 +20,7 @@ describe('roll()', () => {
       required_status_checks: {
         enforcement_level: '',
         contexts: [],
+        checks: [],
       },
     },
     protection_url: 'asdasd',

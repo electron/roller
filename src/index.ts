@@ -3,9 +3,7 @@ import { Context, Probot } from 'probot';
 import { IssueCommentCreatedEvent, PullRequestClosedEvent } from '@octokit/webhooks-types';
 import { handleNodeCheck } from './node-handler';
 import { handleChromiumCheck } from './chromium-handler';
-import { REPOS, ROLL_TARGETS } from './constants';
-import { getSupportedBranches } from './utils/get-supported-branches';
-import { ReposListBranchesResponseItem } from './types';
+import { ROLL_TARGETS } from './constants';
 
 const handler = (robot: Probot) => {
   robot.on('pull_request.closed', async (context: Context) => {
