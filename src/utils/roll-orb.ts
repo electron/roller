@@ -96,14 +96,6 @@ export async function rollOrb(
     try {
       d(`roll triggered for  ${orbTarget.name}=${targetOrbVersion}`);
 
-      try {
-        await octokit.git.getRef({ owner, repo, ref: shortRef });
-        d(`Ref ${ref} already exists`);
-      } catch {
-        d(`Creating ref=${ref} at sha=${defaultBranchHeadSha}`);
-        await octokit.git.createRef({ owner, repo, ref, sha: defaultBranchHeadSha });
-      }
-
       const configData = await getCircleConfigFile();
       const targetKeyAndPreviousVersion = getTargetKeyAndPreviousVersion(configData.yaml);
 
