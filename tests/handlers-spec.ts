@@ -335,6 +335,7 @@ describe('handleNodeCheck()', () => {
 
   beforeEach(() => {
     mockOctokit = {
+      paginate: jest.fn().mockReturnValue([]),
       repos: {
         getBranch: jest.fn().mockReturnValue({
           data: {
@@ -361,19 +362,49 @@ describe('handleNodeCheck()', () => {
           ],
         }),
         getContent: jest.fn(),
+        listBranches: {
+          endpoint: {
+            merge: jest.fn(),
+          },
+        },
       },
     };
     (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
   });
 
   it('rolls even major versions of Node.js with latest minor/patch update', async () => {
+    mockOctokit.paginate.mockReturnValue([
+      {
+        name: '4-x-y',
+        commit: {
+          sha: '1234',
+        },
+      },
+      {
+        name: '5-x-y',
+        commit: {
+          sha: '2345',
+        },
+      },
+      {
+        name: '6-x-y',
+        commit: {
+          sha: '3456',
+        },
+      },
+    ]);
+
     mockOctokit.repos.getContent.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.0.0',`),
         sha: '1234',
       },
     });
+
     await handleNodeCheck();
+
+    // Main roll and three supported branches.
+    expect(roll).toBeCalledTimes(4);
 
     expect(roll).toHaveBeenCalledWith({
       rollTarget: ROLL_TARGETS.node,
@@ -424,7 +455,7 @@ describe('handleNodeCheck()', () => {
         throw new Error('');
       });
     await expect(handleNodeCheck()).rejects.toThrowError(
-      `Upgrade check failed - see logs for more details`,
+      `One or more upgrade checks failed - see logs for more details`,
     );
     expect(roll).toHaveBeenCalled();
   });
