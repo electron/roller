@@ -1,7 +1,8 @@
-import { NUM_SUPPORTED_VERSIONS } from '../constants';
-
 // Get array of currently supported branches
-export function getSupportedBranches(branches: { name: string }[]): string[] {
+export function getSupportedBranches(
+  branches: { name: string }[],
+  numSupportedVersions = 4,
+): string[] {
   const releaseBranches = branches
     .filter(branch => {
       const releasePattern = /^(\d)+-(?:(?:[0-9]+-x$)|(?:x+-y$))$/;
@@ -25,5 +26,5 @@ export function getSupportedBranches(branches: { name: string }[]): string[] {
     });
 
   const values = Object.values(filtered);
-  return values.sort((a, b) => parseInt(a, 10) - parseInt(b, 10)).slice(-NUM_SUPPORTED_VERSIONS);
+  return values.sort((a, b) => parseInt(a, 10) - parseInt(b, 10)).slice(-numSupportedVersions);
 }

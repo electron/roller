@@ -14,8 +14,6 @@ export const REPO_OWNER = 'electron';
 
 export const MAIN_BRANCH = 'main';
 
-export const NUM_SUPPORTED_VERSIONS = 4;
-
 export const ROLL_TARGETS = {
   node: {
     name: 'node',
