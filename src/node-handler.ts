@@ -19,7 +19,7 @@ export async function handleNodeCheck(): Promise<void> {
   );
   let failed = false;
 
-  const supported = getSupportedBranches(branches);
+  const supported = getSupportedBranches(branches, 3);
   const releaseBranches = branches.filter(branch => supported.includes(branch.name));
   d(`Found ${releaseBranches.length} release branches`);
 
