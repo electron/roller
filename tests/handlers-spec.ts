@@ -7,10 +7,12 @@ import { handleChromiumCheck } from '../src/chromium-handler';
 import { getChromiumReleases } from '../src/utils/get-chromium-tags';
 import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
+import { getLatestLTSVersion } from '../src/utils/get-nodejs-lts';
 
 jest.mock('../src/utils/get-chromium-tags');
 jest.mock('../src/utils/octokit');
 jest.mock('../src/utils/roll');
+jest.mock('../src/utils/get-nodejs-lts');
 
 describe('handleChromiumCheck()', () => {
   let mockOctokit: any;
@@ -373,6 +375,8 @@ describe('handleNodeCheck()', () => {
   });
 
   it('rolls even major versions of Node.js with latest minor/patch update', async () => {
+    (getLatestLTSVersion as jest.Mock).mockReturnValue('14.0.0');
+
     mockOctokit.paginate.mockReturnValue([
       {
         name: '4-x-y',
@@ -416,6 +420,8 @@ describe('handleNodeCheck()', () => {
   });
 
   it('does not roll for uneven major versions of Node.js', async () => {
+    (getLatestLTSVersion as jest.Mock).mockReturnValue('12.0.0');
+
     mockOctokit.repos.getContent.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v11.0.0',`),
@@ -428,6 +434,8 @@ describe('handleNodeCheck()', () => {
   });
 
   it('does not roll if no newer release found', async () => {
+    (getLatestLTSVersion as jest.Mock).mockReturnValue('12.0.0');
+
     mockOctokit.repos.getContent.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.2.0',`),
@@ -440,6 +448,8 @@ describe('handleNodeCheck()', () => {
   });
 
   it('throws error if roll() process failed', async () => {
+    (getLatestLTSVersion as jest.Mock).mockReturnValue('14.0.0');
+
     mockOctokit.repos.getContent.mockReturnValue({
       data: {
         content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.0.0',`),
