@@ -6,6 +6,7 @@ import { getOctokit } from './utils/octokit';
 import { roll } from './utils/roll';
 import { ReposListBranchesResponseItem } from './types';
 import { getSupportedBranches } from './utils/get-supported-branches';
+import { getLatestLTSVersion } from './utils/get-nodejs-lts';
 
 export async function handleNodeCheck(): Promise<void> {
   const d = debug('roller/node:handleNodeCheck()');
@@ -85,10 +86,11 @@ async function rollBranch(branch: string, isMain: boolean): Promise<void> {
   d(`Computing latest upstream version for Node ${majorVersion}`);
   let acceptableRange = `^${majorVersion}`;
   if (isMain) {
-    // The main branch can roll ahead to the next LTS
-    acceptableRange = [majorVersion, majorVersion + 2, majorVersion + 4, majorVersion + 6]
-      .map(n => `^${n}`)
-      .join(' || ');
+    // The main branch can roll ahead to the next active LTS.
+    const nextLTS = await getLatestLTSVersion();
+    if (semver.major(nextLTS) > majorVersion) {
+      acceptableRange = `^${majorVersion} || ^${nextLTS}`;
+    }
   }
   const latestUpstreamVersion = semver.maxSatisfying(releaseTags, acceptableRange);
 
