@@ -1,14 +1,67 @@
 import * as debug from 'debug';
+import * as semver from 'semver';
 
-import { BACKPORT_CHECK_SKIP, MAIN_BRANCH, NO_BACKPORT, REPOS, RollTarget } from '../constants';
+import {
+  BACKPORT_CHECK_SKIP,
+  MAIN_BRANCH,
+  NO_BACKPORT,
+  REPOS,
+  ROLL_TARGETS,
+  RollTarget,
+} from '../constants';
 import { ReposListBranchesResponseItem, PullsListResponseItem } from '../types';
 import { getOctokit } from './octokit';
 import { getPRText } from './pr-text';
 import { updateDepsFile } from './update-deps';
+import { Octokit } from '@octokit/rest';
+import { addLabels, removeLabel } from './label-utils';
+
 interface RollParams {
   rollTarget: RollTarget;
   electronBranch: ReposListBranchesResponseItem;
   targetVersion: string;
+  prNumber?: number;
+  previousVersion?: string;
+}
+
+async function updateLabels(
+  octokit: Octokit,
+  { rollTarget, electronBranch, targetVersion, previousVersion, prNumber }: RollParams,
+) {
+  let labelsToAdd: string[] = [];
+  let labelToRemove: string;
+
+  labelsToAdd.push(electronBranch.name === MAIN_BRANCH ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
+
+  // Chromium rolls don't follow semver, but a semver label is required.
+  if (rollTarget === ROLL_TARGETS.chromium) {
+    labelsToAdd.push('semver/patch');
+    await addLabels(octokit, {
+      prNumber,
+      labels: labelsToAdd,
+    });
+    return;
+  }
+
+  // Check Node.js rolls against previous version and determine the semver label to add.
+  const bumpType = semver.diff(previousVersion, targetVersion);
+  if (bumpType === 'patch') {
+    labelsToAdd = ['semver/patch'];
+    labelToRemove = 'semver/minor';
+  } else if (bumpType === 'minor') {
+    labelsToAdd = ['semver/minor'];
+    labelToRemove = 'semver/patch';
+  }
+
+  await removeLabel(octokit, {
+    prNumber,
+    name: labelToRemove,
+  });
+
+  await addLabels(octokit, {
+    prNumber,
+    labels: labelsToAdd,
+  });
 }
 
 export async function roll({
@@ -80,6 +133,14 @@ export async function roll({
           branchName: electronBranch.name,
         }),
       });
+
+      await updateLabels(github, {
+        rollTarget,
+        electronBranch,
+        targetVersion,
+        previousVersion: prVersionText[1],
+        prNumber: pr.number,
+      });
     }
   } else {
     d(`No existing PR found - raising a new PR`);
@@ -125,16 +186,14 @@ export async function roll({
       }),
     });
 
-    const labels = ['semver/patch'];
-    labels.push(electronBranch.name === MAIN_BRANCH ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
-
-    // Although not completely correct, it's the best we've got :)
-    await github.issues.addLabels({
-      ...REPOS.electron,
-      issue_number: newPr.data.number,
-      labels,
+    await updateLabels(github, {
+      rollTarget,
+      electronBranch,
+      targetVersion,
+      previousVersion: previousDEPSVersion,
+      prNumber: newPr.data.number,
     });
+
     d(`New PR: ${newPr.data.html_url}`);
-    // TODO: add comment with commit list to new PR.
   }
 }

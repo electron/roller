@@ -40,6 +40,7 @@ describe('roll()', () => {
       },
       issues: {
         addLabels: jest.fn(),
+        listLabelsOnIssue: jest.fn().mockReturnValue({ data: [] }),
       },
     };
     (getOctokit as jest.Mock).mockReturnValue(mockOctokit);

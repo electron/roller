@@ -1,12 +1,7 @@
 import { Octokit as GitHub } from '@octokit/rest';
-import {
-  AppAuthentication,
-  createAppAuth,
-  InstallationAccessTokenAuthentication,
-} from '@octokit/auth-app';
+import { createAppAuth, InstallationAccessTokenAuthentication } from '@octokit/auth-app';
 
 let octokit: GitHub;
-let appOctokit: GitHub;
 
 const getAuthProvider = () =>
   createAppAuth({
