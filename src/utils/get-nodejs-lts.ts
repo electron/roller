@@ -1,6 +1,6 @@
 import * as semver from 'semver';
 
-const NODE_SCHEDULE_URL = 'https://github.com/nodejs/Release/blob/main/schedule.json';
+const NODE_SCHEDULE_URL = 'https://raw.githubusercontent.com/nodejs/Release/main/schedule.json';
 
 interface NodeMajorLine {
   start: string;
@@ -14,7 +14,9 @@ interface NodeMajorLine {
 export async function getLatestLTSVersion(): Promise<string | null> {
   let data: Record<string, NodeMajorLine>;
   try {
-    const response = await fetch(NODE_SCHEDULE_URL);
+    const response = await fetch(NODE_SCHEDULE_URL, {
+      headers: { accept: 'application/json' },
+    });
     data = await response.json();
   } catch (error) {
     console.error('Failed to fetch Node.js release schedule:', error);
