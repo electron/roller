@@ -34,7 +34,7 @@ async function updateLabels(
   labelsToAdd.push(electronBranch.name === MAIN_BRANCH ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
 
   // Chromium rolls don't follow semver, but a semver label is required.
-  if (rollTarget === ROLL_TARGETS.chromium) {
+  if (electronBranch.name === MAIN_BRANCH) {
     labelsToAdd.push('semver/patch');
     await addLabels(octokit, {
       prNumber,
