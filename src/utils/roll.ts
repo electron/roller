@@ -28,40 +28,30 @@ async function updateLabels(
   octokit: Octokit,
   { rollTarget, electronBranch, targetVersion, previousVersion, prNumber }: RollParams,
 ) {
-  let labelsToAdd: string[] = [];
+  let labels: string[] = [];
   let labelToRemove: string;
 
-  labelsToAdd.push(electronBranch.name === MAIN_BRANCH ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
+  labels.push(electronBranch.name === MAIN_BRANCH ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
 
   // Chromium rolls don't follow semver, but a semver label is required.
-  if (electronBranch.name === MAIN_BRANCH) {
-    labelsToAdd.push('semver/patch');
-    await addLabels(octokit, {
-      prNumber,
-      labels: labelsToAdd,
-    });
+  if (electronBranch.name === MAIN_BRANCH || rollTarget === ROLL_TARGETS.chromium) {
+    labels.push('semver/patch');
+    await addLabels(octokit, { prNumber, labels });
     return;
   }
 
   // Check Node.js rolls against previous version and determine the semver label to add.
   const bumpType = semver.diff(previousVersion, targetVersion);
   if (bumpType === 'patch') {
-    labelsToAdd = ['semver/patch'];
+    labels = ['semver/patch'];
     labelToRemove = 'semver/minor';
   } else if (bumpType === 'minor') {
-    labelsToAdd = ['semver/minor'];
+    labels = ['semver/minor'];
     labelToRemove = 'semver/patch';
   }
 
-  await removeLabel(octokit, {
-    prNumber,
-    name: labelToRemove,
-  });
-
-  await addLabels(octokit, {
-    prNumber,
-    labels: labelsToAdd,
-  });
+  await removeLabel(octokit, { prNumber, name: labelToRemove });
+  await addLabels(octokit, { prNumber, labels });
 }
 
 export async function roll({
