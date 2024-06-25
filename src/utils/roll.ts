@@ -33,7 +33,7 @@ async function updateLabels(
 
   labels.push(electronBranch.name === MAIN_BRANCH ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
 
-  // Chromium rolls don't follow semver, but a semver label is required.
+  // Chromium bumps & roll bumps to the main branch are always patch bumps.
   if (electronBranch.name === MAIN_BRANCH || rollTarget === ROLL_TARGETS.chromium) {
     labels.push('semver/patch');
     await addLabels(octokit, { prNumber, labels });
@@ -43,10 +43,10 @@ async function updateLabels(
   // Check Node.js rolls against previous version and determine the semver label to add.
   const bumpType = semver.diff(previousVersion, targetVersion);
   if (bumpType === 'patch') {
-    labels = ['semver/patch'];
+    labels.push('semver/patch');
     labelToRemove = 'semver/minor';
   } else if (bumpType === 'minor') {
-    labels = ['semver/minor'];
+    labels.push('semver/minor');
     labelToRemove = 'semver/patch';
   }
 
