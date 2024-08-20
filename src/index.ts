@@ -64,10 +64,10 @@ const handler = (robot: Probot) => {
         await context.octokit.issues.createComment(
           context.repo({
             issue_number: issue.number,
-            body: 'Checking for new Node.js commits...',
+            body: `Checking for new Node.js commits on \`${branch}\``,
           }),
         );
-        await handleNodeCheck();
+        await handleNodeCheck(branch);
       }
     } catch (error) {
       d(`Failed to check for possible roll on ${issue.number}: ${error.message}`);

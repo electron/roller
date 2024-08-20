@@ -8,9 +8,11 @@ import { ReposListBranchesResponseItem } from './types';
 import { getSupportedBranches } from './utils/get-supported-branches';
 import { getLatestLTSVersion } from './utils/get-nodejs-lts';
 
-export async function handleNodeCheck(): Promise<void> {
+export async function handleNodeCheck(target?: string): Promise<void> {
   const d = debug('roller/node:handleNodeCheck()');
+
   const github = await getOctokit();
+
   d('Fetching release branches for electron/electron');
   const branches: ReposListBranchesResponseItem[] = await github.paginate(
     github.repos.listBranches.endpoint.merge({
@@ -18,26 +20,36 @@ export async function handleNodeCheck(): Promise<void> {
       protected: true,
     }),
   );
-  let failed = false;
 
   const supported = getSupportedBranches(branches, 3);
   const releaseBranches = branches.filter(branch => supported.includes(branch.name));
   d(`Found ${releaseBranches.length} release branches`);
 
-  // Roll all non-main release branches.
-  for (const branch of releaseBranches) {
+  let failed = false;
+  if (target) {
     try {
-      await rollBranch(branch.name, false);
+      await rollBranch(target, true);
+    } catch (e) {
+      d(`Failed to roll ${target}: ${e.message}`);
+      failed = true;
+    }
+  } else {
+    // Roll all non-main release branches.
+    for (const branch of releaseBranches) {
+      try {
+        await rollBranch(branch.name, false);
+      } catch (e) {
+        failed = true;
+        continue;
+      }
+    }
+
+    // Roll the main branch.
+    try {
+      await rollBranch(MAIN_BRANCH, true);
     } catch (e) {
       failed = true;
-      continue;
     }
-  }
-
-  try {
-    await rollBranch(MAIN_BRANCH, true);
-  } catch (e) {
-    failed = true;
   }
 
   if (failed) {
