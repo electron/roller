@@ -128,6 +128,7 @@ async function rollMainBranch(github: Octokit, chromiumReleases: Release[]) {
 
 export async function handleChromiumCheck(target?: string): Promise<void> {
   const d = debug('roller/chromium:handleChromiumCheck()');
+
   d('Fetching Chromium releases');
   const chromiumReleases = await getChromiumReleases();
 
