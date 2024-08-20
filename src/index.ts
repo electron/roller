@@ -7,7 +7,7 @@ import { ROLL_TARGETS } from './constants';
 
 const handler = (robot: Probot) => {
   robot.on('pull_request.closed', async (context: Context) => {
-    const d = debug('Autorolling On Merge');
+    const d = debug('roller/github:pull_request.closed');
 
     const { pull_request: pr } = context.payload as PullRequestClosedEvent;
 
@@ -31,7 +31,7 @@ const handler = (robot: Probot) => {
   });
 
   robot.on('issue_comment.created', async (context: Context) => {
-    const d = debug('Manual Roll');
+    const d = debug('roller/github:issue_comment.created');
 
     const { issue, comment } = context.payload as IssueCommentCreatedEvent;
 
