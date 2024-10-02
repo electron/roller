@@ -27,7 +27,6 @@
   },
   "homepage": "https://github.com/electron/roller#readme",
   "devDependencies": {
-    "@types/body-parser": "^1.17.0",
     "@types/debug": "^4.1.7",
     "@types/jest": "^29.0.0",
     "@types/node": "^20.10.6",
