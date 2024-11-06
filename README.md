@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/electron/roller.svg?style=svg)](https://circleci.com/gh/electron/roller)
+[![Test](https://github.com/electron/roller/actions/workflows/test.yml/badge.svg)](https://github.com/electron-roller/actions/workflows/test.yml)
 
 # Roller
 
