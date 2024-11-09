@@ -3,23 +3,23 @@ import * as https from 'https';
 function get(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
     https
-      .get(url, res => {
+      .get(url, (res) => {
         let s = '';
-        res.on('data', d => {
+        res.on('data', (d) => {
           s += d.toString('utf8');
         });
         res.on('end', () => {
           resolve(s);
         });
       })
-      .on('error', e => {
+      .on('error', (e) => {
         reject(e);
       });
   });
 }
 
 function getJSON(url: string): Promise<any> {
-  return get(url).then(s => JSON.parse(s.slice(s.indexOf('{'))));
+  return get(url).then((s) => JSON.parse(s.slice(s.indexOf('{'))));
 }
 
 export type Release = {
@@ -31,7 +31,7 @@ export type Release = {
 };
 
 export function getChromiumReleases(): Promise<Release[]> {
-  return get('https://chromiumdash.appspot.com/fetch_releases').then(s => JSON.parse(s));
+  return get('https://chromiumdash.appspot.com/fetch_releases').then((s) => JSON.parse(s));
 }
 
 export interface ChromiumCommit {

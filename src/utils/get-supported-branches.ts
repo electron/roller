@@ -4,11 +4,11 @@ export function getSupportedBranches(
   numSupportedVersions = 4,
 ): string[] {
   const releaseBranches = branches
-    .filter(branch => {
+    .filter((branch) => {
       const releasePattern = /^(\d)+-(?:(?:[0-9]+-x$)|(?:x+-y$))$/;
       return releasePattern.test(branch.name);
     })
-    .map(b => b.name);
+    .map((b) => b.name);
 
   const filtered: Record<string, string> = {};
   releaseBranches
@@ -21,7 +21,7 @@ export function getSupportedBranches(
       }
       return 0;
     })
-    .forEach(branch => {
+    .forEach((branch) => {
       return (filtered[branch.split('-')[0]] = branch);
     });
 

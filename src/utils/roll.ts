@@ -73,7 +73,7 @@ export async function roll({
     state: 'open',
   })) as PullsListResponseItem[];
 
-  const prs = existingPrsForBranch.filter(pr =>
+  const prs = existingPrsForBranch.filter((pr) =>
     pr.title.startsWith(`chore: bump ${rollTarget.name}`),
   );
 
@@ -84,7 +84,7 @@ export async function roll({
       d(`Found existing PR: #${pr.number} opened by ${pr.user.login}`);
 
       // Check to see if automatic DEPS roll has been temporarily disabled
-      const hasPauseLabel = pr.labels.some(label => label.name === 'roller/pause');
+      const hasPauseLabel = pr.labels.some((label) => label.name === 'roller/pause');
       if (hasPauseLabel) {
         d(`Automatic updates have been paused for #${pr.number}, skipping DEPS roll.`);
         continue;
@@ -145,7 +145,7 @@ export async function roll({
       if (maybeOldRef.status === 200) {
         d(`Found orphan ref ${ref} with no open PR - deleting`);
         await github.git.deleteRef({ ...REPOS.electron, ref: shortRef });
-        await new Promise<void>(r => setTimeout(r, 2000));
+        await new Promise<void>((r) => setTimeout(r, 2000));
       }
     } catch (error) {
       d(`No orphan ref exists at ${ref} - proceeding`);

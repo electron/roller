@@ -34,7 +34,7 @@ export async function rollOrb(
     })) as PullsListResponseItem[];
   } catch {}
 
-  const prs = existingPrsForBranch.filter(pr =>
+  const prs = existingPrsForBranch.filter((pr) =>
     pr.title.startsWith(`chore: bump ${orbTarget.name}`),
   );
 
@@ -44,7 +44,7 @@ export async function rollOrb(
       d(`Found existing PR: #${pr.number} opened by ${pr.user.login}`);
 
       // Check to see if automatic orb roll has been temporarily disabled
-      const hasPauseLabel = pr.labels.some(label => label.name === 'roller/pause');
+      const hasPauseLabel = pr.labels.some((label) => label.name === 'roller/pause');
       if (hasPauseLabel) {
         d(`Automatic updates have been paused for #${pr.number}, skipping orb roll.`);
         continue;
