@@ -21,9 +21,11 @@ export async function getOctokit(): Promise<GitHub> {
   octokit =
     octokit ||
     new GitHub({
-      auth: ((await getAuthProvider()({
-        type: 'installation',
-      })) as InstallationAccessTokenAuthentication).token,
+      auth: (
+        (await getAuthProvider()({
+          type: 'installation',
+        })) as InstallationAccessTokenAuthentication
+      ).token,
     });
 
   return octokit;

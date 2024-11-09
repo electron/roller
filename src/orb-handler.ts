@@ -14,10 +14,10 @@ async function getLatestTagForOrb(orbTarget: OrbTarget) {
       repo: orbTarget.repo,
     })
   )
-    .map(tag => tag.name)
-    .map(tag => semver.valid(tag))
-    .map(tag => semver.clean(tag))
-    .filter(tag => tag !== null);
+    .map((tag) => tag.name)
+    .map((tag) => semver.valid(tag))
+    .map((tag) => semver.clean(tag))
+    .filter((tag) => tag !== null);
 
   if (!tags.length) {
     throw new Error(`Failed to get the current release version from tags.`);
@@ -37,13 +37,13 @@ export async function getRelevantReposList() {
       org: REPO_OWNER,
       type: 'sources',
     })
-  ).filter(repo => {
+  ).filter((repo) => {
     return !repo.archived;
   });
 
   d('filtering repos that have a .circleci/config.yml file and return a list of OrbTarget');
   const repos = await Promise.all(
-    reposList.map(async repo => {
+    reposList.map(async (repo) => {
       try {
         await octokit.repos.getContent({
           owner: REPO_OWNER,
@@ -62,7 +62,7 @@ export async function getRelevantReposList() {
       }
     }),
   );
-  return repos.filter(repo => repo !== null);
+  return repos.filter((repo) => repo !== null);
 }
 
 // Rolls each orb defined in ORB_TARGETS in constants.ts to the latest version

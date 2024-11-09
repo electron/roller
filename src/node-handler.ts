@@ -22,7 +22,7 @@ export async function handleNodeCheck(target?: string): Promise<void> {
   );
 
   const supported = getSupportedBranches(branches, 3);
-  const releaseBranches = branches.filter(branch => supported.includes(branch.name));
+  const releaseBranches = branches.filter((branch) => supported.includes(branch.name));
   d(`Found ${releaseBranches.length} release branches`);
 
   let failed = false;
@@ -67,7 +67,7 @@ async function rollBranch(branch: string, isMain: boolean): Promise<void> {
     repo: REPOS.node.repo,
     per_page: 100,
   });
-  const releaseTags = releases.map(r => r.tag_name);
+  const releaseTags = releases.map((r) => r.tag_name);
 
   d(`Fetching ${branch} branch from electron/electron`);
   const { data: targetBranch } = await github.repos.getBranch({
