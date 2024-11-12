@@ -9,7 +9,7 @@ export const addLabels = async (
   },
 ) => {
   // If the PR already has the label, don't try to add it.
-  const labels = data.labels.filter(async label => {
+  const labels = data.labels.filter(async (label) => {
     const labelExists = await labelExistsOnPR(octokit, {
       prNumber: data.prNumber,
       name: label,
@@ -61,6 +61,6 @@ export const labelExistsOnPR = async (
     page: 1,
   });
 
-  const labels = labelData.map(l => l.name);
-  return labels.some(label => label === data.name);
+  const labels = labelData.map((l) => l.name);
+  return labels.some((label) => label === data.name);
 };

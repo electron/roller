@@ -39,12 +39,12 @@ async function rollReleaseBranch(github: Octokit, branch: BranchItem, chromiumRe
   d(`Computing latest upstream version for Chromium ${chromiumMajorVersion}`);
   const upstreamVersions = chromiumReleases
     .filter(
-      r =>
+      (r) =>
         ['Win32', 'Windows', 'Linux', 'Mac'].includes(r.platform) &&
         r.milestone === chromiumMajorVersion,
     )
     .sort((a, b) => a.time - b.time)
-    .map(r => r.version);
+    .map((r) => r.version);
   const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
   if (
     latestUpstreamVersion &&
@@ -104,10 +104,10 @@ async function rollMainBranch(github: Octokit, chromiumReleases: Release[]) {
 
   const upstreamVersions = chromiumReleases
     .filter(
-      r => ['Windows', 'Win32', 'Linux', 'Mac'].includes(r.platform) && r.channel === 'Canary',
+      (r) => ['Windows', 'Win32', 'Linux', 'Mac'].includes(r.platform) && r.channel === 'Canary',
     )
     .sort((a, b) => a.time - b.time)
-    .map(r => r.version);
+    .map((r) => r.version);
   const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
 
   if (latestUpstreamVersion && currentVersion !== latestUpstreamVersion) {
@@ -168,7 +168,7 @@ export async function handleChromiumCheck(target?: string): Promise<void> {
     );
 
     const supported = getSupportedBranches(branches);
-    const releaseBranches = branches.filter(branch => supported.includes(branch.name));
+    const releaseBranches = branches.filter((branch) => supported.includes(branch.name));
     d(`Found ${releaseBranches.length} release branches`);
 
     // Roll all non-main release branches.
