@@ -14,7 +14,7 @@
     "roll-node": "DEBUG=roller* node lib/node-cron.js",
     "roll-orb": "DEBUG=roller* node lib/orb-cron.js",
     "start": "DEBUG=roller* probot run ./lib/index.js",
-    "test": "jest --config=jest.json --coverage"
+    "test": "vitest run --coverage --reporter=verbose"
   },
   "repository": {
     "type": "git",
@@ -28,15 +28,14 @@
   "homepage": "https://github.com/electron/roller#readme",
   "devDependencies": {
     "@types/debug": "^4.1.12",
-    "@types/jest": "^29.5.14",
     "@types/node": "^22.9.0",
     "@types/semver": "^7.5.8",
+    "@vitest/coverage-v8": "3.0.2",
     "husky": "^9.1.6",
-    "jest": "^29.7.0",
     "lint-staged": "^15.2.10",
     "prettier": "^3.3.3",
-    "ts-jest": "^29.2.5",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^3.0.2"
   },
   "dependencies": {
     "@octokit/auth-app": "^6.0.2",

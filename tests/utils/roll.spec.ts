@@ -1,10 +1,12 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { roll } from '../../src/utils/roll';
 import { getOctokit } from '../../src/utils/octokit';
 import { ROLL_TARGETS, REPOS } from '../../src/constants';
 import { updateDepsFile } from '../../src/utils/update-deps';
 
-jest.mock('../../src/utils/octokit');
-jest.mock('../../src/utils/update-deps');
+vi.mock('../../src/utils/octokit');
+vi.mock('../../src/utils/update-deps');
 
 describe('roll()', () => {
   let mockOctokit: any;
@@ -28,23 +30,23 @@ describe('roll()', () => {
 
   beforeEach(() => {
     mockOctokit = {
-      paginate: jest.fn(),
+      paginate: vi.fn(),
       pulls: {
-        update: jest.fn(),
-        create: jest.fn().mockReturnValue({ data: { html_url: 'https://google.com' } }),
+        update: vi.fn(),
+        create: vi.fn().mockReturnValue({ data: { html_url: 'https://google.com' } }),
       },
       git: {
-        createRef: jest.fn(),
-        getRef: jest.fn().mockReturnValue({ status: 404 }),
-        deleteRef: jest.fn(),
+        createRef: vi.fn(),
+        getRef: vi.fn().mockReturnValue({ status: 404 }),
+        deleteRef: vi.fn(),
       },
       issues: {
-        addLabels: jest.fn(),
-        listLabelsOnIssue: jest.fn().mockReturnValue({ data: [] }),
+        addLabels: vi.fn(),
+        listLabelsOnIssue: vi.fn().mockReturnValue({ data: [] }),
       },
     };
-    (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
-    (updateDepsFile as jest.Mock).mockReturnValue({
+    vi.mocked(getOctokit).mockReturnValue(mockOctokit);
+    vi.mocked(updateDepsFile).mockResolvedValue({
       previousDEPSVersion: 'v4.0.0',
       newDEPSVersion: 'v10.0.0',
     });
@@ -67,7 +69,7 @@ describe('roll()', () => {
       },
     ]);
 
-    (updateDepsFile as jest.Mock).mockReturnValue({
+    vi.mocked(updateDepsFile).mockResolvedValue({
       previousDEPSVersion: 'v4.0.0',
       newDEPSVersion: 'v4.0.0',
     });
@@ -99,7 +101,7 @@ describe('roll()', () => {
       },
     ]);
 
-    (updateDepsFile as jest.Mock).mockReturnValue({
+    vi.mocked(updateDepsFile).mockResolvedValue({
       previousDEPSVersion: 'v4.0.0',
       newDEPSVersion: 'v4.0.0',
     });

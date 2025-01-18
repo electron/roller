@@ -1,7 +1,8 @@
-import { getOrbPRText } from '../../src/utils/pr-text-orb';
-import { ORB_TARGETS } from '../../src/constants';
+import { describe, expect, it, vi } from 'vitest';
 
-jest.mock('../../src/utils/octokit');
+import { getOrbPRText } from '../../src/utils/pr-text-orb';
+
+vi.mock('../../src/utils/octokit');
 
 describe('getOrbPRText', () => {
   describe('node-orb target', () => {

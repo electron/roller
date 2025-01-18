@@ -1,10 +1,12 @@
+import { vi } from 'vitest';
+
 export const mockOctokit = {
   git: {
-    createRef: jest.fn(),
-    getRef: jest.fn(),
+    createRef: vi.fn(),
+    getRef: vi.fn(),
   },
   repos: {
-    getContent: jest.fn(),
-    updateFile: jest.fn(),
+    getContent: vi.fn(),
+    updateFile: vi.fn(),
   },
 };

@@ -1,8 +1,10 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { rollOrb } from '../../src/utils/roll-orb';
 import { getOctokit } from '../../src/utils/octokit';
 import { Repository, OrbTarget, MAIN_BRANCH } from '../../src/constants';
 
-jest.mock('../../src/utils/octokit');
+vi.mock('../../src/utils/octokit');
 
 describe('rollOrb()', () => {
   let mockOctokit: any;
@@ -24,26 +26,26 @@ describe('rollOrb()', () => {
 
   beforeEach(() => {
     mockOctokit = {
-      paginate: jest.fn(),
+      paginate: vi.fn(),
       pulls: {
-        create: jest.fn().mockReturnValue({ data: { html_url: 'https://google.com' } }),
-        update: jest.fn(),
+        create: vi.fn().mockReturnValue({ data: { html_url: 'https://google.com' } }),
+        update: vi.fn(),
       },
       git: {
-        createRef: jest.fn(),
+        createRef: vi.fn(),
       },
       repos: {
-        getContent: jest.fn().mockReturnValue({
+        getContent: vi.fn().mockReturnValue({
           data: {
             type: 'file',
             content: Buffer.from('orbs:\n  node: electronjs/node@1.0.0\n').toString('base64'),
             sha: '1234',
           },
         }),
-        createOrUpdateFileContents: jest.fn(),
+        createOrUpdateFileContents: vi.fn(),
       },
     };
-    (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
+    vi.mocked(getOctokit).mockReturnValue(mockOctokit);
   });
 
   it('takes no action if versions are identical', async () => {
