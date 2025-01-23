@@ -1,4 +1,4 @@
-import * as debug from 'debug';
+import debug from 'debug';
 import * as semver from 'semver';
 
 import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from './constants';

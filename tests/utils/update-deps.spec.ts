@@ -1,8 +1,10 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { updateDepsFile, UpdateDepsParams } from '../../src/utils/update-deps';
 import { getOctokit } from '../../src/utils/octokit';
 import { REPOS } from '../../src/constants';
 
-jest.mock('../../src/utils/octokit');
+vi.mock('../../src/utils/octokit');
 
 describe('updateDepsFile()', () => {
   let mockOctokit: any;
@@ -11,16 +13,16 @@ describe('updateDepsFile()', () => {
   beforeEach(() => {
     mockOctokit = {
       repos: {
-        getContent: jest.fn().mockImplementation(() => ({
+        getContent: vi.fn().mockImplementation(() => ({
           data: {
             content: Buffer.from("'testKey':\n    'v4.0.0',"),
             sha: '1234',
           },
         })),
-        createOrUpdateFileContents: jest.fn(),
+        createOrUpdateFileContents: vi.fn(),
       },
     };
-    (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
+    vi.mocked(getOctokit).mockReturnValue(mockOctokit);
     options = {
       depKey: 'testKey',
       depName: 'testName',

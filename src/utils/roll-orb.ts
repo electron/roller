@@ -1,4 +1,4 @@
-import * as debug from 'debug';
+import debug from 'debug';
 import * as yamljs from 'yaml';
 
 import { ORB_KEY, OrbTarget, Repository } from '../constants';

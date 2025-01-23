@@ -1,3 +1,5 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from '../src/constants';
 import * as orbHandler from '../src/orb-handler';
 import * as rollOrb from '../src/utils/roll-orb';
@@ -9,26 +11,26 @@ import { getOctokit } from '../src/utils/octokit';
 import { roll } from '../src/utils/roll';
 import { getLatestLTSVersion } from '../src/utils/get-nodejs-lts';
 
-jest.mock('../src/utils/get-chromium-tags');
-jest.mock('../src/utils/octokit');
-jest.mock('../src/utils/roll');
-jest.mock('../src/utils/get-nodejs-lts');
+vi.mock('../src/utils/get-chromium-tags');
+vi.mock('../src/utils/octokit');
+vi.mock('../src/utils/roll');
+vi.mock('../src/utils/get-nodejs-lts');
 
 describe('handleChromiumCheck()', () => {
   let mockOctokit: any;
 
   beforeEach(() => {
     mockOctokit = {
-      paginate: jest.fn(),
+      paginate: vi.fn(),
       repos: {
         listBranches: {
           endpoint: {
-            merge: jest.fn(),
+            merge: vi.fn(),
           },
         },
-        getContent: jest.fn(),
-        get: jest.fn(),
-        getBranch: jest.fn().mockReturnValue({
+        getContent: vi.fn(),
+        get: vi.fn(),
+        getBranch: vi.fn().mockReturnValue({
           data: {
             name: MAIN_BRANCH,
             commit: {
@@ -38,7 +40,7 @@ describe('handleChromiumCheck()', () => {
         }),
       },
     };
-    (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
+    vi.mocked(getOctokit).mockReturnValue(mockOctokit);
   });
 
   describe('release branches', () => {
@@ -58,7 +60,7 @@ describe('handleChromiumCheck()', () => {
           sha: '1234',
         },
       });
-      (getChromiumReleases as jest.Mock).mockReturnValue([
+      vi.mocked(getChromiumReleases).mockResolvedValue([
         {
           time: 1577869261000,
           version: '1.1.0.0',
@@ -167,7 +169,7 @@ describe('handleChromiumCheck()', () => {
       mockOctokit.repos.getBranch.mockReturnValue(null);
 
       const invalid = 'i-am-not-a-valid-release-branch';
-      expect(handleChromiumCheck(invalid)).rejects.toThrow(
+      await expect(handleChromiumCheck(invalid)).rejects.toThrow(
         'One or more upgrade checks failed - see logs for more details',
       );
     });
@@ -224,7 +226,7 @@ describe('handleChromiumCheck()', () => {
     });
 
     it('updates to main', async () => {
-      (getChromiumReleases as jest.Mock).mockReturnValue([
+      vi.mocked(getChromiumReleases).mockResolvedValue([
         {
           time: 1577869261000,
           version: '1.1.0.0',
@@ -259,7 +261,7 @@ describe('handleChromiumCheck()', () => {
     });
 
     it('takes no action if main is already in DEPS', async () => {
-      (getChromiumReleases as jest.Mock).mockReturnValue([
+      vi.mocked(getChromiumReleases).mockResolvedValue([
         {
           time: 1577869261000,
           version: '1.1.0.0',
@@ -298,7 +300,7 @@ describe('handleChromiumCheck()', () => {
         sha: '1234',
       },
     });
-    (getChromiumReleases as jest.Mock).mockReturnValue([
+    vi.mocked(getChromiumReleases).mockResolvedValue([
       {
         time: 1577869261000,
         version: '1.1.0.0',
@@ -322,7 +324,7 @@ describe('handleChromiumCheck()', () => {
       },
     ]);
 
-    (roll as jest.Mock).mockImplementationOnce(() => {
+    vi.mocked(roll).mockImplementationOnce(() => {
       throw new Error('');
     });
     await expect(handleChromiumCheck()).rejects.toThrowError(
@@ -337,9 +339,9 @@ describe('handleNodeCheck()', () => {
 
   beforeEach(() => {
     mockOctokit = {
-      paginate: jest.fn().mockReturnValue([]),
+      paginate: vi.fn().mockReturnValue([]),
       repos: {
-        getBranch: jest.fn().mockReturnValue({
+        getBranch: vi.fn().mockReturnValue({
           data: {
             name: MAIN_BRANCH,
             commit: {
@@ -347,7 +349,7 @@ describe('handleNodeCheck()', () => {
             },
           },
         }),
-        listReleases: jest.fn().mockReturnValue({
+        listReleases: vi.fn().mockReturnValue({
           data: [
             {
               tag_name: 'v11.2.0',
@@ -363,19 +365,19 @@ describe('handleNodeCheck()', () => {
             },
           ],
         }),
-        getContent: jest.fn(),
+        getContent: vi.fn(),
         listBranches: {
           endpoint: {
-            merge: jest.fn(),
+            merge: vi.fn(),
           },
         },
       },
     };
-    (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
+    vi.mocked(getOctokit).mockReturnValue(mockOctokit);
   });
 
   it('rolls even major versions of Node.js with latest minor/patch update', async () => {
-    (getLatestLTSVersion as jest.Mock).mockReturnValue('14.0.0');
+    vi.mocked(getLatestLTSVersion).mockResolvedValue('14.0.0');
 
     mockOctokit.paginate.mockReturnValue([
       {
@@ -420,7 +422,7 @@ describe('handleNodeCheck()', () => {
   });
 
   it('does not roll for uneven major versions of Node.js', async () => {
-    (getLatestLTSVersion as jest.Mock).mockReturnValue('12.0.0');
+    vi.mocked(getLatestLTSVersion).mockResolvedValue('12.0.0');
 
     mockOctokit.repos.getContent.mockReturnValue({
       data: {
@@ -434,7 +436,7 @@ describe('handleNodeCheck()', () => {
   });
 
   it('does not roll if no newer release found', async () => {
-    (getLatestLTSVersion as jest.Mock).mockReturnValue('12.0.0');
+    vi.mocked(getLatestLTSVersion).mockResolvedValue('12.0.0');
 
     mockOctokit.repos.getContent.mockReturnValue({
       data: {
@@ -448,7 +450,7 @@ describe('handleNodeCheck()', () => {
   });
 
   it('throws error if roll() process failed', async () => {
-    (getLatestLTSVersion as jest.Mock).mockReturnValue('14.0.0');
+    vi.mocked(getLatestLTSVersion).mockResolvedValue('14.0.0');
 
     mockOctokit.repos.getContent.mockReturnValue({
       data: {
@@ -457,7 +459,7 @@ describe('handleNodeCheck()', () => {
       },
     });
 
-    (roll as jest.Mock)
+    vi.mocked(roll)
       .mockImplementationOnce(() => {
         throw new Error('');
       })
@@ -490,9 +492,9 @@ describe('node-orb', () => {
   };
 
   beforeEach(() => {
-    // mockReturnValue getReleveantReposList to return a list of repos that use the node orb
-    jest.spyOn(rollOrb, 'rollOrb').mockImplementation(async () => {});
-    jest.spyOn(orbHandler, 'getRelevantReposList').mockImplementation(async () => {
+    // mockReturnValue getRelevantReposList to return a list of repos that use the node orb
+    vi.spyOn(rollOrb, 'rollOrb').mockImplementation(async () => {});
+    vi.spyOn(orbHandler, 'getRelevantReposList').mockImplementation(async () => {
       return [
         {
           repo: 'fiddle',
@@ -506,7 +508,7 @@ describe('node-orb', () => {
     });
 
     mockOctokit = {
-      paginate: jest.fn().mockReturnValue([
+      paginate: vi.fn().mockReturnValue([
         {
           name: 'fiddle',
           owner: 'electron',
@@ -524,31 +526,31 @@ describe('node-orb', () => {
         },
       ]),
       pulls: {
-        create: jest.fn().mockReturnValue({ data: { html_url: 'https://google.com' } }),
+        create: vi.fn().mockReturnValue({ data: { html_url: 'https://google.com' } }),
       },
       git: {
-        createRef: jest.fn(),
+        createRef: vi.fn(),
       },
       repos: {
-        get: jest.fn().mockReturnValue({ data: { default_branch: 'main' } }),
-        getContent: jest.fn().mockReturnValue({
+        get: vi.fn().mockReturnValue({ data: { default_branch: 'main' } }),
+        getContent: vi.fn().mockReturnValue({
           data: {
             type: 'file',
             content: Buffer.from('orbs:\n  node: electronjs/node@1.0.0\n').toString('base64'),
           },
         }),
-        createOrUpdateFileContents: jest.fn(),
-        getLatestRelease: jest.fn().mockReturnValue({
+        createOrUpdateFileContents: vi.fn(),
+        getLatestRelease: vi.fn().mockReturnValue({
           data: {
             tag_name: '2.0.0',
           },
         }),
-        getBranch: jest.fn().mockReturnValue({
+        getBranch: vi.fn().mockReturnValue({
           data: branch,
         }),
       },
     };
-    (getOctokit as jest.Mock).mockReturnValue(mockOctokit);
+    vi.mocked(getOctokit).mockReturnValue(mockOctokit);
   });
 
   it('rolls relevant repos only', async () => {

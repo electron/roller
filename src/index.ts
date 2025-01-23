@@ -1,4 +1,4 @@
-import * as debug from 'debug';
+import debug from 'debug';
 import { Context, Probot } from 'probot';
 import { IssueCommentCreatedEvent, PullRequestClosedEvent } from '@octokit/webhooks-types';
 import { handleNodeCheck } from './node-handler';

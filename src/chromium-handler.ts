@@ -1,4 +1,4 @@
-import * as debug from 'debug';
+import debug from 'debug';
 
 import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from './constants';
 import { compareChromiumVersions } from './utils/compare-chromium-versions';

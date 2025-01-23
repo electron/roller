@@ -13,6 +13,7 @@
 		"node_modules",
 		"tests",
 		"lib",
-		"coverage"
+		"coverage",
+    "vitest.config.ts"
 	]
 }
