@@ -57,3 +57,10 @@ Original-Version: ${previousVersion}
 Notes: Updated Node.js to ${newVersion}.`,
   };
 }
+
+export function getInfraPRText(bumpSubject: string, newShortVersion: string) {
+  return {
+    title: `build: bump ${bumpSubject} to ${newShortVersion}`,
+    body: `Updating ${bumpSubject} to \`${newShortVersion}\``,
+  };
+}
