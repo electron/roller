@@ -1,6 +1,7 @@
 import * as semver from 'semver';
 
-const NODE_SCHEDULE_URL = 'https://raw.githubusercontent.com/nodejs/Release/main/schedule.json';
+export const NODE_SCHEDULE_URL =
+  'https://raw.githubusercontent.com/nodejs/Release/main/schedule.json';
 
 interface NodeMajorLine {
   start: string;
