@@ -6,9 +6,9 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "lint": "prettier --check \"src/**/*.ts\"",
+    "lint": "prettier --check \"{src,tests}/**/*.ts\"",
     "postinstall": "tsc",
-    "prettier:write": "prettier --write \"src/**/*.ts\"",
+    "prettier:write": "prettier --write \"{src,tests}/**/*.ts\"",
     "prepare": "husky",
     "roll-chromium": "DEBUG=roller* node lib/chromium-cron.js",
     "roll-node": "DEBUG=roller* node lib/node-cron.js",
@@ -33,6 +33,7 @@
     "@vitest/coverage-v8": "3.0.2",
     "husky": "^9.1.6",
     "lint-staged": "^15.2.10",
+    "nock": "^14.0.1",
     "prettier": "^3.3.3",
     "typescript": "^5.6.3",
     "vitest": "^3.0.5"
