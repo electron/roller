@@ -60,32 +60,11 @@ describe('handleChromiumCheck()', () => {
           sha: '1234',
         },
       });
-      vi.mocked(getChromiumReleases).mockResolvedValue([
-        {
-          time: 1577869261000,
-          version: '1.1.0.0',
-          milestone: 1,
-          channel: 'Stable',
-          platform: 'Windows',
-        },
-        {
-          time: 1577869261003,
-          version: '2.1.0.0',
-          milestone: 2,
-          channel: 'Beta',
-          platform: 'Windows',
-        },
-        {
-          time: 1577869261002,
-          version: '1.2.0.0',
-          milestone: 1,
-          channel: 'Stable',
-          platform: 'Mac',
-        },
-      ]);
     });
 
     it('properly fetches supported versions of Electron to roll against', async () => {
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0', '2.1.0.0']);
+
       mockOctokit.paginate.mockReturnValue([
         {
           name: '10-x-y',
@@ -155,6 +134,8 @@ describe('handleChromiumCheck()', () => {
     });
 
     it('rolls with latest versions from release tags', async () => {
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0']);
+
       await handleChromiumCheck();
 
       expect(roll).toHaveBeenCalledWith(
@@ -175,6 +156,8 @@ describe('handleChromiumCheck()', () => {
     });
 
     it('takes no action if no new minor/build/patch available', async () => {
+      vi.mocked(getChromiumReleases).mockResolvedValue([]);
+
       mockOctokit.repos.getContent.mockReturnValue({
         data: {
           content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.5.0.0',`),
@@ -226,29 +209,7 @@ describe('handleChromiumCheck()', () => {
     });
 
     it('updates to main', async () => {
-      vi.mocked(getChromiumReleases).mockResolvedValue([
-        {
-          time: 1577869261000,
-          version: '1.1.0.0',
-          milestone: 1,
-          channel: 'Stable',
-          platform: 'Windows',
-        },
-        {
-          time: 1577869261003,
-          version: '2.1.0.0',
-          milestone: 2,
-          channel: 'Canary',
-          platform: 'Windows',
-        },
-        {
-          time: 1577869261002,
-          version: '1.2.0.0',
-          milestone: 1,
-          channel: 'Stable',
-          platform: 'Mac',
-        },
-      ]);
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0', '2.1.0.0']);
 
       await handleChromiumCheck();
 
@@ -261,22 +222,7 @@ describe('handleChromiumCheck()', () => {
     });
 
     it('takes no action if main is already in DEPS', async () => {
-      vi.mocked(getChromiumReleases).mockResolvedValue([
-        {
-          time: 1577869261000,
-          version: '1.1.0.0',
-          milestone: 1,
-          channel: 'Canary',
-          platform: 'Windows',
-        },
-        {
-          time: 1577869261001,
-          version: '1.1.0.0',
-          milestone: 1,
-          channel: 'Canary',
-          platform: 'Mac',
-        },
-      ]);
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.1.0.0']);
 
       await handleChromiumCheck();
 
@@ -300,29 +246,7 @@ describe('handleChromiumCheck()', () => {
         sha: '1234',
       },
     });
-    vi.mocked(getChromiumReleases).mockResolvedValue([
-      {
-        time: 1577869261000,
-        version: '1.1.0.0',
-        milestone: 1,
-        channel: 'Stable',
-        platform: 'Windows',
-      },
-      {
-        time: 1577869261003,
-        version: '2.1.0.0',
-        milestone: 2,
-        channel: 'Beta',
-        platform: 'Windows',
-      },
-      {
-        time: 1577869261002,
-        version: '1.2.0.0',
-        milestone: 1,
-        channel: 'Stable',
-        platform: 'Mac',
-      },
-    ]);
+    vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0', '2.1.0.0']);
 
     vi.mocked(roll).mockImplementationOnce(() => {
       throw new Error('');
