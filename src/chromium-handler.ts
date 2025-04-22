@@ -11,7 +11,7 @@ import { Octokit } from '@octokit/rest';
 
 type BranchItem = ReposGetBranchResponseItem | ReposListBranchesResponseItem;
 
-async function rollReleaseBranch(github: Octokit, branch: BranchItem, chromiumReleases: Release[]) {
+async function rollReleaseBranch(github: Octokit, branch: BranchItem) {
   const d = debug(`roller/chromium:rollReleaseBranch('${branch.name}')`);
 
   d(`Fetching DEPS for ${branch.name}`);
@@ -37,15 +37,9 @@ async function rollReleaseBranch(github: Octokit, branch: BranchItem, chromiumRe
   }
 
   d(`Computing latest upstream version for Chromium ${chromiumMajorVersion}`);
-  const upstreamVersions = chromiumReleases
-    .filter(
-      (r) =>
-        ['Win32', 'Windows', 'Linux', 'Mac'].includes(r.platform) &&
-        r.milestone === chromiumMajorVersion,
-    )
-    .sort((a, b) => a.time - b.time)
-    .map((r) => r.version);
-  const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
+  const chromiumReleases = await getChromiumReleases({ milestone: chromiumMajorVersion });
+  const latestUpstreamVersion = chromiumReleases[chromiumReleases.length - 1];
+
   if (
     latestUpstreamVersion &&
     compareChromiumVersions(latestUpstreamVersion, chromiumVersion) > 0
@@ -67,7 +61,7 @@ async function rollReleaseBranch(github: Octokit, branch: BranchItem, chromiumRe
   }
 }
 
-async function rollMainBranch(github: Octokit, chromiumReleases: Release[]) {
+async function rollMainBranch(github: Octokit) {
   const d = debug('roller/chromium:rollMainBranch()');
 
   d(`Fetching ${MAIN_BRANCH} branch for electron/electron`);
@@ -102,13 +96,8 @@ async function rollMainBranch(github: Octokit, chromiumReleases: Release[]) {
     throw new Error(`${MAIN_BRANCH} roll failed: ${currentVersion} is not a valid version number`);
   }
 
-  const upstreamVersions = chromiumReleases
-    .filter(
-      (r) => ['Windows', 'Win32', 'Linux', 'Mac'].includes(r.platform) && r.channel === 'Canary',
-    )
-    .sort((a, b) => a.time - b.time)
-    .map((r) => r.version);
-  const latestUpstreamVersion = upstreamVersions[upstreamVersions.length - 1];
+  const chromiumReleases = await getChromiumReleases({ channel: 'Canary' });
+  const latestUpstreamVersion = chromiumReleases[chromiumReleases.length - 1];
 
   if (latestUpstreamVersion && currentVersion !== latestUpstreamVersion) {
     d(`Updating ${MAIN_BRANCH} from ${currentVersion} to ${latestUpstreamVersion}`);
@@ -129,30 +118,25 @@ async function rollMainBranch(github: Octokit, chromiumReleases: Release[]) {
 export async function handleChromiumCheck(target?: string): Promise<void> {
   const d = debug('roller/chromium:handleChromiumCheck()');
 
-  d('Fetching Chromium releases');
-  const chromiumReleases = await getChromiumReleases();
-
   const github = await getOctokit();
 
   let failed = false;
   if (target) {
     if (target !== 'main') {
       try {
-        const { data: branch }: { data: ReposGetBranchResponseItem } = await github.repos.getBranch(
-          {
-            ...REPOS.electron,
-            branch: target,
-          },
-        );
+        const { data: branch } = await github.repos.getBranch({
+          ...REPOS.electron,
+          branch: target,
+        });
 
-        await rollReleaseBranch(github, branch, chromiumReleases);
+        await rollReleaseBranch(github, branch);
       } catch (e) {
         d(`Failed to roll ${target}: ${e.message}`);
         failed = true;
       }
     } else {
       try {
-        await rollMainBranch(github, chromiumReleases);
+        await rollMainBranch(github);
       } catch (e) {
         d(`Failed to roll ${MAIN_BRANCH}: ${e.message}`);
         failed = true;
@@ -174,7 +158,7 @@ export async function handleChromiumCheck(target?: string): Promise<void> {
     // Roll all non-main release branches.
     for (const branch of releaseBranches) {
       try {
-        await rollReleaseBranch(github, branch, chromiumReleases);
+        await rollReleaseBranch(github, branch);
       } catch (e) {
         failed = true;
         continue;
@@ -182,7 +166,7 @@ export async function handleChromiumCheck(target?: string): Promise<void> {
     }
 
     try {
-      await rollMainBranch(github, chromiumReleases);
+      await rollMainBranch(github);
     } catch (e) {
       failed = true;
     }

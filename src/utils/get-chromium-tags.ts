@@ -22,16 +22,35 @@ function getJSON(url: string): Promise<any> {
   return get(url).then((s) => JSON.parse(s.slice(s.indexOf('{'))));
 }
 
+type ReleaseType = 'Extended' | 'Stable' | 'Beta' | 'Dev' | 'Canary';
+
+export type ReleaseParams = {
+  channel?: ReleaseType;
+  milestone?: number;
+};
+
 export type Release = {
-  platform: 'Android' | 'Linux' | 'Mac' | 'Webview' | 'Win32' | 'Windows' | 'iOS';
-  channel: 'Extended' | 'Stable' | 'Beta' | 'Dev' | 'Canary';
+  platform: 'Linux' | 'Mac' | 'Win32' | 'Windows';
+  channel: ReleaseType;
   milestone: number;
   time: number;
   version: string;
 };
 
-export function getChromiumReleases(): Promise<Release[]> {
-  return get('https://chromiumdash.appspot.com/fetch_releases').then((s) => JSON.parse(s));
+export async function getChromiumReleases({
+  channel,
+  milestone,
+}: ReleaseParams): Promise<string[]> {
+  const url = new URL('https://chromiumdash.appspot.com/fetch_releases');
+
+  url.searchParams.set('platform', 'Win32,Windows,Linux,Mac');
+  url.searchParams.set('num', '10');
+
+  if (channel) url.searchParams.set('channel', channel);
+  if (milestone) url.searchParams.set('milestone', milestone.toString());
+
+  const releases = await get(url.toString()).then((s) => JSON.parse(s));
+  return releases.sort((a, b) => a.time - b.time).map((r) => r.version);
 }
 
 export interface ChromiumCommit {
