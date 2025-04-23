@@ -5,6 +5,7 @@ import { getOctokit } from '../src/utils/octokit';
 
 import { Probot, ProbotOctokit } from 'probot';
 import { MAIN_BRANCH } from '../src/constants';
+import { randomBytes } from 'node:crypto';
 const nock = require('nock');
 
 const GH_API = 'https://api.github.com';
@@ -99,6 +100,9 @@ describe('build-images', () => {
         },
         pulls: {
           create: vi.fn(),
+          list: vi.fn().mockResolvedValue({
+            data: [],
+          }),
         },
       },
     };
@@ -143,7 +147,7 @@ describe('build-images', () => {
     const payload = JSON.parse(JSON.stringify(payloadJson));
     payload.registry_package.package_version.target_oid = 'newtargetoid123';
 
-    const previousTargetOid = await buildImagesHandler.getPreviousTargetOid(payload);
+    const previousTargetOid = await buildImagesHandler.getPreviousOid(payload);
     expect(previousTargetOid).toBe('424eedbf277ad9749ffa9219068aa72ed4a5e373');
   });
 
@@ -222,14 +226,13 @@ describe('build-images', () => {
 
       const result = await buildImagesHandler.updateFilesWithNewOid(
         mockOctokit,
-        ['.github/workflows/linux-publish.yml'],
         'oldsha123',
         'newsha456',
         branchName,
       );
 
       expect(result).toBe(true);
-      expect(mockOctokit.rest.repos.getContent).toHaveBeenCalledTimes(1);
+      expect(mockOctokit.rest.repos.getContent).toHaveBeenCalledTimes(7);
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledTimes(1);
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -251,7 +254,6 @@ describe('build-images', () => {
 
       const result = await buildImagesHandler.updateFilesWithNewOid(
         mockOctokit,
-        ['.github/workflows/linux-publish.yml'],
         'oldsha123',
         'newsha456',
         branchName,
@@ -268,6 +270,8 @@ describe('build-images', () => {
       mockOctokit.rest.pulls.create.mockResolvedValue({
         data: { html_url: 'https://github.com/electron/electron/pull/123' },
       });
+
+      mockOctokit.rest.pulls.list.mockResolvedValue({ data: [] });
 
       mockOctokit.rest.repos.getContent.mockImplementation(() => {
         return {
@@ -305,7 +309,14 @@ describe('build-images', () => {
     });
 
     it('skips PR creation when no files need updating', async () => {
-      vi.spyOn(buildImagesHandler, 'getPreviousTargetOid').mockResolvedValue('oldsha123');
+      const newSha = randomBytes(20).toString('hex');
+
+      mockOctokit.rest.pulls.list.mockResolvedValue({ data: [] });
+      mockOctokit.rest.repos.getContent.mockResolvedValue({
+        data: { content: Buffer.from(newSha).toString('base64') },
+      });
+
+      vi.spyOn(buildImagesHandler, 'getPreviousOid').mockResolvedValue('oldsha123');
 
       vi.spyOn(buildImagesHandler, 'prepareGitBranch').mockResolvedValue({
         ref: `refs/heads/${branchName}`,
@@ -317,7 +328,7 @@ describe('build-images', () => {
       vi.spyOn(buildImagesHandler, 'updateFilesWithNewOid').mockResolvedValue(false);
 
       const payload = JSON.parse(JSON.stringify(payloadJson));
-      payload.registry_package.package_version.target_oid = 'newsha456';
+      payload.registry_package.package_version.target_oid = newSha;
 
       await buildImagesHandler.handleBuildImagesCheck(payload);
 
