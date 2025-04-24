@@ -1,11 +1,16 @@
 import debug from 'debug';
 import { Context, Probot } from 'probot';
-import { IssueCommentCreatedEvent, PullRequestClosedEvent } from '@octokit/webhooks-types';
+import {
+  IssueCommentCreatedEvent,
+  PullRequestClosedEvent,
+  RegistryPackagePublishedEvent,
+} from '@octokit/webhooks-types';
 import { handleNodeCheck } from './node-handler';
 import { handleChromiumCheck } from './chromium-handler';
+import { handleBuildImagesCheck } from './build-images-handler';
 import { ROLL_TARGETS } from './constants';
 
-const handler = (robot: Probot) => {
+export const handler = (robot: Probot) => {
   robot.on('pull_request.closed', async (context: Context) => {
     const d = debug('roller/github:pull_request.closed');
 
@@ -30,9 +35,27 @@ const handler = (robot: Probot) => {
     }
   });
 
+  robot.on('registry_package.published', async (context: Context) => {
+    const d = debug('roller/github:package.published');
+
+    const { repository, registry_package } = context.payload as RegistryPackagePublishedEvent;
+
+    const payload = context.payload as RegistryPackagePublishedEvent;
+    if (repository.full_name !== 'electron/build-images') return;
+
+    // There are three packages in the build-images repo (build, devcontainer, test)
+    // that will all have the same target_oid. We only need to update the shas once.
+    if (registry_package.name !== 'build') return;
+
+    try {
+      await handleBuildImagesCheck(payload);
+    } catch (error) {
+      d(`Failed to autoroll new build-images version: ${error.message}`);
+    }
+  });
+
   robot.on('issue_comment.created', async (context: Context) => {
     const d = debug('roller/github:issue_comment.created');
-
     const { issue, comment } = context.payload as IssueCommentCreatedEvent;
 
     const match = comment.body.match(/^\/roll (main|\d+-x-y)$/);
@@ -74,5 +97,3 @@ const handler = (robot: Probot) => {
     }
   });
 };
-
-module.exports = handler;

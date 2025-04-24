@@ -1,0 +1,443 @@
+{
+  "action": "published",
+  "registry_package": {
+    "id": 6011861,
+    "name": "build",
+    "namespace": "electron",
+    "description": "",
+    "ecosystem": "CONTAINER",
+    "package_type": "CONTAINER",
+    "html_url": "https://github.com/electron/packages/6011861",
+    "created_at": "2024-01-03T10:50:02Z",
+    "updated_at": "2025-03-26T13:51:47Z",
+    "owner": {
+      "login": "electron",
+      "id": 13409222,
+      "node_id": "MDEyOk9yZ2FuaXphdGlvbjEzNDA5MjIy",
+      "avatar_url": "https://avatars.githubusercontent.com/u/13409222?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/electron",
+      "html_url": "https://github.com/electron",
+      "followers_url": "https://api.github.com/users/electron/followers",
+      "following_url": "https://api.github.com/users/electron/following{/other_user}",
+      "gists_url": "https://api.github.com/users/electron/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/electron/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/electron/subscriptions",
+      "organizations_url": "https://api.github.com/users/electron/orgs",
+      "repos_url": "https://api.github.com/users/electron/repos",
+      "events_url": "https://api.github.com/users/electron/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/electron/received_events",
+      "type": "Organization",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "package_version": {
+      "id": 382330667,
+      "version": "sha256:7d72784cca9654d6a8619733b3a92520bcb4b730ca328191a00f0fb78768d4a5",
+      "name": "sha256:7d72784cca9654d6a8619733b3a92520bcb4b730ca328191a00f0fb78768d4a5",
+      "description": "",
+      "summary": "",
+      "body": {
+        "repository": {
+          "repository": {
+            "id": 220443037,
+            "name": "build-images",
+            "owner_id": 13409222,
+            "parent_id": null,
+            "sandbox": null,
+            "updated_at": "2025-03-26T13:26:17.000Z",
+            "created_at": "2019-11-08T10:26:55.000Z",
+            "public": true,
+            "description": "Base docker image used to build Electron on CI",
+            "homepage": "https://hub.docker.com/r/electronjs/build",
+            "source_id": 239015996,
+            "public_push": null,
+            "disk_usage": 90,
+            "locked": false,
+            "pushed_at": "2025-03-26T13:26:14.000Z",
+            "watcher_count": 16,
+            "public_fork_count": 15,
+            "primary_language_name_id": 139,
+            "has_issues": true,
+            "has_wiki": false,
+            "has_downloads": true,
+            "raw_data": {
+              "data": {
+                "created_by_user_id": 6634592,
+                "primary_language_name": "Shell",
+                "completed_onboarding_tasks": []
+              }
+            },
+            "organization_id": 13409222,
+            "disabled_at": null,
+            "disabled_by": null,
+            "disabling_reason": null,
+            "health_status": null,
+            "pushed_at_usec": 796520,
+            "active": true,
+            "reflog_sync_enabled": false,
+            "made_public_at": "2019-11-08T10:26:55.000Z",
+            "user_hidden": 0,
+            "maintained": true,
+            "template": false,
+            "owner_login": "electron",
+            "world_writable_wiki": false,
+            "refset_updated_at": "2025-03-26T13:26:14.000Z",
+            "disabling_detail": null,
+            "archived_at": null,
+            "deleted_at": null
+          }
+        },
+        "info": {
+          "type": "blob",
+          "oid": "3d241794cbd6e8957bf514784bf79908576ed8a7",
+          "mode": 33188,
+          "name": "README.md",
+          "path": "README.md",
+          "size": 1049,
+          "collection": true,
+          "data": "# Electron Build Images\n\n> Docker containers used to build Electron on Linux\n\n[![Actions Status](https://github.com/electron/build-images/workflows/Build%20and%20Publish%20Docker%20images/badge.svg)](https://github.com/electron/build-images/actions)\n\n## Published Images\n\nAll images are published to the GitHub Container Registry.\n\nSpecific versions of the build image are available under a docker tag equivalent to a git commit SHA. E.g.\n\n```bash\ndocker pull ghcr.io/electron/build:3d8d44d0f15b05bef6149e448f9cc522111847e9\n```\n\n### Linux x64\n\n```bash\ndocker pull ghcr.io/electron/build:latest\n```\n\n### Linux Arm\n\n```bash\ndocker pull ghcr.io/electron/build:arm32v7-latest\n```\n\n### Linux Arm64\n\n```bash\ndocker pull ghcr.io/electron/build:arm64v8-latest\n```\n\n### Linux Devcontainer\n\nThis image is used for Electron Codespaces environments or other isolated docker-backed developer environments.  It contains additional dependencies like a VNC server that can make testing Electron easier.\n\n```bash\ndocker pull ghcr.io/electron/devcontainer:latest\n```\n",
+          "truncated": false,
+          "size_over_limit": false,
+          "encoding": "UTF-8",
+          "binary": false
+        },
+        "attributes": {},
+        "_mime_type": {
+          "extension": "md",
+          "content_type": "text/markdown",
+          "encoding": "quoted-printable"
+        },
+        "async_data": {
+          "state": "fulfilled",
+          "source": null,
+          "value": "# Electron Build Images\n\n> Docker containers used to build Electron on Linux\n\n[![Actions Status](https://github.com/electron/build-images/workflows/Build%20and%20Publish%20Docker%20images/badge.svg)](https://github.com/electron/build-images/actions)\n\n## Published Images\n\nAll images are published to the GitHub Container Registry.\n\nSpecific versions of the build image are available under a docker tag equivalent to a git commit SHA. E.g.\n\n```bash\ndocker pull ghcr.io/electron/build:3d8d44d0f15b05bef6149e448f9cc522111847e9\n```\n\n### Linux x64\n\n```bash\ndocker pull ghcr.io/electron/build:latest\n```\n\n### Linux Arm\n\n```bash\ndocker pull ghcr.io/electron/build:arm32v7-latest\n```\n\n### Linux Arm64\n\n```bash\ndocker pull ghcr.io/electron/build:arm64v8-latest\n```\n\n### Linux Devcontainer\n\nThis image is used for Electron Codespaces environments or other isolated docker-backed developer environments.  It contains additional dependencies like a VNC server that can make testing Electron easier.\n\n```bash\ndocker pull ghcr.io/electron/devcontainer:latest\n```\n"
+        },
+        "detect_encoding": {
+          "encoding": "UTF-8",
+          "ruby_encoding": "UTF-8",
+          "confidence": 100
+        },
+        "encoding": "UTF-8",
+        "git_lfs_blob": null,
+        "ruby_encoding": "UTF-8",
+        "encoded_newlines_re": "(?-mix:\\r\\n|\\r|\\n)",
+        "language": {
+          "name": "Markdown",
+          "fs_name": null,
+          "type": "prose",
+          "types": [
+            "data",
+            "markup",
+            "programming",
+            "prose"
+          ],
+          "color": "#083fa1",
+          "aliases": [
+            "markdown",
+            "md",
+            "pandoc"
+          ],
+          "tm_scope": "text.md",
+          "ace_mode": "markdown",
+          "codemirror_mode": "gfm",
+          "codemirror_mime_type": "text/x-gfm",
+          "wrap": true,
+          "language_id": 222,
+          "extensions": [
+            ".md",
+            ".livemd",
+            ".markdown",
+            ".mdown",
+            ".mdwn",
+            ".mkd",
+            ".mkdn",
+            ".mkdown",
+            ".ronn",
+            ".scd",
+            ".workbook"
+          ],
+          "interpreters": [],
+          "filenames": [
+            "contents.lr"
+          ],
+          "popular": false,
+          "group_name": "Markdown"
+        },
+        "_formatted": true
+      },
+      "manifest": "",
+      "html_url": "https://github.com/orgs/electron/packages/container/test/382330667",
+      "target_commitish": "main",
+      "target_oid": "f61ed670557184b30a582b7701eee3e9f57a55a3",
+      "created_at": "0001-01-01T00:00:00Z",
+      "updated_at": "0001-01-01T00:00:00Z",
+      "metadata": [],
+      "container_metadata": {
+        "tag": {
+          "name": "arm32v7-f61ed670557184b30a582b7701eee3e9f57a55a3",
+          "digest": "sha256:7d72784cca9654d6a8619733b3a92520bcb4b730ca328191a00f0fb78768d4a5"
+        },
+        "labels": {
+          "description": "",
+          "source": "https://github.com/electron/build-images",
+          "revision": "",
+          "image_url": "",
+          "licenses": "",
+          "all_labels": {
+            "org.opencontainers.image.source": "https://github.com/electron/build-images",
+            "org.opencontainers.image.ref.name": "ubuntu",
+            "org.opencontainers.image.version": "20.04"
+          }
+        },
+        "manifest": {
+          "digest": "sha256:7d72784cca9654d6a8619733b3a92520bcb4b730ca328191a00f0fb78768d4a5",
+          "media_type": "application/vnd.docker.distribution.manifest.v2+json",
+          "uri": "repositories/electron/test/manifests/sha256:7d72784cca9654d6a8619733b3a92520bcb4b730ca328191a00f0fb78768d4a5",
+          "size": 2399,
+          "config": {
+            "digest": "sha256:4b666ef41b51676e45723424d938d182cae8a6408a6a57f2c2290cc8db33f904",
+            "media_type": "application/vnd.docker.container.image.v1+json",
+            "size": 3886
+          },
+          "layers": [
+            {
+              "digest": "sha256:7474977cdbc1bb838c947dfdfa420a17f877727196fdf929b5bbfb57ddc59d1e",
+              "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+              "size": 24600743
+            },
+            {
+              "digest": "sha256:cb35decdfc4e794eba9aeffe111444a7b5e0345f6ed5f504a401d97bb67e66d7",
+              "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+              "size": 4324
+            },
+            {
+              "digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+              "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+              "size": 32
+            },
+            {
+              "digest": "sha256:f347493a2b486ca867dbfbe609e0b7526c0f3ea09e609030a717bc726082d515",
+              "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+              "size": 1511
+            },
+            {
+              "digest": "sha256:6c1c806ddedfcb355f3e69e562ad4e3c168a3a9dbb3b0a90c8a7bf177f8a4084",
+              "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+              "size": 1409
+            },
+            {
+              "digest": "sha256:8f11a84252026f7e5d8c07bb2db495b0e100c9b03201693bd232d78d64e6b7af",
+              "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+              "size": 545301523
+            },
+            {
+              "digest": "sha256:388a756f251ffd8f89da5e84f5b77617753619164e6482f4688ffd6a6eaf73cf",
+              "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+              "size": 288
+            },
+            {
+              "digest": "sha256:798cab150bb29c8cdbe9e9e31c5a4ba249d871a178761986a5836c3160d0f936",
+              "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+              "size": 283
+            },
+            {
+              "digest": "sha256:45f6525fdf65cefa71ac1437a62043725fbf979f608c2e78a3ea06f05e801fc7",
+              "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+              "size": 729
+            },
+            {
+              "digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+              "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+              "size": 32
+            }
+          ]
+        }
+      },
+      "package_files": [],
+      "author": {
+        "login": "MarshallOfSound",
+        "id": 6634592,
+        "node_id": "MDQ6VXNlcjY2MzQ1OTI=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/6634592?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/MarshallOfSound",
+        "html_url": "https://github.com/MarshallOfSound",
+        "followers_url": "https://api.github.com/users/MarshallOfSound/followers",
+        "following_url": "https://api.github.com/users/MarshallOfSound/following{/other_user}",
+        "gists_url": "https://api.github.com/users/MarshallOfSound/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/MarshallOfSound/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/MarshallOfSound/subscriptions",
+        "organizations_url": "https://api.github.com/users/MarshallOfSound/orgs",
+        "repos_url": "https://api.github.com/users/MarshallOfSound/repos",
+        "events_url": "https://api.github.com/users/MarshallOfSound/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/MarshallOfSound/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "installation_command": "docker pull ghcr.io/electron/test:arm32v7-f61ed670557184b30a582b7701eee3e9f57a55a3",
+      "package_url": "ghcr.io/electron/test:arm32v7-f61ed670557184b30a582b7701eee3e9f57a55a3"
+    },
+    "registry": {
+      "about_url": "https://docs.github.com/packages/learn-github-packages/introduction-to-github-packages",
+      "name": "GitHub CONTAINER registry",
+      "type": "CONTAINER",
+      "url": "https://CONTAINER.pkg.github.com/electron",
+      "vendor": "GitHub Inc"
+    }
+  },
+  "repository": {
+    "id": 220443037,
+    "node_id": "MDEwOlJlcG9zaXRvcnkyMjA0NDMwMzc=",
+    "name": "build-images",
+    "full_name": "electron/build-images",
+    "private": false,
+    "owner": {
+      "login": "electron",
+      "id": 13409222,
+      "node_id": "MDEyOk9yZ2FuaXphdGlvbjEzNDA5MjIy",
+      "avatar_url": "https://avatars.githubusercontent.com/u/13409222?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/electron",
+      "html_url": "https://github.com/electron",
+      "followers_url": "https://api.github.com/users/electron/followers",
+      "following_url": "https://api.github.com/users/electron/following{/other_user}",
+      "gists_url": "https://api.github.com/users/electron/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/electron/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/electron/subscriptions",
+      "organizations_url": "https://api.github.com/users/electron/orgs",
+      "repos_url": "https://api.github.com/users/electron/repos",
+      "events_url": "https://api.github.com/users/electron/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/electron/received_events",
+      "type": "Organization",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "html_url": "https://github.com/electron/build-images",
+    "description": "Base docker image used to build Electron on CI",
+    "fork": false,
+    "url": "https://api.github.com/repos/electron/build-images",
+    "forks_url": "https://api.github.com/repos/electron/build-images/forks",
+    "keys_url": "https://api.github.com/repos/electron/build-images/keys{/key_id}",
+    "collaborators_url": "https://api.github.com/repos/electron/build-images/collaborators{/collaborator}",
+    "teams_url": "https://api.github.com/repos/electron/build-images/teams",
+    "hooks_url": "https://api.github.com/repos/electron/build-images/hooks",
+    "issue_events_url": "https://api.github.com/repos/electron/build-images/issues/events{/number}",
+    "events_url": "https://api.github.com/repos/electron/build-images/events",
+    "assignees_url": "https://api.github.com/repos/electron/build-images/assignees{/user}",
+    "branches_url": "https://api.github.com/repos/electron/build-images/branches{/branch}",
+    "tags_url": "https://api.github.com/repos/electron/build-images/tags",
+    "blobs_url": "https://api.github.com/repos/electron/build-images/git/blobs{/sha}",
+    "git_tags_url": "https://api.github.com/repos/electron/build-images/git/tags{/sha}",
+    "git_refs_url": "https://api.github.com/repos/electron/build-images/git/refs{/sha}",
+    "trees_url": "https://api.github.com/repos/electron/build-images/git/trees{/sha}",
+    "statuses_url": "https://api.github.com/repos/electron/build-images/statuses/{sha}",
+    "languages_url": "https://api.github.com/repos/electron/build-images/languages",
+    "stargazers_url": "https://api.github.com/repos/electron/build-images/stargazers",
+    "contributors_url": "https://api.github.com/repos/electron/build-images/contributors",
+    "subscribers_url": "https://api.github.com/repos/electron/build-images/subscribers",
+    "subscription_url": "https://api.github.com/repos/electron/build-images/subscription",
+    "commits_url": "https://api.github.com/repos/electron/build-images/commits{/sha}",
+    "git_commits_url": "https://api.github.com/repos/electron/build-images/git/commits{/sha}",
+    "comments_url": "https://api.github.com/repos/electron/build-images/comments{/number}",
+    "issue_comment_url": "https://api.github.com/repos/electron/build-images/issues/comments{/number}",
+    "contents_url": "https://api.github.com/repos/electron/build-images/contents/{+path}",
+    "compare_url": "https://api.github.com/repos/electron/build-images/compare/{base}...{head}",
+    "merges_url": "https://api.github.com/repos/electron/build-images/merges",
+    "archive_url": "https://api.github.com/repos/electron/build-images/{archive_format}{/ref}",
+    "downloads_url": "https://api.github.com/repos/electron/build-images/downloads",
+    "issues_url": "https://api.github.com/repos/electron/build-images/issues{/number}",
+    "pulls_url": "https://api.github.com/repos/electron/build-images/pulls{/number}",
+    "milestones_url": "https://api.github.com/repos/electron/build-images/milestones{/number}",
+    "notifications_url": "https://api.github.com/repos/electron/build-images/notifications{?since,all,participating}",
+    "labels_url": "https://api.github.com/repos/electron/build-images/labels{/name}",
+    "releases_url": "https://api.github.com/repos/electron/build-images/releases{/id}",
+    "deployments_url": "https://api.github.com/repos/electron/build-images/deployments",
+    "created_at": "2019-11-08T10:26:55Z",
+    "updated_at": "2025-03-26T13:26:17Z",
+    "pushed_at": "2025-03-26T13:26:14Z",
+    "git_url": "git://github.com/electron/build-images.git",
+    "ssh_url": "git@github.com:electron/build-images.git",
+    "clone_url": "https://github.com/electron/build-images.git",
+    "svn_url": "https://github.com/electron/build-images",
+    "homepage": "https://hub.docker.com/r/electronjs/build",
+    "size": 90,
+    "stargazers_count": 16,
+    "watchers_count": 16,
+    "language": "Shell",
+    "has_issues": true,
+    "has_projects": false,
+    "has_downloads": true,
+    "has_wiki": false,
+    "has_pages": false,
+    "has_discussions": false,
+    "forks_count": 15,
+    "mirror_url": null,
+    "archived": false,
+    "disabled": false,
+    "open_issues_count": 1,
+    "license": null,
+    "allow_forking": true,
+    "is_template": false,
+    "web_commit_signoff_required": false,
+    "topics": [],
+    "visibility": "public",
+    "forks": 15,
+    "open_issues": 1,
+    "watchers": 16,
+    "default_branch": "main",
+    "custom_properties": {}
+  },
+  "organization": {
+    "login": "electron",
+    "id": 13409222,
+    "node_id": "MDEyOk9yZ2FuaXphdGlvbjEzNDA5MjIy",
+    "url": "https://api.github.com/orgs/electron",
+    "repos_url": "https://api.github.com/orgs/electron/repos",
+    "events_url": "https://api.github.com/orgs/electron/events",
+    "hooks_url": "https://api.github.com/orgs/electron/hooks",
+    "issues_url": "https://api.github.com/orgs/electron/issues",
+    "members_url": "https://api.github.com/orgs/electron/members{/member}",
+    "public_members_url": "https://api.github.com/orgs/electron/public_members{/member}",
+    "avatar_url": "https://avatars.githubusercontent.com/u/13409222?v=4",
+    "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS"
+  },
+  "enterprise": {
+    "id": 147131,
+    "slug": "electron",
+    "name": "Electron",
+    "node_id": "E_kgDOAAI-uw",
+    "avatar_url": "https://avatars.githubusercontent.com/b/147131?v=4",
+    "description": "",
+    "website_url": "https://electronjs.org",
+    "html_url": "https://github.com/enterprises/electron",
+    "created_at": "2024-04-12T18:43:42Z",
+    "updated_at": "2025-03-14T09:40:30Z"
+  },
+  "sender": {
+    "login": "github-actions[bot]",
+    "id": 41898282,
+    "node_id": "MDM6Qm90NDE4OTgyODI=",
+    "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/github-actions%5Bbot%5D",
+    "html_url": "https://github.com/apps/github-actions",
+    "followers_url": "https://api.github.com/users/github-actions%5Bbot%5D/followers",
+    "following_url": "https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}",
+    "gists_url": "https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/github-actions%5Bbot%5D/subscriptions",
+    "organizations_url": "https://api.github.com/users/github-actions%5Bbot%5D/orgs",
+    "repos_url": "https://api.github.com/users/github-actions%5Bbot%5D/repos",
+    "events_url": "https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/github-actions%5Bbot%5D/received_events",
+    "type": "Bot",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "installation": {
+    "id": 16902081,
+    "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uMTY5MDIwODE="
+  }
+}
