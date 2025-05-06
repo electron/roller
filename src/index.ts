@@ -10,7 +10,7 @@ import { handleChromiumCheck } from './chromium-handler';
 import { handleBuildImagesCheck } from './build-images-handler';
 import { ROLL_TARGETS } from './constants';
 
-export const handler = (robot: Probot) => {
+const handler = (robot: Probot) => {
   robot.on('pull_request.closed', async (context: Context) => {
     const d = debug('roller/github:pull_request.closed');
 
@@ -97,3 +97,5 @@ export const handler = (robot: Probot) => {
     }
   });
 };
+
+module.exports = handler;

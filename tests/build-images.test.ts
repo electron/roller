@@ -1,4 +1,4 @@
-import { handler } from '../src/index';
+import handler from '../src/index';
 import { beforeEach, afterEach, describe, it, vi, expect } from 'vitest';
 import * as buildImagesHandler from '../src/build-images-handler';
 import { getOctokit } from '../src/utils/octokit';
