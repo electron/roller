@@ -3,6 +3,10 @@ export const REPOS = {
     owner: 'electron',
     repo: 'electron',
   },
+  electronInfra: {
+    owner: 'electron',
+    repo: 'infra',
+  },
   node: {
     owner: 'nodejs',
     repo: 'node',
@@ -40,6 +44,11 @@ export const ORB_TARGETS = [
 
 export const BACKPORT_CHECK_SKIP = 'backport-check-skip';
 export const NO_BACKPORT = 'no-backport';
+
+export const ARC_RUNNER_ENVIRONMENTS = {
+  prod: 'argo/arc-cluster/runner-sets/runners.yaml',
+};
+export const WINDOWS_DOCKER_IMAGE_NAME = 'windows-actions-runner';
 
 export interface Commit {
   sha: string;
