@@ -2,7 +2,8 @@ import { Octokit } from '@octokit/rest';
 import { MAIN_BRANCH, REPOS } from '../constants';
 import { getOctokit } from './octokit';
 
-const WINDOWS_IMAGE_REGEX = /electronarc\.azurecr\.io\/win-actions-runner:main-[a-f0-9]{7}@sha256:[a-f0-9]{64}/;
+const WINDOWS_IMAGE_REGEX =
+  /electronarc\.azurecr\.io\/win-actions-runner:main-[a-f0-9]{7}@sha256:[a-f0-9]{64}/;
 // TODO: Also roll the linux ARC container
 // const LINUX_IMAGE_REGEX =
 //   /ghcr\.io\/actions\/actions-runner:[0-9]+\.[0-9]+\.[0-9]+@sha256:[a-f0-9]{64}/;
