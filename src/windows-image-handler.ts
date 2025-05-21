@@ -83,7 +83,7 @@ export async function rollWindowsArcImage() {
           );
         } else {
           d(
-            `Current image in "${arcEnv}" is not latest sha but is considered up-to-date, skipping...`,
+            `Current image in "${arcEnv}" (sha: ${currentSha}) is not latest sha (${shortLatestTag.split('-')[1]}) but is considered up-to-date, skipping...`,
           );
         }
       }
