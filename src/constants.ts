@@ -48,6 +48,7 @@ export const NO_BACKPORT = 'no-backport';
 export const ARC_RUNNER_ENVIRONMENTS = {
   prod: 'argo/arc-cluster/runner-sets/runners.yaml',
 };
+export const WINDOWS_DOCKER_FILE = 'docker/windows-actions-runner/Dockerfile';
 export const WINDOWS_DOCKER_IMAGE_NAME = 'windows-actions-runner';
 
 export interface Commit {
