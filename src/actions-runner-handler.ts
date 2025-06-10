@@ -1,4 +1,4 @@
-import * as debug from 'debug';
+import debug from 'debug';
 
 import { WINDOWS_DOCKER_FILE, ARC_RUNNER_ENVIRONMENTS } from './constants';
 import { getOctokit } from './utils/octokit';
