@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { MAIN_BRANCH, REPOS, WINDOWS_DOCKER_FILE } from '../constants';
+import { MAIN_BRANCH, REPOS } from '../constants';
 import { getOctokit } from './octokit';
 
 const WINDOWS_RUNNER_REGEX = /ARG RUNNER_VERSION=([\d.]+)/;

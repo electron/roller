@@ -1,8 +1,6 @@
 // Fetches the latest linux/amd64 and linux/arm64 images for actions/runner from GitHub Container Registry
 
-import https from 'https';
 import { Octokit } from '@octokit/rest';
-import { getOctokit } from './octokit';
 
 const OWNER = 'actions';
 const PACKAGE = 'actions-runner';
@@ -28,29 +26,6 @@ type Manifest = {
 type ManifestList = {
   manifests?: Manifest[];
 };
-
-// Helper to fetch JSON from a URL
-function fetchJson(url: string, headers: Record<string, string> = {}): Promise<any> {
-  return new Promise((resolve, reject) => {
-    https
-      .get(url, { headers }, (res) => {
-        let data = '';
-        res.on('data', (chunk) => (data += chunk));
-        res.on('end', () => {
-          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-            try {
-              resolve(JSON.parse(data));
-            } catch (e) {
-              reject(e);
-            }
-          } else {
-            reject(new Error(`HTTP ${res.statusCode}: ${data}`));
-          }
-        });
-      })
-      .on('error', reject);
-  });
-}
 
 export async function getLatestRunnerImages(
   octokit: Octokit,
@@ -89,7 +64,10 @@ export async function getLatestRunnerImages(
   };
   let manifestList: ManifestList;
   try {
-    manifestList = await fetchJson(manifestUrl, manifestHeaders);
+    const manifestResponse = await fetch(manifestUrl, {
+      headers: manifestHeaders,
+    });
+    manifestList = await manifestResponse.json();
   } catch (e) {
     console.error('Failed to fetch manifest list:', e);
     return null;
