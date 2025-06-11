@@ -38,24 +38,24 @@ const newLinuxImages = {
 beforeEach(() => {
   vi.clearAllMocks();
   (getOctokit as any).mockResolvedValue(mockOctokit);
-  (getLatestRunnerImagesModule.getLatestRunnerImages as any).mockResolvedValue({
+  vi.mocked(getLatestRunnerImagesModule.getLatestRunnerImages).mockResolvedValue({
     archDigests,
     latestVersion,
   });
-  (arcImage.getFileContent as any).mockImplementation(async (_octokit: any, file: string) => {
+  vi.mocked(arcImage.getFileContent).mockImplementation(async (_octokit: any, file: string) => {
     if (file === constants.WINDOWS_DOCKER_FILE) return mockFileContent(oldWinDockerFile);
     if (file === constants.ARC_RUNNER_ENVIRONMENTS.prod)
       return mockFileContent(`amd64: ${oldLinuxImages.amd64}\narm64: ${oldLinuxImages.arm64}`);
     return mockFileContent('');
   });
-  (arcImage.getCurrentWindowsRunnerVersion as any).mockImplementation(
+  vi.mocked(arcImage.getCurrentWindowsRunnerVersion).mockImplementation(
     async (raw: string) => raw.match(/([\d.]+)/)?.[1] || '',
   );
-  (arcImage.currentLinuxImages as any).mockImplementation((raw: string) => {
+  vi.mocked(arcImage.currentLinuxImages).mockImplementation((raw: string) => {
     if (raw.includes('oldamd64')) return oldLinuxImages;
     return newLinuxImages;
   });
-  (rollInfraModule.rollInfra as any).mockResolvedValue(undefined);
+  vi.mocked(rollInfraModule.rollInfra).mockResolvedValue(undefined);
 });
 
 describe('rollActionsRunner', () => {
@@ -82,16 +82,16 @@ describe('rollActionsRunner', () => {
   });
 
   it('should skip update if everything is up-to-date', async () => {
-    (arcImage.getFileContent as any).mockImplementation(async (_octokit: any, file: string) => {
+    vi.mocked(arcImage.getFileContent).mockImplementation(async (_octokit: any, file: string) => {
       if (file === constants.WINDOWS_DOCKER_FILE) return mockFileContent(newWinDockerFile);
       if (file === constants.ARC_RUNNER_ENVIRONMENTS.prod)
         return mockFileContent(`amd64: ${archDigests.amd64}\narm64: ${archDigests.arm64}`);
       return mockFileContent('');
     });
-    (arcImage.getCurrentWindowsRunnerVersion as any).mockImplementation(
+    vi.mocked(arcImage.getCurrentWindowsRunnerVersion).mockImplementation(
       async (raw: string) => latestVersion,
     );
-    (arcImage.currentLinuxImages as any).mockImplementation((raw: string) => newLinuxImages);
+    vi.mocked(arcImage.currentLinuxImages).mockImplementation((raw: string) => newLinuxImages);
     await rollActionsRunner();
     expect(rollInfraModule.rollInfra).not.toHaveBeenCalled();
   });
