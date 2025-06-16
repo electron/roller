@@ -46,8 +46,8 @@ export async function rollActionsRunner() {
     const currentImages = currentLinuxImages(runnerFile.raw);
     if (currentImages.amd64 !== archDigests.amd64 || currentImages.arm64 !== archDigests.arm64) {
       d(`Current linux images in "${arcEnv}" are outdated, updating to ${latestVersion}.`);
-      let newContent = runnerFile.raw.replace(currentImages.amd64, archDigests.amd64);
-      newContent = newContent.replace(currentImages.arm64, archDigests.arm64);
+      let newContent = runnerFile.raw.replaceAll(currentImages.amd64, archDigests.amd64);
+      newContent = newContent.replaceAll(currentImages.arm64, archDigests.arm64);
       await rollInfra(
         `${arcEnv}/actions-runner`,
         'github actions runner images',

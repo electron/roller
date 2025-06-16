@@ -39,10 +39,10 @@ describe('arc-image utils', () => {
   it('should extract both linux images', () => {
     const images = currentLinuxImages(linuxImageContent);
     expect(images.amd64).toBe(
-      'ghcr.io/actions/actions-runner:2.325.0@sha256:b865e3f046f0a92a4b936ae75c5bc5615b99b64eb4801b0e5220f13f8867d6b8',
+      '2.325.0@sha256:b865e3f046f0a92a4b936ae75c5bc5615b99b64eb4801b0e5220f13f8867d6b8',
     );
     expect(images.arm64).toBe(
-      'ghcr.io/actions/actions-runner:2.325.0@sha256:ab3fb968f7bcc8b34677b93a98f576142a2affde57ea2e7b461f515fd8a12453',
+      '2.325.0@sha256:ab3fb968f7bcc8b34677b93a98f576142a2affde57ea2e7b461f515fd8a12453',
     );
   });
 

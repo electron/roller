@@ -42,8 +42,8 @@ describe('getLatestRunnerImages', () => {
     const result = await getLatestRunnerImages(mockOctokit);
     expect(result).toEqual({
       archDigests: {
-        amd64: 'sha256:amd64digest',
-        arm64: 'sha256:arm64digest',
+        amd64: '2.325.0@sha256:amd64digest',
+        arm64: '2.325.0@sha256:arm64digest',
       },
       latestVersion: '2.325.0',
     });
