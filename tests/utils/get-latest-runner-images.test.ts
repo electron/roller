@@ -31,6 +31,7 @@ describe('getLatestRunnerImages', () => {
       ],
     });
     (fetch as any).mockResolvedValue({
+      ok: true,
       json: async () => ({
         manifests: [
           { platform: { os: 'linux', architecture: 'amd64' }, digest: 'sha256:amd64digest' },
