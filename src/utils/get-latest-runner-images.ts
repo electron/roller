@@ -67,6 +67,9 @@ export async function getLatestRunnerImages(
     const manifestResponse = await fetch(manifestUrl, {
       headers: manifestHeaders,
     });
+    if (!manifestResponse.ok) {
+      throw new Error(`Failed to fetch manifest list: ${manifestResponse.statusText}`);
+    }
     manifestList = await manifestResponse.json();
   } catch (e) {
     console.error('Failed to fetch manifest list:', e);
