@@ -46,7 +46,7 @@ export const BACKPORT_CHECK_SKIP = 'backport-check-skip';
 export const NO_BACKPORT = 'no-backport';
 
 export const ARC_RUNNER_ENVIRONMENTS = {
-  prod: 'argo/arc-cluster/runner-sets/runners.yaml',
+  prod: 'terraform/modules/arc/argo_runners_template.tmpl',
 };
 export const WINDOWS_DOCKER_FILE = 'docker/windows-actions-runner/Dockerfile';
 export const WINDOWS_DOCKER_IMAGE_NAME = 'windows-actions-runner';
