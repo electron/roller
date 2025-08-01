@@ -39,7 +39,10 @@ async function getLatestVersionOfImage() {
       bestMainTag = mainTag;
     }
   }
-  return [`electronarc.azurecr.io/win-actions-runner:${bestMainTag}@${best.name}`, bestMainTag];
+  return [
+    `\${registry_name}.azurecr.io/win-actions-runner:${bestMainTag}@${best.name}`,
+    bestMainTag,
+  ];
 }
 
 const WINDOWS_IMAGE_DOCKERFILE_PATH = 'docker/windows-actions-runner/Dockerfile';

@@ -4,7 +4,7 @@ import { getOctokit } from './octokit';
 
 const WINDOWS_RUNNER_REGEX = /ARG RUNNER_VERSION=([\d.]+)/;
 const WINDOWS_IMAGE_REGEX =
-  /electronarc\.azurecr\.io\/win-actions-runner:main-[a-f0-9]{7}@sha256:[a-f0-9]{64}/;
+  /\$\{registry_name\}\.azurecr\.io\/win-actions-runner:main-[a-f0-9]{7}@sha256:[a-f0-9]{64}/;
 const LINUX_IMAGE_REGEX =
   /if eq .cpuArch "amd64".*\n.*image: ghcr.io\/actions\/actions-runner:([0-9]+\.[0-9]+\.[0-9]+@sha256:[a-f0-9]{64}).*\n.*{{- else }}.*\n.*image: ghcr.io\/actions\/actions-runner:([0-9]+\.[0-9]+\.[0-9]+@sha256:[a-f0-9]{64})/;
 
