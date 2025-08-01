@@ -5,7 +5,8 @@ import {
   getCurrentWindowsRunnerVersion,
 } from '../../src/utils/arc-image';
 
-const windowsImageContent = `electronarc.azurecr.io/win-actions-runner:main-abcdef0@sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef`;
+const windowsImageContent =
+  '${registry_name}.azurecr.io/win-actions-runner:main-abcdef0@sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
 
 const linuxImageContent = `containers:
                   - name: runner
@@ -32,7 +33,7 @@ const invalidLinuxContent = `{{- if eq .cpuArch "amd64" }}\nimage: something-els
 describe('arc-image utils', () => {
   it('should extract the current Windows image', () => {
     expect(currentWindowsImage(windowsImageContent)).toBe(
-      'electronarc.azurecr.io/win-actions-runner:main-abcdef0@sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+      '${registry_name}.azurecr.io/win-actions-runner:main-abcdef0@sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
     );
   });
 
