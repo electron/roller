@@ -3,3 +3,4 @@ lib
 node_modules
 coverage
 .envrc
+.yarn/install-state.gz
