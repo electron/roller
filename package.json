@@ -7,7 +7,6 @@
   "scripts": {
     "build": "tsc",
     "lint": "prettier --check \"{src,tests}/**/*.ts\"",
-    "postinstall": "tsc",
     "prettier:write": "prettier --write \"{src,tests}/**/*.ts\"",
     "prepare": "husky",
     "roll-chromium": "DEBUG=roller* node lib/chromium-cron.js",
@@ -30,7 +29,7 @@
     "@types/debug": "^4.1.12",
     "@types/node": "^22.9.0",
     "@types/semver": "^7.5.8",
-    "@vitest/coverage-v8": "3.0.2",
+    "@vitest/coverage-v8": "3.0.5",
     "husky": "^9.1.6",
     "lint-staged": "^15.2.10",
     "nock": "^14.0.1",
@@ -49,5 +48,6 @@
   },
   "lint-staged": {
     "*.ts": "prettier --write"
-  }
+  },
+  "packageManager": "yarn@4.10.3+sha512.c38cafb5c7bb273f3926d04e55e1d8c9dfa7d9c3ea1f36a4868fa028b9e5f72298f0b7f401ad5eb921749eb012eb1c3bb74bf7503df3ee43fd600d14a018266f"
 }

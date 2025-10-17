@@ -33,7 +33,7 @@ jobs:
         key: ${{ runner.os }}-${{ hashFiles('yarn.lock') }}-node-modules
     - name: Install
       if: steps.cache-node-modules.outputs.cache-hit != 'true'
-      run: yarn --frozen-lockfile
+      run: yarn --immutable
     - name: Lint
       run: yarn lint
     - name: Build
