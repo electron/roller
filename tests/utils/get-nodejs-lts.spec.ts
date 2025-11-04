@@ -15,6 +15,6 @@ describe('getLatestLTSVersion', () => {
     const url = new URL(NODE_SCHEDULE_URL);
     nock(url.origin).get(url.pathname).reply(200, fixture);
 
-    await expect(getLatestLTSVersion()).resolves.toEqual('22.0.0');
+    await expect(getLatestLTSVersion()).resolves.toEqual('24.0.0');
   });
 });
