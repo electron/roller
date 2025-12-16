@@ -8,6 +8,7 @@ import {
 import { handleNodeCheck } from './node-handler';
 import { handleChromiumCheck } from './chromium-handler';
 import { handleBuildImagesCheck } from './build-images-handler';
+import { handleBuildImagesChromiumDepsCheck } from './build-images-chromium-deps-handler';
 import { ROLL_TARGETS } from './constants';
 
 const handler = (robot: Probot) => {
@@ -25,6 +26,9 @@ const handler = (robot: Probot) => {
       if (isChromiumPR) {
         d('Chromium PR merged - opening a new one');
         await handleChromiumCheck();
+        // Also check if build-images chromium deps need updating
+        d('Checking if build-images chromium deps need updating');
+        await handleBuildImagesChromiumDepsCheck();
       } else if (isNodePR) {
         d('Node.js PR merged - opening a new one');
         await handleNodeCheck();
