@@ -1,27 +1,3 @@
-import * as https from 'https';
-
-function get(url: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    https
-      .get(url, (res) => {
-        let s = '';
-        res.on('data', (d) => {
-          s += d.toString('utf8');
-        });
-        res.on('end', () => {
-          resolve(s);
-        });
-      })
-      .on('error', (e) => {
-        reject(e);
-      });
-  });
-}
-
-function getJSON(url: string): Promise<any> {
-  return get(url).then((s) => JSON.parse(s.slice(s.indexOf('{'))));
-}
-
 type ReleaseType = 'Extended' | 'Stable' | 'Beta' | 'Dev' | 'Canary';
 
 export type ReleaseParams = {
@@ -49,7 +25,11 @@ export async function getChromiumReleases({
   if (channel) url.searchParams.set('channel', channel);
   if (milestone) url.searchParams.set('milestone', milestone.toString());
 
-  const releases = await get(url.toString()).then((s) => JSON.parse(s));
+  const response = await fetch(url.toString());
+  if (!response.ok) {
+    throw new Error(`Failed to fetch Chromium releases: ${response.status}`);
+  }
+  const releases: Release[] = await response.json();
   return releases.sort((a, b) => a.time - b.time).map((r) => r.version);
 }
 
@@ -70,11 +50,16 @@ export interface ChromiumCommit {
   message: string;
 }
 
-export function getChromiumCommits(
+export async function getChromiumCommits(
   fromRef: string,
   toRef: string,
 ): Promise<{ log: ChromiumCommit[]; next?: string }> {
-  return getJSON(
-    `https://chromium.googlesource.com/chromium/src/+log/${fromRef}..${toRef}?format=JSON`,
-  );
+  const url = `https://chromium.googlesource.com/chromium/src/+log/${fromRef}..${toRef}?format=JSON`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch Chromium commits: ${response.status}`);
+  }
+  const text = await response.text();
+  // Gitiles prefixes JSON responses with )]}' for security, so strip it
+  return JSON.parse(text.slice(text.indexOf('{')));
 }
