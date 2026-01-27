@@ -1,19 +1,15 @@
 {
-	"compilerOptions": {
-		"module": "commonjs",
-		"target": "es2021",
-		"outDir": "lib",
-		"sourceMap": true,
-		"rootDir": "src",
-    "experimentalDecorators": true,
-    "allowJs": true,
-		"allowSyntheticDefaultImports": true
-	},
-	"exclude": [
-		"node_modules",
-		"tests",
-		"lib",
-		"coverage",
-    "vitest.config.ts"
-	]
+  "extends": "@tsconfig/node24/tsconfig.json",
+  "compilerOptions": {
+    "sourceMap": true,
+    "strict": false,
+    "outDir": "lib",
+    "types": [
+      "node"
+    ],
+    "declaration": true
+  },
+  "include": [
+    "src"
+  ]
 }

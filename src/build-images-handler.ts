@@ -1,9 +1,10 @@
 import debug from 'debug';
 
-import { getOctokit } from './utils/octokit';
-import { RegistryPackagePublishedEvent } from '@octokit/webhooks-types';
-import { MAIN_BRANCH, REPOS } from './constants';
 import { Octokit } from '@octokit/rest';
+import type { Context } from 'probot';
+
+import { getOctokit } from './utils/octokit';
+import { MAIN_BRANCH, REPOS } from './constants';
 
 const files = [
   '.github/workflows/clean-src-cache.yml',
@@ -34,7 +35,7 @@ export async function shouldUpdateFiles(octokit: Octokit, oid: string) {
   return true;
 }
 
-export async function getPreviousOid(payload: RegistryPackagePublishedEvent) {
+export async function getPreviousOid(payload: Context<'registry_package.published'>['payload']) {
   const { registry_package, organization } = payload;
   const { target_oid, name } = registry_package.package_version;
 
@@ -133,7 +134,9 @@ export async function prepareGitBranch(octokit: Octokit, branchName: string, mai
   return { ref, shortRef, branchName, sha };
 }
 
-export async function handleBuildImagesCheck(payload: RegistryPackagePublishedEvent) {
+export async function handleBuildImagesCheck(
+  payload: Context<'registry_package.published'>['payload'],
+) {
   const d = debug(`roller/github:handleBuildImagesCheck`);
   const octokit = await getOctokit();
 
