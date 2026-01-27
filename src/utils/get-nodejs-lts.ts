@@ -18,7 +18,7 @@ export async function getLatestLTSVersion(): Promise<string | null> {
     const response = await fetch(NODE_SCHEDULE_URL, {
       headers: { accept: 'application/json' },
     });
-    data = await response.json();
+    data = (await response.json()) as Record<string, NodeMajorLine>;
   } catch (error) {
     console.error('Failed to fetch Node.js release schedule:', error);
     return null;

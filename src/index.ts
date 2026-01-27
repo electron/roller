@@ -1,20 +1,15 @@
 import debug from 'debug';
-import { Context, Probot } from 'probot';
-import {
-  IssueCommentCreatedEvent,
-  PullRequestClosedEvent,
-  RegistryPackagePublishedEvent,
-} from '@octokit/webhooks-types';
+import type { Probot } from 'probot';
 import { handleNodeCheck } from './node-handler';
 import { handleChromiumCheck } from './chromium-handler';
 import { handleBuildImagesCheck } from './build-images-handler';
 import { ROLL_TARGETS } from './constants';
 
 const handler = (robot: Probot) => {
-  robot.on('pull_request.closed', async (context: Context) => {
+  robot.on('pull_request.closed', async (context) => {
     const d = debug('roller/github:pull_request.closed');
 
-    const { pull_request: pr } = context.payload as PullRequestClosedEvent;
+    const { pull_request: pr } = context.payload;
 
     if (!pr.merged) return;
 
@@ -35,12 +30,12 @@ const handler = (robot: Probot) => {
     }
   });
 
-  robot.on('registry_package.published', async (context: Context) => {
+  robot.on('registry_package.published', async (context) => {
     const d = debug('roller/github:package.published');
 
-    const { repository, registry_package } = context.payload as RegistryPackagePublishedEvent;
+    const { repository, registry_package } = context.payload;
 
-    const payload = context.payload as RegistryPackagePublishedEvent;
+    const payload = context.payload;
     if (repository.full_name !== 'electron/build-images') return;
 
     // There are three packages in the build-images repo (build, devcontainer, test)
@@ -54,9 +49,9 @@ const handler = (robot: Probot) => {
     }
   });
 
-  robot.on('issue_comment.created', async (context: Context) => {
+  robot.on('issue_comment.created', async (context) => {
     const d = debug('roller/github:issue_comment.created');
-    const { issue, comment } = context.payload as IssueCommentCreatedEvent;
+    const { issue, comment } = context.payload;
 
     const match = comment.body.match(/^\/roll (main|\d+-x-y)$/);
     if (!match || !match[1]) {
@@ -75,7 +70,7 @@ const handler = (robot: Probot) => {
     try {
       if (isChromiumPR) {
         d(`Chromium roll requested on ${branch}`);
-        await context.octokit.issues.createComment(
+        await context.octokit.rest.issues.createComment(
           context.repo({
             issue_number: issue.number,
             body: `Checking for new Chromium commits on \`${branch}\``,
@@ -84,7 +79,7 @@ const handler = (robot: Probot) => {
         await handleChromiumCheck(branch);
       } else if (isNodePR) {
         d('Node.js roll requested');
-        await context.octokit.issues.createComment(
+        await context.octokit.rest.issues.createComment(
           context.repo({
             issue_number: issue.number,
             body: `Checking for new Node.js commits on \`${branch}\``,

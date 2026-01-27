@@ -29,7 +29,7 @@ export async function getChromiumReleases({
   if (!response.ok) {
     throw new Error(`Failed to fetch Chromium releases: ${response.status}`);
   }
-  const releases: Release[] = await response.json();
+  const releases = (await response.json()) as Release[];
   return releases.sort((a, b) => a.time - b.time).map((r) => r.version);
 }
 
