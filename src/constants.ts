@@ -7,6 +7,10 @@ export const REPOS = {
     owner: 'electron',
     repo: 'infra',
   },
+  buildImages: {
+    owner: 'electron',
+    repo: 'build-images',
+  },
   node: {
     owner: 'nodejs',
     repo: 'node',
@@ -50,6 +54,10 @@ export const ARC_RUNNER_ENVIRONMENTS = {
 };
 export const WINDOWS_DOCKER_FILE = 'docker/windows-actions-runner/Dockerfile';
 export const WINDOWS_DOCKER_IMAGE_NAME = 'windows-actions-runner';
+
+// Build-images Chromium deps configuration
+export const BUILD_IMAGES_INSTALL_DEPS_FILE = 'tools/install-deps.sh';
+export const CHROMIUM_DEPS_FILES = ['build/install-build-deps.sh', 'build/install-build-deps.py'];
 
 export interface Commit {
   sha: string;
