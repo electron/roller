@@ -1,4 +1,4 @@
-import * as debug from 'debug';
+import debug from 'debug';
 
 import { MAIN_BRANCH, REPOS } from '../constants';
 import { getOctokit } from './octokit';

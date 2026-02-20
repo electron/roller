@@ -1,4 +1,4 @@
-import * as debug from 'debug';
+import debug from 'debug';
 
 import { REPOS, BUILD_IMAGES_INSTALL_DEPS_FILE, CHROMIUM_DEPS_FILES } from './constants';
 import { getOctokit } from './utils/octokit';
