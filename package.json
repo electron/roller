@@ -11,7 +11,6 @@
     "prepare": "husky",
     "roll-chromium": "DEBUG=roller* node lib/chromium-cron.js",
     "roll-node": "DEBUG=roller* node lib/node-cron.js",
-    "roll-orb": "DEBUG=roller* node lib/orb-cron.js",
     "start": "DEBUG=roller* probot run ./lib/index.js",
     "test": "vitest run --coverage --reporter=verbose"
   },
