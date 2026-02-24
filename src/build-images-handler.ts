@@ -37,7 +37,8 @@ export async function shouldUpdateFiles(octokit: Octokit, oid: string) {
 
 export async function getPreviousOid(payload: Context<'registry_package.published'>['payload']) {
   const { registry_package, organization } = payload;
-  const { target_oid, name } = registry_package.package_version;
+  const { target_oid } = registry_package.package_version;
+  const { name } = registry_package;
 
   try {
     const octokit = await getOctokit();

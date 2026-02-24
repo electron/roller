@@ -1,5 +1,5 @@
 import { Octokit as GitHub } from '@octokit/rest';
-import { createAppAuth, InstallationAccessTokenAuthentication } from '@octokit/auth-app';
+import { createAppAuth } from '@octokit/auth-app';
 
 let octokit: GitHub;
 
