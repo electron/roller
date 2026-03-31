@@ -29,13 +29,13 @@
     "@types/debug": "^4.1.12",
     "@types/node": "^22.9.0",
     "@types/semver": "^7.5.8",
-    "@vitest/coverage-v8": "3.0.5",
+    "@vitest/coverage-v8": "4.1.1",
     "husky": "^9.1.6",
     "lint-staged": "^16.2.7",
     "nock": "^14.0.1",
     "prettier": "^3.3.3",
     "typescript": "^5.9.3",
-    "vitest": "^3.0.5"
+    "vitest": "^4.1.1"
   },
   "dependencies": {
     "@octokit/auth-app": "^6.0.2",
