@@ -23,7 +23,7 @@ jobs:
         fetch-depth: 1
         persist-credentials: false
     - name: Setup Node.js
-      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af  # tag: v4.1.0
+      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # tag: v6.3.0
       with:
         node-version: lts/-1
     - name: Cache node_modules
