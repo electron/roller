@@ -1,4 +1,4 @@
-import { rollActionsRunner } from './actions-runner-handler';
+import { rollActionsRunner } from './actions-runner-handler.js';
 
 if (require.main === module) {
   rollActionsRunner().catch((err: Error) => {

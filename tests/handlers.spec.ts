@@ -1,18 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from '../src/constants';
-import { getSupportedBranches } from '../src/utils/get-supported-branches';
-import { handleNodeCheck } from '../src/node-handler';
-import { handleChromiumCheck } from '../src/chromium-handler';
-import { getChromiumReleases } from '../src/utils/get-chromium-tags';
-import { getOctokit } from '../src/utils/octokit';
-import { roll } from '../src/utils/roll';
-import { getLatestLTSVersion } from '../src/utils/get-nodejs-lts';
+import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from '../src/constants.js';
+import { getSupportedBranches } from '../src/utils/get-supported-branches.js';
+import { handleNodeCheck } from '../src/node-handler.js';
+import { handleChromiumCheck } from '../src/chromium-handler.js';
+import { getChromiumReleases } from '../src/utils/get-chromium-tags.js';
+import { getOctokit } from '../src/utils/octokit.js';
+import { roll } from '../src/utils/roll.js';
+import { getLatestLTSVersion } from '../src/utils/get-nodejs-lts.js';
 
-vi.mock('../src/utils/get-chromium-tags');
-vi.mock('../src/utils/octokit');
-vi.mock('../src/utils/roll');
-vi.mock('../src/utils/get-nodejs-lts');
+vi.mock('../src/utils/get-chromium-tags.js');
+vi.mock('../src/utils/octokit.js');
+vi.mock('../src/utils/roll.js');
+vi.mock('../src/utils/get-nodejs-lts.js');
 
 describe('handleChromiumCheck()', () => {
   let mockOctokit: any;

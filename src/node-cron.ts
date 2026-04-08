@@ -1,4 +1,4 @@
-import { handleNodeCheck } from './node-handler';
+import { handleNodeCheck } from './node-handler.js';
 
 if (require.main === module) {
   handleNodeCheck().catch((err) => {

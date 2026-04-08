@@ -5,10 +5,10 @@ import {
   WINDOWS_DOCKER_IMAGE_NAME,
   ARC_RUNNER_ENVIRONMENTS,
   MAIN_BRANCH,
-} from './constants';
-import { getOctokit } from './utils/octokit';
-import { currentWindowsImage, didFileChangeBetweenShas } from './utils/arc-image';
-import { rollInfra } from './utils/roll-infra';
+} from './constants.js';
+import { getOctokit } from './utils/octokit.js';
+import { currentWindowsImage, didFileChangeBetweenShas } from './utils/arc-image.js';
+import { rollInfra } from './utils/roll-infra.js';
 
 async function getLatestVersionOfImage() {
   const octokit = await getOctokit();

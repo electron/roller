@@ -3,7 +3,7 @@ import {
   currentWindowsImage,
   currentLinuxImages,
   getCurrentWindowsRunnerVersion,
-} from '../../src/utils/arc-image';
+} from '../../src/utils/arc-image.js';
 
 const windowsImageContent =
   '${registry_name}.azurecr.io/win-actions-runner:main-abcdef0@sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';

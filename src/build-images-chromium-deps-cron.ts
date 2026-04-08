@@ -1,4 +1,4 @@
-import { handleBuildImagesChromiumDepsCheck } from './build-images-chromium-deps-handler';
+import { handleBuildImagesChromiumDepsCheck } from './build-images-chromium-deps-handler.js';
 
 if (require.main === module) {
   handleBuildImagesChromiumDepsCheck().catch((err) => {

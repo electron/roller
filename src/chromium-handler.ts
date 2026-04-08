@@ -1,12 +1,12 @@
 import debug from 'debug';
 
-import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from './constants';
-import { compareChromiumVersions } from './utils/compare-chromium-versions';
-import { getChromiumReleases, Release } from './utils/get-chromium-tags';
-import { getSupportedBranches } from './utils/get-supported-branches';
-import { getOctokit } from './utils/octokit';
-import { roll } from './utils/roll';
-import { ReposGetBranchResponseItem, ReposListBranchesResponseItem } from './types';
+import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from './constants.js';
+import { compareChromiumVersions } from './utils/compare-chromium-versions.js';
+import { getChromiumReleases, Release } from './utils/get-chromium-tags.js';
+import { getSupportedBranches } from './utils/get-supported-branches.js';
+import { getOctokit } from './utils/octokit.js';
+import { roll } from './utils/roll.js';
+import { ReposGetBranchResponseItem, ReposListBranchesResponseItem } from './types.js';
 import { Octokit } from '@octokit/rest';
 
 type BranchItem = ReposGetBranchResponseItem | ReposListBranchesResponseItem;

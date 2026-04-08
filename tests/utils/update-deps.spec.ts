@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { updateDepsFile, UpdateDepsParams } from '../../src/utils/update-deps';
-import { getOctokit } from '../../src/utils/octokit';
-import { REPOS } from '../../src/constants';
+import { updateDepsFile, UpdateDepsParams } from '../../src/utils/update-deps.js';
+import { getOctokit } from '../../src/utils/octokit.js';
+import { REPOS } from '../../src/constants.js';
 
-vi.mock('../../src/utils/octokit');
+vi.mock('../../src/utils/octokit.js');
 
 describe('updateDepsFile()', () => {
   let mockOctokit: any;

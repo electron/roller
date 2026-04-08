@@ -8,13 +8,13 @@ import {
   REPOS,
   ROLL_TARGETS,
   RollTarget,
-} from '../constants';
-import { ReposListBranchesResponseItem, PullsListResponseItem } from '../types';
-import { getOctokit } from './octokit';
-import { getPRText } from './pr-text';
-import { updateDepsFile } from './update-deps';
+} from '../constants.js';
+import { ReposListBranchesResponseItem, PullsListResponseItem } from '../types.js';
+import { getOctokit } from './octokit.js';
+import { getPRText } from './pr-text.js';
+import { updateDepsFile } from './update-deps.js';
 import { Octokit } from '@octokit/rest';
-import { addLabels, removeLabel } from './label-utils';
+import { addLabels, removeLabel } from './label-utils.js';
 
 interface RollParams {
   rollTarget: RollTarget;

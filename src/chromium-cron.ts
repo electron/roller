@@ -1,4 +1,4 @@
-import { handleChromiumCheck } from './chromium-handler';
+import { handleChromiumCheck } from './chromium-handler.js';
 
 if (require.main === module) {
   handleChromiumCheck().catch((err) => {

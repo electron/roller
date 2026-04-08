@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { getPRText } from '../../src/utils/pr-text';
-import { ROLL_TARGETS, RollTarget } from '../../src/constants';
+import { getPRText } from '../../src/utils/pr-text.js';
+import { ROLL_TARGETS, RollTarget } from '../../src/constants.js';
 
-vi.mock('../../src/utils/octokit');
+vi.mock('../../src/utils/octokit.js');
 
 describe('getPRText()', () => {
   describe('Node.js target', () => {

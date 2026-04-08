@@ -1,5 +1,5 @@
-import { REPOS } from '../constants';
-import { getOctokit } from './octokit';
+import { REPOS } from '../constants.js';
+import { getOctokit } from './octokit.js';
 
 export interface UpdateDepsParams {
   depName: string;

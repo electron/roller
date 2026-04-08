@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { REPOS } from '../constants';
+import { REPOS } from '../constants.js';
 
 export const addLabels = async (
   octokit: Octokit,

@@ -1,9 +1,9 @@
 import debug from 'debug';
 
-import { REPOS, BUILD_IMAGES_INSTALL_DEPS_FILE, CHROMIUM_DEPS_FILES } from './constants';
-import { getOctokit } from './utils/octokit';
-import { getChromiumHeadSha, didChromiumFilesChange } from './utils/chromium-gitiles';
-import { rollBuildImages, getFileContentFromBuildImages } from './utils/roll-build-images';
+import { REPOS, BUILD_IMAGES_INSTALL_DEPS_FILE, CHROMIUM_DEPS_FILES } from './constants.js';
+import { getOctokit } from './utils/octokit.js';
+import { getChromiumHeadSha, didChromiumFilesChange } from './utils/chromium-gitiles.js';
+import { rollBuildImages, getFileContentFromBuildImages } from './utils/roll-build-images.js';
 
 // Regex to extract CHROMIUM_SRC_SHA from install-deps.sh
 const CHROMIUM_SHA_REGEX = /CHROMIUM_SRC_SHA="([a-f0-9]{40})"/;
