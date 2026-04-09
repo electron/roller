@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as arcImage from '../src/utils/arc-image';
-import * as getLatestRunnerImagesModule from '../src/utils/get-latest-runner-images';
-import * as rollInfraModule from '../src/utils/roll-infra';
-import * as constants from '../src/constants';
-import { getOctokit } from '../src/utils/octokit';
+import * as arcImage from '../src/utils/arc-image.js';
+import * as getLatestRunnerImagesModule from '../src/utils/get-latest-runner-images.js';
+import * as rollInfraModule from '../src/utils/roll-infra.js';
+import * as constants from '../src/constants.js';
+import { getOctokit } from '../src/utils/octokit.js';
 
-import { rollActionsRunner } from '../src/actions-runner-handler';
+import { rollActionsRunner } from '../src/actions-runner-handler.js';
 
 vi.mock('debug', () => ({ default: vi.fn(() => vi.fn()) }));
-vi.mock('../src/utils/get-latest-runner-images');
-vi.mock('../src/utils/arc-image');
-vi.mock('../src/utils/roll-infra');
-vi.mock('../src/utils/octokit');
+vi.mock('../src/utils/get-latest-runner-images.js');
+vi.mock('../src/utils/arc-image.js');
+vi.mock('../src/utils/roll-infra.js');
+vi.mock('../src/utils/octokit.js');
 
 const mockOctokit = {};
 

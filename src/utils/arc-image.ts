@@ -1,6 +1,6 @@
 import { Octokit } from '@octokit/rest';
-import { MAIN_BRANCH, REPOS } from '../constants';
-import { getOctokit } from './octokit';
+import { MAIN_BRANCH, REPOS } from '../constants.js';
+import { getOctokit } from './octokit.js';
 
 const WINDOWS_RUNNER_REGEX = /ARG RUNNER_VERSION=([\d.]+)/;
 const WINDOWS_IMAGE_REGEX =

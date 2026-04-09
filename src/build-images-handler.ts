@@ -3,8 +3,8 @@ import debug from 'debug';
 import { Octokit } from '@octokit/rest';
 import type { Context } from 'probot';
 
-import { getOctokit } from './utils/octokit';
-import { MAIN_BRANCH, REPOS } from './constants';
+import { getOctokit } from './utils/octokit.js';
+import { MAIN_BRANCH, REPOS } from './constants.js';
 
 const files = [
   '.github/workflows/clean-src-cache.yml',

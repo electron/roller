@@ -5,7 +5,7 @@ import {
   getChromiumHeadSha,
   getChromiumFileContent,
   didChromiumFilesChange,
-} from '../../src/utils/chromium-gitiles';
+} from '../../src/utils/chromium-gitiles.js';
 
 const GITILES_BASE = 'https://chromium.googlesource.com';
 

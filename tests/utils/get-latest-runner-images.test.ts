@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getLatestRunnerImages } from '../../src/utils/get-latest-runner-images';
+import { getLatestRunnerImages } from '../../src/utils/get-latest-runner-images.js';
 import { Octokit } from '@octokit/rest';
 
 global.fetch = vi.fn();

@@ -1,10 +1,10 @@
 import debug from 'debug';
 import type { Probot } from 'probot';
-import { handleNodeCheck } from './node-handler';
-import { handleChromiumCheck } from './chromium-handler';
-import { handleBuildImagesCheck } from './build-images-handler';
-import { handleBuildImagesChromiumDepsCheck } from './build-images-chromium-deps-handler';
-import { ROLL_TARGETS } from './constants';
+import { handleNodeCheck } from './node-handler.js';
+import { handleChromiumCheck } from './chromium-handler.js';
+import { handleBuildImagesCheck } from './build-images-handler.js';
+import { handleBuildImagesChromiumDepsCheck } from './build-images-chromium-deps-handler.js';
+import { ROLL_TARGETS } from './constants.js';
 
 const handler = (robot: Probot) => {
   robot.on('pull_request.closed', async (context) => {
@@ -97,4 +97,4 @@ const handler = (robot: Probot) => {
   });
 };
 
-module.exports = handler;
+export default handler;

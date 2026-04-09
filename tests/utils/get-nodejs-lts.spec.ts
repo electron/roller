@@ -4,12 +4,12 @@ import path from 'node:path';
 import nock from 'nock';
 import { describe, expect, it } from 'vitest';
 
-import { getLatestLTSVersion, NODE_SCHEDULE_URL } from '../../src/utils/get-nodejs-lts';
+import { getLatestLTSVersion, NODE_SCHEDULE_URL } from '../../src/utils/get-nodejs-lts.js';
 
 describe('getLatestLTSVersion', () => {
   it('returns the latest Node.js LTS version', async () => {
     const fixture = fs.readFileSync(
-      path.join(__dirname, '../fixtures/node-release-schedule.json'),
+      path.join(import.meta.dirname, '../fixtures/node-release-schedule.json'),
       'utf8',
     );
     const url = new URL(NODE_SCHEDULE_URL);

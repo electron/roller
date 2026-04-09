@@ -1,4 +1,4 @@
-import { rollWindowsArcImage } from './windows-image-handler';
+import { rollWindowsArcImage } from './windows-image-handler.js';
 
 if (require.main === module) {
   rollWindowsArcImage().catch((err: Error) => {

@@ -1,12 +1,12 @@
-import handler from '../src/index';
+import handler from '../src/index.js';
 import { beforeEach, afterEach, describe, it, vi, expect } from 'vitest';
-import * as buildImagesHandler from '../src/build-images-handler';
-import { getOctokit } from '../src/utils/octokit';
+import * as buildImagesHandler from '../src/build-images-handler.js';
+import { getOctokit } from '../src/utils/octokit.js';
 
 import { Probot, ProbotOctokit } from 'probot';
-import { MAIN_BRANCH } from '../src/constants';
+import { MAIN_BRANCH } from '../src/constants.js';
 import { randomBytes } from 'node:crypto';
-const nock = require('nock');
+import nock from 'nock';
 
 const GH_API = 'https://api.github.com';
 const INSTALLATION_ID = 123456;
@@ -14,7 +14,7 @@ const INSTALLATION_ID = 123456;
 const payloadJson = await import('./fixtures/publish_payload.json');
 const branchName = `roller/build-images/${MAIN_BRANCH}`;
 
-vi.mock('../src/utils/octokit');
+vi.mock('../src/utils/octokit.js');
 
 describe('build-images', () => {
   let probot: Probot;

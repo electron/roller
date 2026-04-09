@@ -1,11 +1,11 @@
 import debug from 'debug';
 
-import { MAIN_BRANCH, REPOS } from '../constants';
-import { getOctokit } from './octokit';
-import { PullsListResponseItem } from '../types';
+import { MAIN_BRANCH, REPOS } from '../constants.js';
+import { getOctokit } from './octokit.js';
+import { PullsListResponseItem } from '../types.js';
 import { Octokit } from '@octokit/rest';
-import { getInfraPRText } from './pr-text';
-import { getFileContent } from './arc-image';
+import { getInfraPRText } from './pr-text.js';
+import { getFileContent } from './arc-image.js';
 
 export async function rollInfra(
   rollKey: string,

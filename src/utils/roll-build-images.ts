@@ -1,8 +1,8 @@
 import debug from 'debug';
 
-import { MAIN_BRANCH, REPOS } from '../constants';
-import { getOctokit } from './octokit';
-import { PullsListResponseItem } from '../types';
+import { MAIN_BRANCH, REPOS } from '../constants.js';
+import { getOctokit } from './octokit.js';
+import { PullsListResponseItem } from '../types.js';
 import { Octokit } from '@octokit/rest';
 
 export async function getFileContentFromBuildImages(

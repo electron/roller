@@ -1,15 +1,15 @@
 import debug from 'debug';
 
-import { WINDOWS_DOCKER_FILE, ARC_RUNNER_ENVIRONMENTS } from './constants';
-import { getOctokit } from './utils/octokit';
+import { WINDOWS_DOCKER_FILE, ARC_RUNNER_ENVIRONMENTS } from './constants.js';
+import { getOctokit } from './utils/octokit.js';
 
-import { getLatestRunnerImages } from './utils/get-latest-runner-images';
+import { getLatestRunnerImages } from './utils/get-latest-runner-images.js';
 import {
   getCurrentWindowsRunnerVersion,
   getFileContent,
   currentLinuxImages,
-} from './utils/arc-image';
-import { rollInfra } from './utils/roll-infra';
+} from './utils/arc-image.js';
+import { rollInfra } from './utils/roll-infra.js';
 
 export async function rollActionsRunner() {
   const d = debug(`roller/infra:rollActionsRunner()`);

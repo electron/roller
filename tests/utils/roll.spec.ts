@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { roll } from '../../src/utils/roll';
-import { getOctokit } from '../../src/utils/octokit';
-import { ROLL_TARGETS, REPOS } from '../../src/constants';
-import { updateDepsFile } from '../../src/utils/update-deps';
+import { roll } from '../../src/utils/roll.js';
+import { getOctokit } from '../../src/utils/octokit.js';
+import { ROLL_TARGETS, REPOS } from '../../src/constants.js';
+import { updateDepsFile } from '../../src/utils/update-deps.js';
 
-vi.mock('../../src/utils/octokit');
-vi.mock('../../src/utils/update-deps');
+vi.mock('../../src/utils/octokit.js');
+vi.mock('../../src/utils/update-deps.js');
 
 describe('roll()', () => {
   let mockOctokit: any;

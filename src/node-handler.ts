@@ -1,12 +1,12 @@
 import debug from 'debug';
 import * as semver from 'semver';
 
-import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from './constants';
-import { getOctokit } from './utils/octokit';
-import { roll } from './utils/roll';
-import { ReposListBranchesResponseItem } from './types';
-import { getSupportedBranches } from './utils/get-supported-branches';
-import { getLatestLTSVersion } from './utils/get-nodejs-lts';
+import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from './constants.js';
+import { getOctokit } from './utils/octokit.js';
+import { roll } from './utils/roll.js';
+import { ReposListBranchesResponseItem } from './types.js';
+import { getSupportedBranches } from './utils/get-supported-branches.js';
+import { getLatestLTSVersion } from './utils/get-nodejs-lts.js';
 
 export async function handleNodeCheck(target?: string): Promise<void> {
   const d = debug('roller/node:handleNodeCheck()');
