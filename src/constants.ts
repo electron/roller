@@ -21,6 +21,13 @@ export const REPO_OWNER = 'electron';
 
 export const MAIN_BRANCH = 'main';
 
+export const CHROMIUM_UPGRADE_WORKFLOW = {
+  owner: 'electron',
+  repo: 'agent-workflows',
+  workflow_id: 'chromium-upgrade.yml',
+  ref: 'main',
+};
+
 export const ROLL_TARGETS = {
   node: {
     name: 'node',
