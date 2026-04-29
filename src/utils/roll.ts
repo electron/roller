@@ -3,6 +3,7 @@ import * as semver from 'semver';
 
 import {
   BACKPORT_CHECK_SKIP,
+  CHROMIUM_UPGRADE_WORKFLOW,
   MAIN_BRANCH,
   NO_BACKPORT,
   REPOS,
@@ -54,6 +55,16 @@ async function updateLabels(
   await addLabels(octokit, { prNumber, labels });
 }
 
+async function triggerChromiumUpgradeWorkflow(octokit: Octokit) {
+  const d = debug('roller/chromium:triggerChromiumUpgradeWorkflow()');
+  try {
+    await octokit.actions.createWorkflowDispatch(CHROMIUM_UPGRADE_WORKFLOW);
+    d(`Dispatched ${CHROMIUM_UPGRADE_WORKFLOW.workflow_id}`);
+  } catch (e) {
+    d(`Failed to dispatch ${CHROMIUM_UPGRADE_WORKFLOW.workflow_id}: ${e.message}`);
+  }
+}
+
 export async function roll({
   rollTarget,
   electronBranch,
@@ -65,6 +76,8 @@ export async function roll({
   d(
     `roll triggered for electron branch=${electronBranch.name} ${rollTarget.depsKey}=${targetVersion}`,
   );
+
+  let didRoll = false;
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
   const existingPrsForBranch = (await github.paginate('GET /repos/:owner/:repo/pulls', {
@@ -131,6 +144,8 @@ export async function roll({
         previousVersion: prVersionText[1],
         prNumber: pr.number,
       });
+
+      didRoll = true;
     }
   } else {
     d(`No existing PR found - raising a new PR`);
@@ -185,5 +200,11 @@ export async function roll({
     });
 
     d(`New PR: ${newPr.data.html_url}`);
+
+    didRoll = true;
+  }
+
+  if (didRoll && rollTarget === ROLL_TARGETS.chromium && electronBranch.name === MAIN_BRANCH) {
+    await triggerChromiumUpgradeWorkflow(github);
   }
 }
