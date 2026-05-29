@@ -32,34 +32,3 @@ export async function getChromiumReleases({
   const releases = (await response.json()) as Release[];
   return releases.sort((a, b) => a.time - b.time).map((r) => r.version);
 }
-
-export interface ChromiumCommit {
-  commit: string;
-  tree: string;
-  parents: string[];
-  author: {
-    name: string;
-    email: string;
-    time: string;
-  };
-  committer: {
-    name: string;
-    email: string;
-    time: string;
-  };
-  message: string;
-}
-
-export async function getChromiumCommits(
-  fromRef: string,
-  toRef: string,
-): Promise<{ log: ChromiumCommit[]; next?: string }> {
-  const url = `https://chromium.googlesource.com/chromium/src/+log/${fromRef}..${toRef}?format=JSON`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch Chromium commits: ${response.status}`);
-  }
-  const text = await response.text();
-  // Gitiles prefixes JSON responses with )]}' for security, so strip it
-  return JSON.parse(text.slice(text.indexOf('{')));
-}

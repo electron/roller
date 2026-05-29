@@ -1,6 +1,7 @@
 import debug from 'debug';
 
 import { MAIN_BRANCH, REPOS } from '../constants.js';
+import { CHROMIUM_GITILES_BASE } from './chromium-gitiles.js';
 import { getOctokit } from './octokit.js';
 import { PullsListResponseItem } from '../types.js';
 import { Octokit } from '@octokit/rest';
@@ -47,9 +48,7 @@ export async function rollBuildImages(
 
   const { owner, repo } = REPOS.buildImages;
 
-  const diffLink =
-    `https://chromium.googlesource.com/chromium/src/+log/` +
-    `${previousSha}..${newSha}?n=10000&pretty=fuller`;
+  const diffLink = `${CHROMIUM_GITILES_BASE}/+log/${previousSha}..${newSha}?n=10000&pretty=fuller`;
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
   let existingPrsForBranch: PullsListResponseItem[] = [];
