@@ -3,6 +3,7 @@ import debug from 'debug';
 import { Octokit } from '@octokit/rest';
 import type { Context } from 'probot';
 
+import { getContent } from './utils/github-utils.js';
 import { getOctokit } from './utils/octokit.js';
 import { MAIN_BRANCH, REPOS } from './constants.js';
 
@@ -17,17 +18,16 @@ const files = [
 ];
 
 export async function shouldUpdateFiles(octokit: Octokit, oid: string) {
-  const { data: file } = await octokit.rest.repos.getContent({
+  const file = await getContent(octokit, {
     ...REPOS.electron,
     path: files[0],
   });
 
-  if (!('content' in file)) {
-    throw new Error(`Incorrectly received array when fetching content for ${files[0]}`);
+  if (file === null) {
+    throw new Error(`Could not fetch content for ${files[0]}`);
   }
 
-  const fileContent = Buffer.from(file.content, 'base64').toString('utf-8');
-  const match = fileContent.match(oid);
+  const match = file.content.match(oid);
   if (match?.[0] === oid) {
     return false;
   }
@@ -72,24 +72,23 @@ export async function updateFilesWithNewOid(
 
   for (const filePath of files) {
     try {
-      const { data: file } = await octokit.rest.repos.getContent({
+      const file = await getContent(octokit, {
         ...REPOS.electron,
         path: filePath,
       });
 
-      if (!('content' in file)) {
-        throw new Error(`Incorrectly received array when fetching content for ${filePath}`);
+      if (file === null) {
+        throw new Error(`Could not fetch content for ${filePath}`);
       }
 
-      const fileContent = Buffer.from(file.content, 'base64').toString('utf-8');
-      const match = fileContent.match(previousOid);
+      const match = file.content.match(previousOid);
       if (!match) {
         d(`No match found for ${filePath}`);
         continue;
       }
 
       d(`Updating ${filePath} from ${match[0]} to ${targetOid}`);
-      const newContent = fileContent.replace(match[0], targetOid);
+      const newContent = file.content.replace(match[0], targetOid);
       await octokit.rest.repos.createOrUpdateFileContents({
         ...REPOS.electron,
         path: filePath,

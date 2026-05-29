@@ -2,6 +2,7 @@ import debug from 'debug';
 import * as semver from 'semver';
 
 import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from './constants.js';
+import { getContent } from './utils/github-utils.js';
 import { getOctokit } from './utils/octokit.js';
 import { roll } from './utils/roll.js';
 import { ReposListBranchesResponseItem } from './types.js';
@@ -76,23 +77,21 @@ async function rollBranch(branch: string, isMain: boolean): Promise<void> {
   });
 
   d(`Fetching DEPS for branch ${targetBranch.name} in electron/electron`);
-  const { data: depsData } = await github.repos.getContent({
+  const deps = await getContent(github, {
     owner: REPOS.electron.owner,
     repo: REPOS.electron.repo,
     path: 'DEPS',
     ref: branch,
   });
 
-  if (!('content' in depsData)) {
-    d(`Error - incorrectly got array when fetching DEPS content for ${branch}`);
+  if (deps === null) {
+    d(`Error - could not fetch DEPS content for ${branch}`);
     throw new Error(`Upgrade check failed - see logs for more details`);
   }
 
-  const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
-
   // find node version from DEPS
   const versionRegex = new RegExp(`${ROLL_TARGETS.node.depsKey}':\n +'(.+?)',`, 'm');
-  const [, depsNodeVersion] = versionRegex.exec(deps);
+  const [, depsNodeVersion] = versionRegex.exec(deps.content);
   const majorVersion = semver.major(semver.clean(depsNodeVersion));
 
   d(`Computing latest upstream version for Node ${majorVersion}`);

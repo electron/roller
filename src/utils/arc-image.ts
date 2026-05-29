@@ -1,5 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { MAIN_BRANCH, REPOS } from '../constants.js';
+import { getContent } from './github-utils.js';
 import { getOctokit } from './octokit.js';
 
 const WINDOWS_RUNNER_REGEX = /ARG RUNNER_VERSION=([\d.]+)/;
@@ -9,13 +10,13 @@ const LINUX_IMAGE_REGEX =
   /if eq .cpuArch "amd64".*\n.*image: ghcr.io\/actions\/actions-runner:([0-9]+\.[0-9]+\.[0-9]+@sha256:[a-f0-9]{64}).*\n.*{{- else }}.*\n.*image: ghcr.io\/actions\/actions-runner:([0-9]+\.[0-9]+\.[0-9]+@sha256:[a-f0-9]{64})/;
 
 export async function getFileContent(octokit: Octokit, filePath: string, ref = MAIN_BRANCH) {
-  const { data } = await octokit.repos.getContent({
+  const data = await getContent(octokit, {
     ...REPOS.electronInfra,
     path: filePath,
     ref,
   });
-  if ('content' in data) {
-    return { raw: Buffer.from(data.content, 'base64').toString('utf8'), sha: data.sha };
+  if (data !== null) {
+    return { raw: data.content, sha: data.sha };
   }
   throw 'wat';
 }

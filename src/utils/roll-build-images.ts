@@ -2,6 +2,7 @@ import debug from 'debug';
 
 import { MAIN_BRANCH, REPOS } from '../constants.js';
 import { CHROMIUM_GITILES_BASE } from './chromium-gitiles.js';
+import { getContent } from './github-utils.js';
 import { getOctokit } from './octokit.js';
 import { PullsListResponseItem } from '../types.js';
 import { Octokit } from '@octokit/rest';
@@ -11,13 +12,13 @@ export async function getFileContentFromBuildImages(
   filePath: string,
   ref = MAIN_BRANCH,
 ) {
-  const { data } = await octokit.repos.getContent({
+  const data = await getContent(octokit, {
     ...REPOS.buildImages,
     path: filePath,
     ref,
   });
-  if ('content' in data) {
-    return { raw: Buffer.from(data.content, 'base64').toString('utf8'), sha: data.sha };
+  if (data !== null) {
+    return { raw: data.content, sha: data.sha };
   }
   throw new Error(`Failed to get content for ${filePath}`);
 }
