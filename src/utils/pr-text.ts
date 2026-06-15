@@ -1,4 +1,5 @@
 import { ROLL_TARGETS, RollTarget } from '../constants.js';
+import { CHROMIUM_GITILES_BASE } from './chromium-gitiles.js';
 
 interface PRTextDetails {
   previousVersion: string;
@@ -23,9 +24,7 @@ function getChromiumPRText(details: PRTextDetails) {
   const isMain = !newVersion.includes('.');
   const shortVersion = isMain ? newVersion.substr(11) : newVersion;
   const shortPreviousVersion = isMain ? previousVersion.substr(11) : previousVersion;
-  const diffLink =
-    `https://chromium.googlesource.com/chromium/src/+log/` +
-    `${previousVersion}..${newVersion}?n=10000&pretty=fuller`;
+  const diffLink = `${CHROMIUM_GITILES_BASE}/+log/${previousVersion}..${newVersion}?n=10000&pretty=fuller`;
   return {
     title: `chore: bump ${ROLL_TARGETS.chromium.name} to ${shortVersion} (${branchName})`,
     body: `Updating Chromium to ${shortVersion}${isMain ? ' (main)' : ''}.

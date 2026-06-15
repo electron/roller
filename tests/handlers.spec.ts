@@ -5,11 +5,13 @@ import { getSupportedBranches } from '../src/utils/get-supported-branches.js';
 import { handleNodeCheck } from '../src/node-handler.js';
 import { handleChromiumCheck } from '../src/chromium-handler.js';
 import { getChromiumReleases } from '../src/utils/get-chromium-tags.js';
+import { getContent } from '../src/utils/github-utils.js';
 import { getOctokit } from '../src/utils/octokit.js';
 import { roll } from '../src/utils/roll.js';
 import { getLatestLTSVersion } from '../src/utils/get-nodejs-lts.js';
 
 vi.mock('../src/utils/get-chromium-tags.js');
+vi.mock('../src/utils/github-utils.js');
 vi.mock('../src/utils/octokit.js');
 vi.mock('../src/utils/roll.js');
 vi.mock('../src/utils/get-nodejs-lts.js');
@@ -52,11 +54,9 @@ describe('handleChromiumCheck()', () => {
         },
       ]);
 
-      mockOctokit.repos.getContent.mockReturnValue({
-        data: {
-          content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`),
-          sha: '1234',
-        },
+      vi.mocked(getContent).mockResolvedValue({
+        content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`,
+        sha: '1234',
       });
     });
 
@@ -156,11 +156,9 @@ describe('handleChromiumCheck()', () => {
     it('takes no action if no new minor/build/patch available', async () => {
       vi.mocked(getChromiumReleases).mockResolvedValue([]);
 
-      mockOctokit.repos.getContent.mockReturnValue({
-        data: {
-          content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.5.0.0',`),
-          sha: '1234',
-        },
+      vi.mocked(getContent).mockResolvedValue({
+        content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.5.0.0',`,
+        sha: '1234',
       });
 
       await handleChromiumCheck();
@@ -169,11 +167,9 @@ describe('handleChromiumCheck()', () => {
     });
 
     it('fails if DEPS version invalid', async () => {
-      mockOctokit.repos.getContent.mockReturnValue({
-        data: {
-          content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    'someCommitSha',`),
-          sha: '1234',
-        },
+      vi.mocked(getContent).mockResolvedValue({
+        content: `${ROLL_TARGETS.chromium.depsKey}':\n    'someCommitSha',`,
+        sha: '1234',
       });
 
       expect.assertions(2);
@@ -198,11 +194,9 @@ describe('handleChromiumCheck()', () => {
         },
       ]);
 
-      mockOctokit.repos.getContent.mockReturnValue({
-        data: {
-          content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`),
-          sha: '1234',
-        },
+      vi.mocked(getContent).mockResolvedValue({
+        content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`,
+        sha: '1234',
       });
     });
 
@@ -238,11 +232,9 @@ describe('handleChromiumCheck()', () => {
       },
     ]);
 
-    mockOctokit.repos.getContent.mockReturnValue({
-      data: {
-        content: Buffer.from(`${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`),
-        sha: '1234',
-      },
+    vi.mocked(getContent).mockResolvedValue({
+      content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`,
+      sha: '1234',
     });
     vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0', '2.1.0.0']);
 
@@ -322,11 +314,9 @@ describe('handleNodeCheck()', () => {
       },
     ]);
 
-    mockOctokit.repos.getContent.mockReturnValue({
-      data: {
-        content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.0.0',`),
-        sha: '1234',
-      },
+    vi.mocked(getContent).mockResolvedValue({
+      content: `${ROLL_TARGETS.node.depsKey}':\n    'v12.0.0',`,
+      sha: '1234',
     });
 
     await handleNodeCheck();
@@ -346,11 +336,9 @@ describe('handleNodeCheck()', () => {
   it('does not roll for uneven major versions of Node.js', async () => {
     vi.mocked(getLatestLTSVersion).mockResolvedValue('12.0.0');
 
-    mockOctokit.repos.getContent.mockReturnValue({
-      data: {
-        content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v11.0.0',`),
-        sha: '1234',
-      },
+    vi.mocked(getContent).mockResolvedValue({
+      content: `${ROLL_TARGETS.node.depsKey}':\n    'v11.0.0',`,
+      sha: '1234',
     });
     await handleNodeCheck();
 
@@ -360,11 +348,9 @@ describe('handleNodeCheck()', () => {
   it('does not roll if no newer release found', async () => {
     vi.mocked(getLatestLTSVersion).mockResolvedValue('12.0.0');
 
-    mockOctokit.repos.getContent.mockReturnValue({
-      data: {
-        content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.2.0',`),
-        sha: '1234',
-      },
+    vi.mocked(getContent).mockResolvedValue({
+      content: `${ROLL_TARGETS.node.depsKey}':\n    'v12.2.0',`,
+      sha: '1234',
     });
     await handleNodeCheck();
 
@@ -374,11 +360,9 @@ describe('handleNodeCheck()', () => {
   it('throws error if roll() process failed', async () => {
     vi.mocked(getLatestLTSVersion).mockResolvedValue('14.0.0');
 
-    mockOctokit.repos.getContent.mockReturnValue({
-      data: {
-        content: Buffer.from(`${ROLL_TARGETS.node.depsKey}':\n    'v12.0.0',`),
-        sha: '1234',
-      },
+    vi.mocked(getContent).mockResolvedValue({
+      content: `${ROLL_TARGETS.node.depsKey}':\n    'v12.0.0',`,
+      sha: '1234',
     });
 
     vi.mocked(roll)

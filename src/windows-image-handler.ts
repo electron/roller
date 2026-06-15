@@ -6,6 +6,7 @@ import {
   ARC_RUNNER_ENVIRONMENTS,
   MAIN_BRANCH,
 } from './constants.js';
+import { getContent } from './utils/github-utils.js';
 import { getOctokit } from './utils/octokit.js';
 import { currentWindowsImage, didFileChangeBetweenShas } from './utils/arc-image.js';
 import { rollInfra } from './utils/roll-infra.js';
@@ -56,14 +57,13 @@ export async function rollWindowsArcImage() {
   for (const arcEnv of Object.keys(ARC_RUNNER_ENVIRONMENTS)) {
     d(`Fetching current version of "${arcEnv}" arc image in: ${ARC_RUNNER_ENVIRONMENTS[arcEnv]}`);
 
-    const currentVersion = await octokit.repos.getContent({
+    const data = await getContent(octokit, {
       owner: REPOS.electronInfra.owner,
       repo: REPOS.electronInfra.repo,
       path: ARC_RUNNER_ENVIRONMENTS[arcEnv],
     });
-    const data = currentVersion.data;
-    if ('content' in data) {
-      const currentContent = Buffer.from(data.content, 'base64').toString('utf8');
+    if (data !== null) {
+      const currentContent = data.content;
       const currentImage = currentWindowsImage(currentContent);
 
       if (currentImage !== latestWindowsImage) {

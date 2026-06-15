@@ -5,9 +5,10 @@ import {
   getChromiumHeadSha,
   getChromiumFileContent,
   didChromiumFilesChange,
+  CHROMIUM_GITILES_BASE,
 } from '../../src/utils/chromium-gitiles.js';
 
-const GITILES_BASE = 'https://chromium.googlesource.com';
+const { origin: GITILES_BASE } = new URL(CHROMIUM_GITILES_BASE);
 
 describe('chromium-gitiles', () => {
   beforeEach(() => {

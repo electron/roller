@@ -4,6 +4,7 @@ import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from './constants.js';
 import { compareChromiumVersions } from './utils/compare-chromium-versions.js';
 import { getChromiumReleases, Release } from './utils/get-chromium-tags.js';
 import { getSupportedBranches } from './utils/get-supported-branches.js';
+import { getContent } from './utils/github-utils.js';
 import { getOctokit } from './utils/octokit.js';
 import { roll } from './utils/roll.js';
 import { ReposGetBranchResponseItem, ReposListBranchesResponseItem } from './types.js';
@@ -15,19 +16,18 @@ async function rollReleaseBranch(github: Octokit, branch: BranchItem) {
   const d = debug(`roller/chromium:rollReleaseBranch('${branch.name}')`);
 
   d(`Fetching DEPS for ${branch.name}`);
-  const { data: depsData } = await github.repos.getContent({
+  const deps = await getContent(github, {
     ...REPOS.electron,
     path: 'DEPS',
     ref: branch.commit.sha,
   });
 
-  if (!('content' in depsData)) {
-    throw new Error(`Incorrectly received array when fetching DEPS content for ${branch.name}`);
+  if (deps === null) {
+    throw new Error(`Could not fetch DEPS content for ${branch.name}`);
   }
 
-  const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
   const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
-  const [, chromiumVersion] = versionRegex.exec(deps);
+  const [, chromiumVersion] = versionRegex.exec(deps.content);
 
   const chromiumMajorVersion = Number(chromiumVersion.split('.')[0]);
 
@@ -75,20 +75,19 @@ async function rollMainBranch(github: Octokit) {
   }
 
   d(`Fetching DEPS for ${MAIN_BRANCH}`);
-  const { data: depsData } = await github.repos.getContent({
+  const deps = await getContent(github, {
     owner: REPOS.electron.owner,
     repo: REPOS.electron.repo,
     path: 'DEPS',
     ref: MAIN_BRANCH,
   });
 
-  if (!('content' in depsData)) {
-    throw new Error(`Incorrectly received array when fetching DEPS content for ${MAIN_BRANCH}`);
+  if (deps === null) {
+    throw new Error(`Could not fetch DEPS content for ${MAIN_BRANCH}`);
   }
 
-  const deps = Buffer.from(depsData.content, 'base64').toString('utf8');
   const versionRegex = new RegExp(`${ROLL_TARGETS.chromium.depsKey}':\n +'(.+?)',`, 'm');
-  const [, currentVersion] = versionRegex.exec(deps);
+  const [, currentVersion] = versionRegex.exec(deps.content);
 
   // We should be able to parse major version as a number.
   const chromiumMajorVersion = Number(currentVersion.split('.')[0]);

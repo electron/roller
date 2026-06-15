@@ -1,4 +1,5 @@
 import { REPOS } from '../constants.js';
+import { getContent } from './github-utils.js';
 import { getOctokit } from './octokit.js';
 
 export interface UpdateDepsParams {
@@ -11,27 +12,26 @@ export interface UpdateDepsParams {
 export async function updateDepsFile({ depName, depKey, branch, targetVersion }: UpdateDepsParams) {
   const github = await getOctokit();
 
-  const { data } = await github.repos.getContent({
+  const deps = await getContent(github, {
     ...REPOS.electron,
     path: 'DEPS',
     ref: branch,
   });
 
-  if (!('content' in data)) return;
+  if (deps === null) return;
 
-  const content = Buffer.from(data.content, 'base64').toString('utf8');
   const previousRegex = new RegExp(`${depKey}':\n +'(.+?)',`, 'm');
-  const [, previousDEPSVersion] = previousRegex.exec(content);
+  const [, previousDEPSVersion] = previousRegex.exec(deps.content);
 
   if (targetVersion !== previousDEPSVersion) {
     const regexToReplace = new RegExp(`(${depKey}':\n +').+?',`, 'gm');
-    const newContent = content.replace(regexToReplace, `$1${targetVersion}',`);
+    const newContent = deps.content.replace(regexToReplace, `$1${targetVersion}',`);
     await github.repos.createOrUpdateFileContents({
       ...REPOS.electron,
       path: 'DEPS',
       content: Buffer.from(newContent).toString('base64'),
       message: `chore: bump ${depName} in DEPS to ${targetVersion}`,
-      sha: data.sha,
+      sha: deps.sha,
       branch,
     });
   }

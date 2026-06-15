@@ -1,6 +1,7 @@
 import handler from '../src/index.js';
 import { beforeEach, afterEach, describe, it, vi, expect } from 'vitest';
 import * as buildImagesHandler from '../src/build-images-handler.js';
+import { getContent } from '../src/utils/github-utils.js';
 import { getOctokit } from '../src/utils/octokit.js';
 
 import { Probot, ProbotOctokit } from 'probot';
@@ -14,6 +15,7 @@ const INSTALLATION_ID = 123456;
 const payloadJson = await import('./fixtures/publish_payload.json');
 const branchName = `roller/build-images/${MAIN_BRANCH}`;
 
+vi.mock('../src/utils/github-utils.js');
 vi.mock('../src/utils/octokit.js');
 
 describe('build-images', () => {
@@ -204,20 +206,16 @@ describe('build-images', () => {
 
   describe('updateFilesWithNewOid', () => {
     it('updates files that contain the previous OID', async () => {
-      mockOctokit.rest.repos.getContent.mockImplementation(({ path }) => {
-        if (path === '.github/workflows/linux-publish.yml') {
+      vi.mocked(getContent).mockImplementation(async (_, options) => {
+        if (options?.path === '.github/workflows/linux-publish.yml') {
           return {
-            data: {
-              content: Buffer.from('image: ghcr.io/electron/build:oldsha123').toString('base64'),
-              sha: 'linux-publishsha',
-            },
+            content: 'image: ghcr.io/electron/build:oldsha123',
+            sha: 'linux-publishsha',
           };
         } else {
           return {
-            data: {
-              content: Buffer.from('no matches here').toString('base64'),
-              sha: 'file2sha',
-            },
+            content: 'no matches here',
+            sha: 'file2sha',
           };
         }
       });
@@ -232,7 +230,7 @@ describe('build-images', () => {
       );
 
       expect(result).toBe(true);
-      expect(mockOctokit.rest.repos.getContent).toHaveBeenCalledTimes(7);
+      expect(getContent).toHaveBeenCalledTimes(7);
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledTimes(1);
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -245,11 +243,9 @@ describe('build-images', () => {
     });
 
     it('returns false when no files need updating', async () => {
-      mockOctokit.rest.repos.getContent.mockResolvedValue({
-        data: {
-          content: Buffer.from('no matches here').toString('base64'),
-          sha: 'filesha',
-        },
+      vi.mocked(getContent).mockResolvedValue({
+        content: 'no matches here',
+        sha: 'filesha',
       });
 
       const result = await buildImagesHandler.updateFilesWithNewOid(
@@ -273,15 +269,9 @@ describe('build-images', () => {
 
       mockOctokit.rest.pulls.list.mockResolvedValue({ data: [] });
 
-      mockOctokit.rest.repos.getContent.mockImplementation(() => {
-        return {
-          data: {
-            content: Buffer.from(
-              'image: ghcr.io/electron/build:424eedbf277ad9749ffa9219068aa72ed4a5e373',
-            ).toString('base64'),
-            sha: 'linux-publishsha',
-          },
-        };
+      vi.mocked(getContent).mockResolvedValue({
+        content: 'image: ghcr.io/electron/build:424eedbf277ad9749ffa9219068aa72ed4a5e373',
+        sha: 'linux-publishsha',
       });
 
       const payload = JSON.parse(JSON.stringify(payloadJson));
@@ -312,9 +302,7 @@ describe('build-images', () => {
       const newSha = randomBytes(20).toString('hex');
 
       mockOctokit.rest.pulls.list.mockResolvedValue({ data: [] });
-      mockOctokit.rest.repos.getContent.mockResolvedValue({
-        data: { content: Buffer.from(newSha).toString('base64') },
-      });
+      vi.mocked(getContent).mockResolvedValue({ content: newSha, sha: 'foo' });
 
       vi.spyOn(buildImagesHandler, 'getPreviousOid').mockResolvedValue('oldsha123');
 

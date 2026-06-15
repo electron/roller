@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { updateDepsFile, UpdateDepsParams } from '../../src/utils/update-deps.js';
+import { getContent } from '../../src/utils/github-utils.js';
 import { getOctokit } from '../../src/utils/octokit.js';
 import { REPOS } from '../../src/constants.js';
 
+vi.mock('../../src/utils/github-utils.js');
 vi.mock('../../src/utils/octokit.js');
 
 describe('updateDepsFile()', () => {
@@ -13,12 +15,6 @@ describe('updateDepsFile()', () => {
   beforeEach(() => {
     mockOctokit = {
       repos: {
-        getContent: vi.fn().mockImplementation(() => ({
-          data: {
-            content: Buffer.from("'testKey':\n    'v4.0.0',"),
-            sha: '1234',
-          },
-        })),
         createOrUpdateFileContents: vi.fn(),
       },
     };
@@ -29,6 +25,10 @@ describe('updateDepsFile()', () => {
       branch: 'testBranch',
       targetVersion: 'v10.0.0',
     } as UpdateDepsParams;
+    vi.mocked(getContent).mockResolvedValue({
+      content: "'testKey':\n    'v4.0.0',",
+      sha: '1234',
+    });
   });
 
   it('returns the previous and new version numbers', async () => {

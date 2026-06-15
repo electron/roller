@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { getPRText } from '../../src/utils/pr-text.js';
 import { ROLL_TARGETS, RollTarget } from '../../src/constants.js';
+import { CHROMIUM_GITILES_BASE } from '../../src/utils/chromium-gitiles.js';
 
 vi.mock('../../src/utils/octokit.js');
 
@@ -51,7 +52,7 @@ describe('getPRText()', () => {
       expect(prText.body).toContain(`Original-Version: ${details.previousVersion}`);
       // Contains link to Chromium diff.
       expect(prText.body).toContain(
-        `https://chromium.googlesource.com/chromium/src/+log/${details.previousVersion}..${details.newVersion}?n=10000&pretty=fuller`,
+        `${CHROMIUM_GITILES_BASE}/+log/${details.previousVersion}..${details.newVersion}?n=10000&pretty=fuller`,
       );
     });
 
