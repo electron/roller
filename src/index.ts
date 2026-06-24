@@ -4,8 +4,9 @@ import { handleNodeCheck } from './node-handler.js';
 import { handleChromiumCheck } from './chromium-handler.js';
 import { handleBuildImagesCheck } from './build-images-handler.js';
 import { handleBuildImagesChromiumDepsCheck } from './build-images-chromium-deps-handler.js';
-import { REPOS, ROLL_TARGETS } from './constants.js';
+import { REPOS, ROLLER_BOT_LOGIN, ROLL_TARGETS } from './constants.js';
 import { isAuthorizedElectronRepoUser } from './utils/is-authorized-user.js';
+import { updatePRBranch } from './utils/update-pr-branch.js';
 
 const handler = (robot: Probot) => {
   robot.on('pull_request.closed', async (context) => {
@@ -63,11 +64,6 @@ const handler = (robot: Probot) => {
     const d = debug('roller/github:issue_comment.created');
     const { issue, comment } = context.payload;
 
-    const match = comment.body.match(/^\/roll (main|\d+-x-y)$/);
-    if (!match || !match[1]) {
-      return;
-    }
-
     // Roll commands perform privileged actions against electron/electron, so only
     // honor them when issued from that repository. This prevents permissions on
     // unrelated repos where this app is installed from authorizing a roll.
@@ -91,6 +87,34 @@ const handler = (robot: Probot) => {
           body: `@${comment.user.login} is not authorized to run roller commands.`,
         }),
       );
+      return;
+    }
+
+    // Maintainer command to update the branch with the latest changes from its base branch
+    if (/^\/roller update-branch$/.test(comment.body)) {
+      const { data: pr } = await context.octokit.rest.pulls.get(
+        context.repo({ pull_number: issue.number }),
+      );
+
+      // Ensure the PR was actually created by roller before updating it.
+      if (pr.user?.login !== ROLLER_BOT_LOGIN) {
+        d(`#${issue.number} was not created by roller - skipping update-branch`);
+        await context.octokit.rest.issues.createComment(
+          context.repo({
+            issue_number: issue.number,
+            body: 'This PR was not created by roller and cannot be updated via this command.',
+          }),
+        );
+        return;
+      }
+
+      d(`Updating the branch for #${issue.number}`);
+      await updatePRBranch(context, pr);
+      return;
+    }
+
+    const match = comment.body.match(/^\/roll (main|\d+-x-y)$/);
+    if (!match || !match[1]) {
       return;
     }
 
