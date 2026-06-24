@@ -5,6 +5,7 @@ import { handleChromiumCheck } from './chromium-handler.js';
 import { handleBuildImagesCheck } from './build-images-handler.js';
 import { handleBuildImagesChromiumDepsCheck } from './build-images-chromium-deps-handler.js';
 import { ROLL_TARGETS } from './constants.js';
+import { isAuthorizedUser } from './utils/is-authorized-user.js';
 
 const handler = (robot: Probot) => {
   robot.on('pull_request.closed', async (context) => {
@@ -64,6 +65,18 @@ const handler = (robot: Probot) => {
 
     if (!issue.pull_request) {
       d(`Invalid usage - only roll PRs can be triggered with the roll command`);
+      return;
+    }
+
+    // Allow all users with push access to run commands
+    if (!(await isAuthorizedUser(context, comment.user.login))) {
+      d(`@${comment.user.login} is not authorized to run roller commands - stopping`);
+      await context.octokit.rest.issues.createComment(
+        context.repo({
+          issue_number: issue.number,
+          body: `@${comment.user.login} is not authorized to run roller commands.`,
+        }),
+      );
       return;
     }
 
