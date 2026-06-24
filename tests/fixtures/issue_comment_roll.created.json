@@ -1,0 +1,36 @@
+{
+  "name": "issue_comment",
+  "payload": {
+    "action": "created",
+    "issue": {
+      "url": "https://api.github.com/repos/electron/electron/pull/0",
+      "html_url": "https://github.com/electron/electron/pull/0",
+      "number": 0,
+      "title": "chore: bump chromium to 1.2.3.4",
+      "user": {
+        "login": "dsanders11"
+      },
+      "body": "Bump the version of Chromium to 1.2.3.4.",
+      "pull_request": {}
+    },
+    "comment": {
+      "url": "https://api.github.com/repos/electron/electron/pulls/comments/0",
+      "html_url": "https://github.com/electron/electron/pulls/0#issuecomment-0",
+      "id": 0,
+      "user": {
+        "login": "dsanders11"
+      },
+      "body": "/roll main"
+    },
+    "repository": {
+      "name": "electron",
+      "full_name": "electron/electron",
+      "owner": {
+        "login": "electron"
+      }
+    },
+    "installation": {
+      "id": 12345
+    }
+  }
+}
