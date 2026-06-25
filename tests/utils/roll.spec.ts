@@ -69,7 +69,8 @@ describe('roll()', () => {
         title: `chore: bump ${ROLL_TARGETS.node.name} to foo`,
         number: 1,
         head: {
-          ref: 'asd',
+          ref: `roller/${ROLL_TARGETS.node.name}/${branch.name}`,
+          repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
         },
         body: 'Original-Version: v4.0.0',
         labels: [{ name: 'hello' }, { name: 'goodbye' }],
@@ -133,7 +134,8 @@ describe('roll()', () => {
         title: `chore: bump ${ROLL_TARGETS.node.name} to bar`,
         number: 1,
         head: {
-          ref: 'asd',
+          ref: `roller/${ROLL_TARGETS.node.name}/${branch.name}`,
+          repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
         },
         body: 'Original-Version: v4.0.0',
         labels: [{ name: 'hello' }, { name: 'goodbye' }],
@@ -157,6 +159,70 @@ describe('roll()', () => {
         body: expect.stringContaining('Original-Version: v4.0.0'),
       }),
     );
+  });
+
+  it('ignores a PR whose head is a fork branch impersonating the roll branch', async () => {
+    // An attacker forks electron/electron and names their branch after the
+    // bot's roll branch, opening a PR with a matching title. The bot must not
+    // read from or commit to that attacker-controlled ref, nor update its
+    // title/body/labels.
+    mockOctokit.paginate.mockReturnValue([
+      {
+        user: {
+          login: 'attacker',
+        },
+        title: `chore: bump ${ROLL_TARGETS.node.name} to evil`,
+        number: 1,
+        head: {
+          ref: `roller/${ROLL_TARGETS.node.name}/${branch.name}`,
+          repo: { full_name: 'attacker/electron' },
+        },
+        body: 'Original-Version: v4.0.0',
+        labels: [],
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    await roll({
+      rollTarget: ROLL_TARGETS.node,
+      electronBranch: branch,
+      targetVersion: 'v10.0.0',
+    });
+
+    expect(updateDepsFile).not.toHaveBeenCalled();
+    expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
+    expect(mockOctokit.issues.addLabels).not.toHaveBeenCalled();
+  });
+
+  it('ignores a same-repo PR whose head ref is not the roll branch', async () => {
+    // A same-repo PR matching the title prefix but not on the bot's roll branch
+    // must not be touched either - the write target is derived from trusted
+    // naming, never from the PR.
+    mockOctokit.paginate.mockReturnValue([
+      {
+        user: {
+          login: 'maintainer',
+        },
+        title: `chore: bump ${ROLL_TARGETS.node.name} to manual`,
+        number: 1,
+        head: {
+          ref: 'some-manual-branch',
+          repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
+        },
+        body: 'Original-Version: v4.0.0',
+        labels: [],
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    await roll({
+      rollTarget: ROLL_TARGETS.node,
+      electronBranch: branch,
+      targetVersion: 'v10.0.0',
+    });
+
+    expect(updateDepsFile).not.toHaveBeenCalled();
+    expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
   });
 
   it('creates a new PR if none found', async () => {
@@ -209,7 +275,10 @@ describe('roll()', () => {
           user: { login: 'electron-roller[bot]' },
           title: `chore: bump ${ROLL_TARGETS.chromium.name} to bar`,
           number: 1,
-          head: { ref: 'asd' },
+          head: {
+            ref: `roller/${ROLL_TARGETS.chromium.name}/${mainBranch.name}`,
+            repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
+          },
           body: 'Original-Version: 119.0.0.0',
           labels: [],
           created_at: new Date().toISOString(),
@@ -277,7 +346,8 @@ describe('roll()', () => {
         title: ROLL_TARGETS.node.name,
         number: 1,
         head: {
-          ref: 'asd',
+          ref: `roller/${ROLL_TARGETS.node.name}/${branch.name}`,
+          repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
         },
         body: 'Original-Version: v4.0.0',
         labels: [{ name: 'roller/pause' }],
