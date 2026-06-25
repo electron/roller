@@ -24,19 +24,29 @@ export async function rollInfra(
   const { owner, repo } = REPOS.electronInfra;
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
+  // The head filter must be owner-qualified ('owner:ref-name'); an unqualified value does
+  // not validly filter and would return every open PR in the repo.
   let existingPrsForBranch: PullsListResponseItem[] = [];
   try {
     existingPrsForBranch = (await octokit.paginate('GET /repos/:owner/:repo/pulls', {
-      head: branchName,
+      head: `${owner}:${branchName}`,
       owner,
       repo,
       state: 'open',
     })) as PullsListResponseItem[];
   } catch {}
 
-  const prs = existingPrsForBranch.filter((pr) =>
-    pr.title.startsWith(`build: bump ${bumpSubject}`),
-  );
+  // Positively identify the roller's own PR: it must originate from the trusted repo's
+  // roller branch (owner-qualified head above) and be authored by the roller App. Trusting
+  // any open PR that merely shares the title prefix would let a third party suppress rolls.
+  let prs: PullsListResponseItem[] = [];
+  if (existingPrsForBranch.length) {
+    const { data: app } = await octokit.apps.getAuthenticated();
+    const rollerLogin = `${app.slug}[bot]`;
+    prs = existingPrsForBranch.filter(
+      (pr) => pr.user?.login === rollerLogin && pr.title.startsWith(`build: bump ${bumpSubject}`),
+    );
+  }
 
   const defaultBranchHeadSha = (
     await octokit.repos.getBranch({
