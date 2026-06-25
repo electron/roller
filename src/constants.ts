@@ -19,6 +19,10 @@ export const REPOS = {
 
 export const REPO_OWNER = 'electron';
 
+// Login of the GitHub App that opens and maintains roll PRs. The bot only ever
+// updates roll PRs it authored itself.
+export const ROLLER_BOT_LOGIN = 'electron-roller[bot]';
+
 export const MAIN_BRANCH = 'main';
 
 export const CHROMIUM_UPGRADE_WORKFLOW = {

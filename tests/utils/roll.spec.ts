@@ -225,6 +225,36 @@ describe('roll()', () => {
     expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
   });
 
+  it('ignores a same-repo roll-branch PR not authored by the roller bot', async () => {
+    // Even when the head repo and ref match the bot's roll branch exactly, a PR
+    // opened by anyone other than the roller bot must not be touched.
+    mockOctokit.paginate.mockReturnValue([
+      {
+        user: {
+          login: 'someone-else',
+        },
+        title: `chore: bump ${ROLL_TARGETS.node.name} to bar`,
+        number: 1,
+        head: {
+          ref: `roller/${ROLL_TARGETS.node.name}/${branch.name}`,
+          repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
+        },
+        body: 'Original-Version: v4.0.0',
+        labels: [],
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    await roll({
+      rollTarget: ROLL_TARGETS.node,
+      electronBranch: branch,
+      targetVersion: 'v10.0.0',
+    });
+
+    expect(updateDepsFile).not.toHaveBeenCalled();
+    expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
+  });
+
   it('creates a new PR if none found', async () => {
     mockOctokit.paginate.mockReturnValue([]);
 

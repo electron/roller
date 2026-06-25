@@ -8,6 +8,7 @@ import {
   NO_BACKPORT,
   REPOS,
   ROLL_TARGETS,
+  ROLLER_BOT_LOGIN,
   RollTarget,
 } from '../constants.js';
 import { ReposListBranchesResponseItem, PullsListResponseItem } from '../types.js';
@@ -100,19 +101,22 @@ export async function roll({
 
     // Update existing PR(s)
     for (const pr of prs) {
-      if (pr.user.login.startsWith('trop')) continue;
-
-      // Only act on the bot's own roll PR. Its head must live in the
-      // electron/electron repo itself (not a fork) and be named exactly as the
-      // bot names its roll branches. Any open PR can match the title prefix - a
-      // fork PR's head ref/title/body are entirely attacker-controlled - so they
-      // must never be allowed to select the branch a privileged commit lands on
-      // or to receive bot-applied label/title updates.
-      if (pr.head.repo?.full_name !== electronRepoFullName || pr.head.ref !== rollBranchName) {
+      // Only act on the bot's own roll PR. It must be authored by the roller
+      // bot, its head must live in the electron/electron repo itself (not a
+      // fork), and it must be named exactly as the bot names its roll branches.
+      // Any open PR can match the title prefix - a fork PR's author, head ref,
+      // title and body are all attacker-controlled - so none of them may be
+      // allowed to select the branch a privileged commit lands on or to receive
+      // bot-applied label/title updates.
+      if (
+        pr.user.login !== ROLLER_BOT_LOGIN ||
+        pr.head.repo?.full_name !== electronRepoFullName ||
+        pr.head.ref !== rollBranchName
+      ) {
         d(
-          `Ignoring PR #${pr.number} - head ${pr.head.repo?.full_name ?? '<unknown>'}:${
-            pr.head.ref
-          } is not the bot's roll branch ${electronRepoFullName}:${rollBranchName}`,
+          `Ignoring PR #${pr.number} (@${pr.user.login}, head ${
+            pr.head.repo?.full_name ?? '<unknown>'
+          }:${pr.head.ref}) - not the bot's roll branch ${electronRepoFullName}:${rollBranchName}`,
         );
         continue;
       }
