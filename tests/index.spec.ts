@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import handler from '../src/index.js';
 import { handleChromiumCheck } from '../src/chromium-handler.js';
 import { handleNodeCheck } from '../src/node-handler.js';
-import { isAuthorizedUser } from '../src/utils/is-authorized-user.js';
+import { isAuthorizedElectronRepoUser } from '../src/utils/is-authorized-user.js';
 
 import issueCommentRollCreatedEvent from './fixtures/issue_comment_roll.created.json' with { type: 'json' };
 
@@ -44,7 +44,7 @@ describe('roller', () => {
     });
 
     it('rolls Chromium when an authorized user comments /roll main', async () => {
-      vi.mocked(isAuthorizedUser).mockResolvedValue(true);
+      vi.mocked(isAuthorizedElectronRepoUser).mockResolvedValue(true);
 
       nock(GH_API)
         .post('/repos/electron/electron/issues/0/comments', ({ body }) => {
@@ -59,7 +59,7 @@ describe('roller', () => {
     });
 
     it('rolls Node.js when an authorized user comments /roll main', async () => {
-      vi.mocked(isAuthorizedUser).mockResolvedValue(true);
+      vi.mocked(isAuthorizedElectronRepoUser).mockResolvedValue(true);
 
       nock(GH_API)
         .post('/repos/electron/electron/issues/0/comments', ({ body }) => {
@@ -75,8 +75,21 @@ describe('roller', () => {
       expect(handleNodeCheck).toHaveBeenCalledWith('main');
     });
 
+    it('ignores roll commands from repositories other than electron/electron', async () => {
+      vi.mocked(isAuthorizedElectronRepoUser).mockResolvedValue(true);
+
+      const event = JSON.parse(JSON.stringify(issueCommentRollCreatedEvent));
+      event.payload.repository.name = 'other-repo';
+      event.payload.repository.full_name = 'electron/other-repo';
+      await probot.receive(event as Parameters<typeof probot.receive>[0]);
+
+      expect(isAuthorizedElectronRepoUser).not.toHaveBeenCalled();
+      expect(handleChromiumCheck).not.toHaveBeenCalled();
+      expect(handleNodeCheck).not.toHaveBeenCalled();
+    });
+
     it('blocks unauthorized users from triggering a roll', async () => {
-      vi.mocked(isAuthorizedUser).mockResolvedValue(false);
+      vi.mocked(isAuthorizedElectronRepoUser).mockResolvedValue(false);
 
       nock(GH_API)
         .post('/repos/electron/electron/issues/0/comments', ({ body }) => {
