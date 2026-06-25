@@ -8,6 +8,7 @@ import {
   NO_BACKPORT,
   REPOS,
   ROLL_TARGETS,
+  ROLLER_BOT_LOGIN,
   RollTarget,
 } from '../constants.js';
 import { ReposListBranchesResponseItem, PullsListResponseItem } from '../types.js';
@@ -91,9 +92,35 @@ export async function roll({
   );
 
   if (prs.length) {
+    // The bot only ever rolls into the branch it created itself, which it names
+    // `roller/<target>/<electron branch>` in the electron/electron repo. Derive
+    // the write target solely from this trusted naming rather than from any
+    // field of the (potentially untrusted) PR.
+    const rollBranchName = `roller/${rollTarget.name}/${electronBranch.name}`;
+    const electronRepoFullName = `${REPOS.electron.owner}/${REPOS.electron.repo}`;
+
     // Update existing PR(s)
     for (const pr of prs) {
-      if (pr.user.login.startsWith('trop')) continue;
+      // Only act on the bot's own roll PR. It must be authored by the roller
+      // bot, its head must live in the electron/electron repo itself (not a
+      // fork), and it must be named exactly as the bot names its roll branches.
+      // Any open PR can match the title prefix - a fork PR's author, head ref,
+      // title and body are all attacker-controlled - so none of them may be
+      // allowed to select the branch a privileged commit lands on or to receive
+      // bot-applied label/title updates.
+      if (
+        pr.user.login !== ROLLER_BOT_LOGIN ||
+        pr.head.repo?.full_name !== electronRepoFullName ||
+        pr.head.ref !== rollBranchName
+      ) {
+        d(
+          `Ignoring PR #${pr.number} (@${pr.user.login}, head ${
+            pr.head.repo?.full_name ?? '<unknown>'
+          }:${pr.head.ref}) - not the bot's roll branch ${electronRepoFullName}:${rollBranchName}`,
+        );
+        continue;
+      }
+
       d(`Found existing PR: #${pr.number} opened by ${pr.user.login}`);
 
       // Check to see if automatic DEPS roll has been temporarily disabled
@@ -107,7 +134,7 @@ export async function roll({
       const { previousDEPSVersion, newDEPSVersion } = await updateDepsFile({
         depName: rollTarget.name,
         depKey: rollTarget.depsKey,
-        branch: pr.head.ref,
+        branch: rollBranchName,
         targetVersion,
       });
 
