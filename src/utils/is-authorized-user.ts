@@ -2,7 +2,7 @@ import type { Context } from 'probot';
 
 import { REPOS } from '../constants.js';
 
-export async function isAuthorizedUser(
+export async function isAuthorizedElectronRepoUser(
   context: Context<'issue_comment.created'>,
   username: string,
 ) {

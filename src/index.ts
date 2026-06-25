@@ -5,7 +5,7 @@ import { handleChromiumCheck } from './chromium-handler.js';
 import { handleBuildImagesCheck } from './build-images-handler.js';
 import { handleBuildImagesChromiumDepsCheck } from './build-images-chromium-deps-handler.js';
 import { REPOS, ROLL_TARGETS } from './constants.js';
-import { isAuthorizedUser } from './utils/is-authorized-user.js';
+import { isAuthorizedElectronRepoUser } from './utils/is-authorized-user.js';
 
 const handler = (robot: Probot) => {
   robot.on('pull_request.closed', async (context) => {
@@ -83,7 +83,7 @@ const handler = (robot: Probot) => {
     }
 
     // Allow all users with push access to run commands
-    if (!(await isAuthorizedUser(context, comment.user.login))) {
+    if (!(await isAuthorizedElectronRepoUser(context, comment.user.login))) {
       d(`@${comment.user.login} is not authorized to run roller commands - stopping`);
       await context.octokit.rest.issues.createComment(
         context.repo({
