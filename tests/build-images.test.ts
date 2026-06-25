@@ -206,10 +206,13 @@ describe('build-images', () => {
 
   describe('updateFilesWithNewOid', () => {
     it('updates files that contain the previous OID', async () => {
+      const previousOid = '424eedbf277ad9749ffa9219068aa72ed4a5e373';
+      const targetOid = 'bed562b00714c63080bda07af3f016cab4ba02fc';
+
       vi.mocked(getContent).mockImplementation(async (_, options) => {
         if (options?.path === '.github/workflows/linux-publish.yml') {
           return {
-            content: 'image: ghcr.io/electron/build:oldsha123',
+            content: `image: ghcr.io/electron/build:${previousOid}`,
             sha: 'linux-publishsha',
           };
         } else {
@@ -224,8 +227,8 @@ describe('build-images', () => {
 
       const result = await buildImagesHandler.updateFilesWithNewOid(
         mockOctokit,
-        'oldsha123',
-        'newsha456',
+        previousOid,
+        targetOid,
         branchName,
       );
 
@@ -250,12 +253,32 @@ describe('build-images', () => {
 
       const result = await buildImagesHandler.updateFilesWithNewOid(
         mockOctokit,
-        'oldsha123',
-        'newsha456',
+        '424eedbf277ad9749ffa9219068aa72ed4a5e373',
+        'bed562b00714c63080bda07af3f016cab4ba02fc',
         branchName,
       );
 
       expect(result).toBe(false);
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
+    });
+
+    it('refuses to update files when given OIDs that are not valid hex object IDs', async () => {
+      vi.mocked(getContent).mockResolvedValue({
+        content: 'jobs:\n  build:\n    runs-on: ubuntu-latest\n',
+        sha: 'filesha',
+      });
+
+      // A crafted container tag containing regex metacharacters must never be
+      // compiled into a regular expression or matched against file content.
+      const result = await buildImagesHandler.updateFilesWithNewOid(
+        mockOctokit,
+        'jobs[\\s\\S]*',
+        'malicious replacement',
+        branchName,
+      );
+
+      expect(result).toBe(false);
+      expect(getContent).not.toHaveBeenCalled();
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
     });
   });

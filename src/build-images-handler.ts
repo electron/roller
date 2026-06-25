@@ -17,6 +17,16 @@ const files = [
   '.devcontainer/docker-compose.yml',
 ];
 
+// Git object IDs are 40-character lowercase hex strings. Any value taken from a
+// webhook payload or package metadata must match this exactly before it is used
+// to match against or rewrite file content, so that attacker-controlled tags
+// cannot be interpreted as regular expressions or replacement patterns.
+const OID_REGEX = /^[0-9a-f]{40}$/;
+
+export function isValidOid(value: unknown): value is string {
+  return typeof value === 'string' && OID_REGEX.test(value);
+}
+
 export async function shouldUpdateFiles(octokit: Octokit, oid: string) {
   const file = await getContent(octokit, {
     ...REPOS.electron,
@@ -27,8 +37,9 @@ export async function shouldUpdateFiles(octokit: Octokit, oid: string) {
     throw new Error(`Could not fetch content for ${files[0]}`);
   }
 
-  const match = file.content.match(oid);
-  if (match?.[0] === oid) {
+  // `oid` is a validated 40-char hex OID; use a literal substring check so the
+  // value is never compiled into a regular expression.
+  if (file.content.includes(oid)) {
     return false;
   }
 
@@ -54,7 +65,15 @@ export async function getPreviousOid(payload: Context<'registry_package.publishe
       return metadata.container.tags[0] !== target_oid;
     });
 
-    return previousPackage.metadata.container.tags[0] || null;
+    const previousTag = previousPackage?.metadata.container.tags[0];
+
+    // The tag is attacker-influenceable package metadata. Only accept it if it
+    // is a well-formed OID; otherwise it must not be used to match/rewrite files.
+    if (!isValidOid(previousTag)) {
+      return null;
+    }
+
+    return previousTag;
   } catch (error) {
     console.error('Error fetching previous target_oid:', error);
     return null;
@@ -70,6 +89,13 @@ export async function updateFilesWithNewOid(
   const d = debug(`roller/github:updateFilesWithNewOid`);
   let updatedAny = false;
 
+  // Defense-in-depth: never match against or substitute values that are not
+  // well-formed OIDs, regardless of how this function is reached.
+  if (!isValidOid(previousOid) || !isValidOid(targetOid)) {
+    d(`Refusing to update files with invalid OID(s)`);
+    return updatedAny;
+  }
+
   for (const filePath of files) {
     try {
       const file = await getContent(octokit, {
@@ -81,14 +107,16 @@ export async function updateFilesWithNewOid(
         throw new Error(`Could not fetch content for ${filePath}`);
       }
 
-      const match = file.content.match(previousOid);
-      if (!match) {
+      // `previousOid` and `targetOid` are validated 40-char hex OIDs. Use literal
+      // substring matching and split/join so neither value is ever interpreted as
+      // a regular expression or as a replacement pattern (e.g. `$&`, `$1`).
+      if (!file.content.includes(previousOid)) {
         d(`No match found for ${filePath}`);
         continue;
       }
 
-      d(`Updating ${filePath} from ${match[0]} to ${targetOid}`);
-      const newContent = file.content.replace(match[0], targetOid);
+      d(`Updating ${filePath} from ${previousOid} to ${targetOid}`);
+      const newContent = file.content.split(previousOid).join(targetOid);
       await octokit.rest.repos.createOrUpdateFileContents({
         ...REPOS.electron,
         path: filePath,
@@ -141,6 +169,14 @@ export async function handleBuildImagesCheck(
   const octokit = await getOctokit();
 
   const { target_oid: targetOid } = payload.registry_package.package_version;
+
+  // `target_oid` comes straight from the webhook payload and is written into
+  // workflow file content. Refuse to proceed unless it is a well-formed OID.
+  if (!isValidOid(targetOid)) {
+    d(`Invalid target OID in payload, cannot proceed with updates`);
+    return;
+  }
+
   const previousOid = await getPreviousOid(payload);
 
   if (!previousOid) {
