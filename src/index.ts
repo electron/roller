@@ -4,16 +4,21 @@ import { handleNodeCheck } from './node-handler.js';
 import { handleChromiumCheck } from './chromium-handler.js';
 import { handleBuildImagesCheck } from './build-images-handler.js';
 import { handleBuildImagesChromiumDepsCheck } from './build-images-chromium-deps-handler.js';
-import { ROLL_TARGETS } from './constants.js';
+import { REPOS, ROLL_TARGETS } from './constants.js';
 import { isAuthorizedUser } from './utils/is-authorized-user.js';
 
 const handler = (robot: Probot) => {
   robot.on('pull_request.closed', async (context) => {
     const d = debug('roller/github:pull_request.closed');
 
-    const { pull_request: pr } = context.payload;
+    const { pull_request: pr, repository } = context.payload;
 
     if (!pr.merged) return;
+
+    // Merging a `chore: bump ...` PR triggers privileged rolls against electron/electron,
+    // so only react to merges in that repository. Otherwise a merged PR with a crafted
+    // title in any other repo where this app is installed could trigger a roll.
+    if (repository.full_name !== `${REPOS.electron.owner}/${REPOS.electron.repo}`) return;
 
     const isNodePR = pr.title.startsWith(`chore: bump ${ROLL_TARGETS.node.name}`);
     const isChromiumPR = pr.title.startsWith(`chore: bump ${ROLL_TARGETS.chromium.name}`);
@@ -60,6 +65,15 @@ const handler = (robot: Probot) => {
 
     const match = comment.body.match(/^\/roll (main|\d+-x-y)$/);
     if (!match || !match[1]) {
+      return;
+    }
+
+    // Roll commands perform privileged actions against electron/electron, so only
+    // honor them when issued from that repository. This prevents permissions on
+    // unrelated repos where this app is installed from authorizing a roll.
+    const { repository } = context.payload;
+    if (repository.full_name !== `${REPOS.electron.owner}/${REPOS.electron.repo}`) {
+      d(`Ignoring roll command from ${repository.full_name} - only electron/electron is allowed`);
       return;
     }
 

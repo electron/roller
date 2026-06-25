@@ -75,6 +75,19 @@ describe('roller', () => {
       expect(handleNodeCheck).toHaveBeenCalledWith('main');
     });
 
+    it('ignores roll commands from repositories other than electron/electron', async () => {
+      vi.mocked(isAuthorizedUser).mockResolvedValue(true);
+
+      const event = JSON.parse(JSON.stringify(issueCommentRollCreatedEvent));
+      event.payload.repository.name = 'other-repo';
+      event.payload.repository.full_name = 'electron/other-repo';
+      await probot.receive(event as Parameters<typeof probot.receive>[0]);
+
+      expect(isAuthorizedUser).not.toHaveBeenCalled();
+      expect(handleChromiumCheck).not.toHaveBeenCalled();
+      expect(handleNodeCheck).not.toHaveBeenCalled();
+    });
+
     it('blocks unauthorized users from triggering a roll', async () => {
       vi.mocked(isAuthorizedUser).mockResolvedValue(false);
 
