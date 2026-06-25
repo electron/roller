@@ -7,6 +7,7 @@ import {
   MAIN_BRANCH,
   REPOS,
   ROLL_TARGETS,
+  TROP_BOT_LOGIN,
 } from '../../src/constants.js';
 import { updateDepsFile } from '../../src/utils/update-deps.js';
 
@@ -152,7 +153,7 @@ describe('roll()', () => {
     mockOctokit.paginate.mockReturnValue([
       {
         user: {
-          login: 'trop[bot]',
+          login: TROP_BOT_LOGIN,
         },
         title: `chore: bump ${ROLL_TARGETS.node.name} to foo`,
         number: 1,
@@ -176,6 +177,44 @@ describe('roll()', () => {
     expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
     expect(mockOctokit.pulls.create).not.toHaveBeenCalled();
     expect(updateDepsFile).not.toHaveBeenCalled();
+  });
+
+  it('does not let a trop-prefixed impostor on a fork suppress the roll', async () => {
+    // The backport signal is the exact `trop[bot]` app login, not a `trop`
+    // prefix - so a fork PR from a user merely named `trop...` must not be able
+    // to defer creation of the roller's own PR.
+    mockOctokit.paginate.mockReturnValue([
+      {
+        user: {
+          login: 'tropical',
+        },
+        title: `chore: bump ${ROLL_TARGETS.node.name} to 1`,
+        number: 1,
+        head: {
+          ref: 'main',
+          repo: { full_name: 'tropical/electron' },
+        },
+        body: 'no marker here',
+        labels: [],
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    await roll({
+      rollTarget: ROLL_TARGETS.node,
+      electronBranch: branch,
+      targetVersion: 'v10.0.0',
+    });
+
+    // The impostor is ignored and the roller still raises its own PR.
+    expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
+    expect(mockOctokit.pulls.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...REPOS.electron,
+        base: branch.name,
+        head: `${REPOS.electron.owner}:roller/${ROLL_TARGETS.node.name}/${branch.name}`,
+      }),
+    );
   });
 
   it('updates a PR if existing PR already exists', async () => {

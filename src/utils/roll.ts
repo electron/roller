@@ -9,6 +9,7 @@ import {
   REPOS,
   ROLL_TARGETS,
   RollTarget,
+  TROP_BOT_LOGIN,
 } from '../constants.js';
 import { ReposListBranchesResponseItem, PullsListResponseItem } from '../types.js';
 import { getOctokit } from './octokit.js';
@@ -109,7 +110,7 @@ export async function roll({
   const hasBackportInFlight = existingPrsForBranch.some(
     (pr) =>
       isInBaseRepo(pr) &&
-      pr.user?.login?.startsWith('trop') &&
+      pr.user?.login === TROP_BOT_LOGIN &&
       pr.title.startsWith(`chore: bump ${rollTarget.name}`),
   );
 

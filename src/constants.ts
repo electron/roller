@@ -21,6 +21,12 @@ export const REPO_OWNER = 'electron';
 
 export const MAIN_BRANCH = 'main';
 
+// The exact PR author login of the trop backport bot (https://github.com/apps/trop).
+// A GitHub App's PRs are authored as `<app-slug>[bot]`, and this login cannot be
+// spoofed by a fork PR - so it is the trusted signal for recognising trop's
+// backport PRs (which live on trop's own head branches, not the roller's).
+export const TROP_BOT_LOGIN = 'trop[bot]';
+
 export const CHROMIUM_UPGRADE_WORKFLOW = {
   owner: 'electron',
   repo: 'agent-workflows',
