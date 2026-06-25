@@ -79,21 +79,43 @@ export async function roll({
 
   let didRoll = false;
 
-  // Look for a pre-existing PR that targets this branch to see if we can update that.
+  // Look for a pre-existing PR that targets this branch to see if we can update
+  // it. Only PRs in the base repository are trusted: matching on title alone is
+  // unsafe because an unprivileged user could open a decoy PR from a fork titled
+  // `chore: bump <target>` to suppress creation of the roller's PR or have their
+  // fork branch written to. Pushing a branch into the base repo requires write
+  // access, so requiring it defeats the decoy.
+  const branchName = `roller/${rollTarget.name}/${electronBranch.name}`;
+  const baseRepoFullName = `${REPOS.electron.owner}/${REPOS.electron.repo}`;
+
   const existingPrsForBranch = (await github.paginate('GET /repos/:owner/:repo/pulls', {
     base: electronBranch.name,
     ...REPOS.electron,
     state: 'open',
   })) as PullsListResponseItem[];
 
-  const prs = existingPrsForBranch.filter((pr) =>
-    pr.title.startsWith(`chore: bump ${rollTarget.name}`),
+  const isInBaseRepo = (pr: PullsListResponseItem) =>
+    pr.head.repo?.full_name === baseRepoFullName;
+
+  // PRs the roller itself authored, identified by their deterministic head ref
+  // in the base repo. These are the only PRs we will update.
+  const ownPrs = existingPrsForBranch.filter(
+    (pr) => isInBaseRepo(pr) && pr.head.ref === branchName,
   );
 
-  if (prs.length) {
+  // A trop backport PR (in the base repo, carrying the roller's title) means a
+  // roll for this branch is already in flight. Its head ref and body are never
+  // touched, but its presence must defer creation of a competing PR.
+  const hasBackportInFlight = existingPrsForBranch.some(
+    (pr) =>
+      isInBaseRepo(pr) &&
+      pr.user?.login?.startsWith('trop') &&
+      pr.title.startsWith(`chore: bump ${rollTarget.name}`),
+  );
+
+  if (ownPrs.length) {
     // Update existing PR(s)
-    for (const pr of prs) {
-      if (pr.user.login.startsWith('trop')) continue;
+    for (const pr of ownPrs) {
       d(`Found existing PR: #${pr.number} opened by ${pr.user.login}`);
 
       // Check to see if automatic DEPS roll has been temporarily disabled
@@ -122,8 +144,8 @@ export async function roll({
       const prVersionText = re.exec(pr.body);
 
       if (!prVersionText || prVersionText.length === 0) {
-        d('Could not find PR version text in existing PR - exiting');
-        return;
+        d('Could not find PR version text in existing PR - skipping');
+        continue;
       }
 
       await github.pulls.update({
@@ -147,10 +169,13 @@ export async function roll({
 
       didRoll = true;
     }
+  } else if (hasBackportInFlight) {
+    // A trop backport PR for this bump is already open, so a roll is in flight.
+    // Defer to it rather than opening a competing PR.
+    d(`Found a trop backport PR for this bump - deferring, not raising a new PR`);
   } else {
     d(`No existing PR found - raising a new PR`);
     const sha = electronBranch.commit.sha;
-    const branchName = `roller/${rollTarget.name}/${electronBranch.name}`;
     const shortRef = `heads/${branchName}`;
     const ref = `refs/${shortRef}`;
 

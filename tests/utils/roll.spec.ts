@@ -69,7 +69,8 @@ describe('roll()', () => {
         title: `chore: bump ${ROLL_TARGETS.node.name} to foo`,
         number: 1,
         head: {
-          ref: 'asd',
+          ref: `roller/${ROLL_TARGETS.node.name}/${branch.name}`,
+          repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
         },
         body: 'Original-Version: v4.0.0',
         labels: [{ name: 'hello' }, { name: 'goodbye' }],
@@ -92,7 +93,62 @@ describe('roll()', () => {
     expect(mockOctokit.pulls.create).not.toHaveBeenCalled();
   });
 
-  it('takes no action if the PR user is trop', async () => {
+  it('ignores a decoy PR from a fork and raises its own PR instead', async () => {
+    // A decoy PR opened from an arbitrary fork with a title that matches the
+    // roller's naming convention must never be treated as the roller's own PR:
+    // it must not suppress new-PR creation, and its fork head ref must never be
+    // written to.
+    mockOctokit.paginate.mockReturnValue([
+      {
+        user: {
+          login: 'attacker',
+        },
+        title: `chore: bump ${ROLL_TARGETS.node.name} to 1`,
+        number: 1,
+        head: {
+          ref: 'main',
+          repo: { full_name: 'attacker/electron' },
+        },
+        body: 'no marker here',
+        labels: [],
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    await roll({
+      rollTarget: ROLL_TARGETS.node,
+      electronBranch: branch,
+      targetVersion: 'v10.0.0',
+    });
+
+    // The decoy is ignored, so the existing-PR path is never taken.
+    expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
+
+    // The decoy's fork head ref is never written to - only the roller's own
+    // branch is updated.
+    const newBranchName = `roller/${ROLL_TARGETS.node.name}/${branch.name}`;
+    expect(updateDepsFile).not.toHaveBeenCalledWith(
+      expect.objectContaining({ branch: 'main' }),
+    );
+    expect(updateDepsFile).toHaveBeenCalledWith(
+      expect.objectContaining({ branch: newBranchName }),
+    );
+
+    // The roller raises its own PR rather than being starved by the decoy.
+    expect(mockOctokit.pulls.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...REPOS.electron,
+        base: branch.name,
+        head: `${REPOS.electron.owner}:${newBranchName}`,
+      }),
+    );
+  });
+
+  it('defers to a trop backport PR without updating it or raising a competing PR', async () => {
+    // trop opens backport PRs that carry the roller's `chore: bump` title but
+    // live on trop's own head branch in the base repo. Their presence means a
+    // roll is already in flight, so the roller must neither write to them nor
+    // open a competing PR.
     mockOctokit.paginate.mockReturnValue([
       {
         user: {
@@ -101,7 +157,8 @@ describe('roll()', () => {
         title: `chore: bump ${ROLL_TARGETS.node.name} to foo`,
         number: 1,
         head: {
-          ref: 'asd',
+          ref: 'trop/backport-foo',
+          repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
         },
         body: 'Original-Version: v4.0.0',
         labels: [{ name: 'hello' }, { name: 'goodbye' }],
@@ -109,19 +166,16 @@ describe('roll()', () => {
       },
     ]);
 
-    vi.mocked(updateDepsFile).mockResolvedValue({
-      previousDEPSVersion: 'v4.0.0',
-      newDEPSVersion: 'v4.0.0',
-    });
-
     await roll({
       rollTarget: ROLL_TARGETS.node,
       electronBranch: branch,
-      targetVersion: 'v4.0.0',
+      targetVersion: 'v10.0.0',
     });
 
+    // trop's PR is neither updated nor written to, and no competing PR is raised.
     expect(mockOctokit.pulls.update).not.toHaveBeenCalled();
     expect(mockOctokit.pulls.create).not.toHaveBeenCalled();
+    expect(updateDepsFile).not.toHaveBeenCalled();
   });
 
   it('updates a PR if existing PR already exists', async () => {
@@ -133,7 +187,8 @@ describe('roll()', () => {
         title: `chore: bump ${ROLL_TARGETS.node.name} to bar`,
         number: 1,
         head: {
-          ref: 'asd',
+          ref: `roller/${ROLL_TARGETS.node.name}/${branch.name}`,
+          repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
         },
         body: 'Original-Version: v4.0.0',
         labels: [{ name: 'hello' }, { name: 'goodbye' }],
@@ -209,7 +264,10 @@ describe('roll()', () => {
           user: { login: 'electron-roller[bot]' },
           title: `chore: bump ${ROLL_TARGETS.chromium.name} to bar`,
           number: 1,
-          head: { ref: 'asd' },
+          head: {
+            ref: `roller/${ROLL_TARGETS.chromium.name}/${mainBranch.name}`,
+            repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
+          },
           body: 'Original-Version: 119.0.0.0',
           labels: [],
           created_at: new Date().toISOString(),
@@ -274,10 +332,11 @@ describe('roll()', () => {
         user: {
           login: 'electron-roller[bot]',
         },
-        title: ROLL_TARGETS.node.name,
+        title: `chore: bump ${ROLL_TARGETS.node.name} to bar`,
         number: 1,
         head: {
-          ref: 'asd',
+          ref: `roller/${ROLL_TARGETS.node.name}/${branch.name}`,
+          repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
         },
         body: 'Original-Version: v4.0.0',
         labels: [{ name: 'roller/pause' }],
