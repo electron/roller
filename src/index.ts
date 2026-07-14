@@ -78,6 +78,12 @@ const handler = (robot: Probot) => {
       return;
     }
 
+    const isUpdateBranchCommand = /^\/roller update-branch$/.test(comment.body);
+    const rollMatch = comment.body.match(/^\/roll (main|\d+-x-y)$/);
+    if (!isUpdateBranchCommand && !rollMatch) {
+      return;
+    }
+
     // Allow all users with push access to run commands
     if (!(await isAuthorizedElectronRepoUser(context, comment.user.login))) {
       d(`@${comment.user.login} is not authorized to run roller commands - stopping`);
@@ -91,7 +97,7 @@ const handler = (robot: Probot) => {
     }
 
     // Maintainer command to update the branch with the latest changes from its base branch
-    if (/^\/roller update-branch$/.test(comment.body)) {
+    if (isUpdateBranchCommand) {
       const { data: pr } = await context.octokit.rest.pulls.get(
         context.repo({ pull_number: issue.number }),
       );
@@ -113,12 +119,11 @@ const handler = (robot: Probot) => {
       return;
     }
 
-    const match = comment.body.match(/^\/roll (main|\d+-x-y)$/);
-    if (!match || !match[1]) {
+    if (!rollMatch || !rollMatch[1]) {
       return;
     }
 
-    const branch = match[1];
+    const branch = rollMatch[1];
     const isNodePR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.node.name}`);
     const isChromiumPR = issue.title.startsWith(`chore: bump ${ROLL_TARGETS.chromium.name}`);
 
