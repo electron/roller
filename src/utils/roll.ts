@@ -17,6 +17,7 @@ import { getPRText } from './pr-text.js';
 import { updateDepsFile } from './update-deps.js';
 import { Octokit } from '@octokit/rest';
 import { addLabels, removeLabel } from './label-utils.js';
+import { getTargetBranchLabels } from './get-target-branch-labels.js';
 
 interface RollParams {
   rollTarget: RollTarget;
@@ -30,10 +31,33 @@ async function updateLabels(
   octokit: Octokit,
   { rollTarget, electronBranch, targetVersion, previousVersion, prNumber }: RollParams,
 ) {
+  const d = debug(`roller/${rollTarget.name}:updateLabels()`);
   let labels: string[] = [];
   let labelToRemove: string;
 
-  labels.push(electronBranch.name === MAIN_BRANCH ? NO_BACKPORT : BACKPORT_CHECK_SKIP);
+  if (electronBranch.name === MAIN_BRANCH) {
+    let targetBranchLabels: string[] = [];
+
+    // Chromium rolls to main should be labeled for backport to every supported
+    // release branch whose scheduled Chromium version is >= the rolled version.
+    if (rollTarget === ROLL_TARGETS.chromium) {
+      const chromiumMajorVersion = Number(targetVersion.split('.')[0]);
+      try {
+        targetBranchLabels = await getTargetBranchLabels(octokit, chromiumMajorVersion);
+      } catch (e) {
+        d(`Failed to determine target branch labels: ${e.message} - skipping target labels`);
+      }
+    }
+
+    if (targetBranchLabels.length > 0) {
+      d(`Adding target branch labels: ${targetBranchLabels.join(', ')}`);
+      labels.push(...targetBranchLabels);
+    } else {
+      labels.push(NO_BACKPORT);
+    }
+  } else {
+    labels.push(BACKPORT_CHECK_SKIP);
+  }
 
   // Chromium bumps & roll bumps to the main branch are always patch bumps.
   if (electronBranch.name === MAIN_BRANCH || rollTarget === ROLL_TARGETS.chromium) {

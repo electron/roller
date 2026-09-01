@@ -3,15 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { roll } from '../../src/utils/roll.js';
 import { getOctokit } from '../../src/utils/octokit.js';
 import {
+  BACKPORT_CHECK_SKIP,
   CHROMIUM_UPGRADE_WORKFLOW,
   MAIN_BRANCH,
+  NO_BACKPORT,
   REPOS,
   ROLL_TARGETS,
 } from '../../src/constants.js';
+import { getTargetBranchLabels } from '../../src/utils/get-target-branch-labels.js';
 import { updateDepsFile } from '../../src/utils/update-deps.js';
 
 vi.mock('../../src/utils/octokit.js');
 vi.mock('../../src/utils/update-deps.js');
+vi.mock('../../src/utils/get-target-branch-labels.js');
 
 describe('roll()', () => {
   let mockOctokit: any;
@@ -58,6 +62,7 @@ describe('roll()', () => {
       previousDEPSVersion: 'v4.0.0',
       newDEPSVersion: 'v10.0.0',
     });
+    vi.mocked(getTargetBranchLabels).mockReset().mockResolvedValue([]);
   });
 
   it('takes no action if versions are identical', async () => {
@@ -364,6 +369,97 @@ describe('roll()', () => {
       ).resolves.toBeUndefined();
 
       expect(mockOctokit.pulls.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('backport labels', () => {
+    const mainBranch = { ...branch, name: MAIN_BRANCH };
+
+    it('adds target branch labels instead of no-backport for chromium rolls on main', async () => {
+      mockOctokit.paginate.mockReturnValue([]);
+      vi.mocked(getTargetBranchLabels).mockResolvedValue(['target/44-x-y', 'target/45-x-y']);
+
+      await roll({
+        rollTarget: ROLL_TARGETS.chromium,
+        electronBranch: mainBranch,
+        targetVersion: '152.0.0.0',
+      });
+
+      expect(getTargetBranchLabels).toHaveBeenCalledWith(mockOctokit, 152);
+      expect(mockOctokit.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({
+          labels: ['target/44-x-y', 'target/45-x-y', 'semver/patch'],
+        }),
+      );
+    });
+
+    it('adds no-backport for chromium rolls on main when no target branch applies', async () => {
+      mockOctokit.paginate.mockReturnValue([]);
+      vi.mocked(getTargetBranchLabels).mockResolvedValue([]);
+
+      await roll({
+        rollTarget: ROLL_TARGETS.chromium,
+        electronBranch: mainBranch,
+        targetVersion: '160.0.0.0',
+      });
+
+      expect(mockOctokit.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({
+          labels: [NO_BACKPORT, 'semver/patch'],
+        }),
+      );
+    });
+
+    it('falls back to no-backport if target branch labels cannot be determined', async () => {
+      mockOctokit.paginate.mockReturnValue([]);
+      vi.mocked(getTargetBranchLabels).mockRejectedValue(new Error('schedule unavailable'));
+
+      await roll({
+        rollTarget: ROLL_TARGETS.chromium,
+        electronBranch: mainBranch,
+        targetVersion: '152.0.0.0',
+      });
+
+      expect(mockOctokit.pulls.create).toHaveBeenCalled();
+      expect(mockOctokit.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({
+          labels: [NO_BACKPORT, 'semver/patch'],
+        }),
+      );
+    });
+
+    it('adds no-backport for node rolls on main without checking the schedule', async () => {
+      mockOctokit.paginate.mockReturnValue([]);
+
+      await roll({
+        rollTarget: ROLL_TARGETS.node,
+        electronBranch: mainBranch,
+        targetVersion: 'v10.0.0',
+      });
+
+      expect(getTargetBranchLabels).not.toHaveBeenCalled();
+      expect(mockOctokit.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({
+          labels: [NO_BACKPORT, 'semver/patch'],
+        }),
+      );
+    });
+
+    it('adds backport-check-skip for chromium rolls on a release branch', async () => {
+      mockOctokit.paginate.mockReturnValue([]);
+
+      await roll({
+        rollTarget: ROLL_TARGETS.chromium,
+        electronBranch: branch,
+        targetVersion: '152.0.0.0',
+      });
+
+      expect(getTargetBranchLabels).not.toHaveBeenCalled();
+      expect(mockOctokit.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({
+          labels: [BACKPORT_CHECK_SKIP, 'semver/patch'],
+        }),
+      );
     });
   });
 
