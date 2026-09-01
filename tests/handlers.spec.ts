@@ -9,12 +9,14 @@ import { getContent } from '../src/utils/github-utils.js';
 import { getOctokit } from '../src/utils/octokit.js';
 import { roll } from '../src/utils/roll.js';
 import { getLatestLTSVersion } from '../src/utils/get-nodejs-lts.js';
+import { getBranchesTrackedByMain } from '../src/utils/get-target-branch-labels.js';
 
 vi.mock('../src/utils/get-chromium-tags.js');
 vi.mock('../src/utils/github-utils.js');
 vi.mock('../src/utils/octokit.js');
 vi.mock('../src/utils/roll.js');
 vi.mock('../src/utils/get-nodejs-lts.js');
+vi.mock('../src/utils/get-target-branch-labels.js');
 
 describe('handleChromiumCheck()', () => {
   let mockOctokit: any;
@@ -41,6 +43,7 @@ describe('handleChromiumCheck()', () => {
       },
     };
     vi.mocked(getOctokit).mockReturnValue(mockOctokit);
+    vi.mocked(getBranchesTrackedByMain).mockReset().mockResolvedValue([]);
   });
 
   describe('release branches', () => {
@@ -139,6 +142,57 @@ describe('handleChromiumCheck()', () => {
       expect(roll).toHaveBeenCalledWith(
         expect.objectContaining({
           rollTarget: ROLL_TARGETS.chromium,
+          targetVersion: '1.2.0.0',
+        }),
+      );
+    });
+
+    it('skips the roll if the branch is tracked by the main branch roll', async () => {
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '2.1.0.0']);
+      vi.mocked(getBranchesTrackedByMain).mockResolvedValue(['4-0-x']);
+
+      mockOctokit.repos.getBranch.mockReturnValue({
+        data: {
+          name: '4-0-x',
+          commit: {
+            sha: '1234',
+          },
+        },
+      });
+
+      await handleChromiumCheck('4-0-x');
+
+      // The tracked check uses the major of the latest Canary release, the
+      // same version the main branch roll targets.
+      expect(getBranchesTrackedByMain).toHaveBeenCalledWith(mockOctokit, 2);
+      expect(roll).not.toHaveBeenCalled();
+    });
+
+    it('rolls independently if the branch is not tracked by the main branch roll', async () => {
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0']);
+      vi.mocked(getBranchesTrackedByMain).mockResolvedValue(['5-0-x']);
+
+      await handleChromiumCheck();
+
+      expect(roll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rollTarget: ROLL_TARGETS.chromium,
+          electronBranch: expect.objectContaining({ name: '4-0-x' }),
+          targetVersion: '1.2.0.0',
+        }),
+      );
+    });
+
+    it('rolls independently if the tracked branches cannot be determined', async () => {
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0']);
+      vi.mocked(getBranchesTrackedByMain).mockRejectedValue(new Error('schedule unavailable'));
+
+      await handleChromiumCheck();
+
+      expect(roll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rollTarget: ROLL_TARGETS.chromium,
+          electronBranch: expect.objectContaining({ name: '4-0-x' }),
           targetVersion: '1.2.0.0',
         }),
       );

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ELECTRON_RELEASE_SCHEDULE_URL,
+  getBranchesTrackedByMain,
   getTargetBranchLabels,
 } from '../../src/utils/get-target-branch-labels.js';
 
@@ -76,6 +77,12 @@ describe('getTargetBranchLabels', () => {
       'target/44-x-y',
       'target/45-x-y',
     ]);
+  });
+
+  it('returns tracked branch names via getBranchesTrackedByMain', async () => {
+    nock(url.origin).get(url.pathname).reply(200, fixture);
+
+    await expect(getBranchesTrackedByMain(mockOctokit, 154)).resolves.toEqual(['45-x-y']);
   });
 
   it('throws if the schedule fetch fails', async () => {

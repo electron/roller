@@ -4,6 +4,7 @@ import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from './constants.js';
 import { compareChromiumVersions } from './utils/compare-chromium-versions.js';
 import { getChromiumReleases, Release } from './utils/get-chromium-tags.js';
 import { getSupportedBranches } from './utils/get-supported-branches.js';
+import { getBranchesTrackedByMain } from './utils/get-target-branch-labels.js';
 import { getContent } from './utils/github-utils.js';
 import { getOctokit } from './utils/octokit.js';
 import { roll } from './utils/roll.js';
@@ -12,8 +13,38 @@ import { Octokit } from '@octokit/rest';
 
 type BranchItem = ReposGetBranchResponseItem | ReposListBranchesResponseItem;
 
+// A release branch is tracked by the main branch roll if its scheduled
+// Chromium version is >= the Chromium major the main roll targets (the latest
+// Canary) - the roll it needs is the main roll, backported via its
+// `target/N-x-y` label, so it should not get an independent roll of its own.
+async function isTrackedByMainRoll(github: Octokit, branchName: string): Promise<boolean> {
+  const canaryReleases = await getChromiumReleases({ channel: 'Canary' });
+  const latestCanaryVersion = canaryReleases[canaryReleases.length - 1];
+  if (!latestCanaryVersion) return false;
+
+  const mainChromiumMajorVersion = Number(latestCanaryVersion.split('.')[0]);
+  if (Number.isNaN(mainChromiumMajorVersion)) return false;
+
+  const trackedBranches = await getBranchesTrackedByMain(github, mainChromiumMajorVersion);
+  return trackedBranches.includes(branchName);
+}
+
 async function rollReleaseBranch(github: Octokit, branch: BranchItem) {
   const d = debug(`roller/chromium:rollReleaseBranch('${branch.name}')`);
+
+  d(`Checking whether ${branch.name} is tracked by the ${MAIN_BRANCH} branch roll`);
+  try {
+    if (await isTrackedByMainRoll(github, branch.name)) {
+      d(
+        `${branch.name} is scheduled to ship the Chromium version targeted by the ${MAIN_BRANCH} roll - skipping independent roll`,
+      );
+      return;
+    }
+  } catch (e) {
+    d(
+      `Could not determine whether ${branch.name} is tracked by the ${MAIN_BRANCH} roll: ${e.message} - rolling independently`,
+    );
+  }
 
   d(`Fetching DEPS for ${branch.name}`);
   const deps = await getContent(github, {

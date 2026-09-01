@@ -51,6 +51,7 @@ describe('roll()', () => {
       },
       issues: {
         addLabels: vi.fn(),
+        removeLabel: vi.fn(),
         listLabelsOnIssue: vi.fn().mockReturnValue({ data: [] }),
       },
       actions: {
@@ -424,6 +425,95 @@ describe('roll()', () => {
       expect(mockOctokit.issues.addLabels).toHaveBeenCalledWith(
         expect.objectContaining({
           labels: [NO_BACKPORT, 'semver/patch'],
+        }),
+      );
+    });
+
+    it('removes stale roller-managed labels that no longer apply', async () => {
+      mockOctokit.paginate.mockReturnValue([]);
+      mockOctokit.issues.listLabelsOnIssue.mockReturnValue({
+        data: [
+          { name: NO_BACKPORT },
+          { name: 'target/43-x-y' },
+          { name: 'target/45-x-y' },
+          { name: 'merged/44-x-y' },
+          { name: 'in-flight/45-x-y' },
+          { name: 'semver/patch' },
+        ],
+      });
+      vi.mocked(getTargetBranchLabels).mockResolvedValue(['target/45-x-y']);
+
+      await roll({
+        rollTarget: ROLL_TARGETS.chromium,
+        electronBranch: mainBranch,
+        targetVersion: '154.0.0.0',
+      });
+
+      // target/43-x-y no longer qualifies and no-backport conflicts with the
+      // target labels that do - both are removed, nothing else is touched.
+      expect(mockOctokit.issues.removeLabel).toHaveBeenCalledTimes(2);
+      expect(mockOctokit.issues.removeLabel).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'target/43-x-y' }),
+      );
+      expect(mockOctokit.issues.removeLabel).toHaveBeenCalledWith(
+        expect.objectContaining({ name: NO_BACKPORT }),
+      );
+    });
+
+    it('removes stale target labels but keeps no-backport when no target branch applies', async () => {
+      mockOctokit.paginate.mockReturnValue([]);
+      mockOctokit.issues.listLabelsOnIssue.mockReturnValue({
+        data: [{ name: NO_BACKPORT }, { name: 'target/45-x-y' }],
+      });
+      vi.mocked(getTargetBranchLabels).mockResolvedValue([]);
+
+      await roll({
+        rollTarget: ROLL_TARGETS.chromium,
+        electronBranch: mainBranch,
+        targetVersion: '160.0.0.0',
+      });
+
+      expect(mockOctokit.issues.removeLabel).toHaveBeenCalledTimes(1);
+      expect(mockOctokit.issues.removeLabel).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'target/45-x-y' }),
+      );
+    });
+
+    it('does not remove any labels if target branch labels cannot be determined', async () => {
+      mockOctokit.paginate.mockReturnValue([]);
+      mockOctokit.issues.listLabelsOnIssue.mockReturnValue({
+        data: [{ name: 'target/45-x-y' }],
+      });
+      vi.mocked(getTargetBranchLabels).mockRejectedValue(new Error('schedule unavailable'));
+
+      await roll({
+        rollTarget: ROLL_TARGETS.chromium,
+        electronBranch: mainBranch,
+        targetVersion: '154.0.0.0',
+      });
+
+      expect(mockOctokit.issues.removeLabel).not.toHaveBeenCalled();
+    });
+
+    it('ignores failures to remove a stale label', async () => {
+      mockOctokit.paginate.mockReturnValue([]);
+      mockOctokit.issues.listLabelsOnIssue.mockReturnValue({
+        data: [{ name: 'target/43-x-y' }],
+      });
+      mockOctokit.issues.removeLabel.mockRejectedValue(new Error('Not Found'));
+      vi.mocked(getTargetBranchLabels).mockResolvedValue(['target/45-x-y']);
+
+      await expect(
+        roll({
+          rollTarget: ROLL_TARGETS.chromium,
+          electronBranch: mainBranch,
+          targetVersion: '154.0.0.0',
+        }),
+      ).resolves.toBeUndefined();
+
+      expect(mockOctokit.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({
+          labels: ['target/45-x-y', 'semver/patch'],
         }),
       );
     });

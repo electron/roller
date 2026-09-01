@@ -12,10 +12,12 @@ interface ReleaseScheduleEntry {
   chromiumVersion: number;
 }
 
-// Returns the `target/N-x-y` label for every supported release branch whose
-// scheduled Chromium version is greater than or equal to the Chromium major
-// being rolled to, per https://releases.electronjs.org/schedule.
-export async function getTargetBranchLabels(
+// Returns the names of the supported release branches whose scheduled Chromium
+// version is greater than or equal to the given Chromium major, per
+// https://releases.electronjs.org/schedule - i.e. the branches whose Chromium
+// upgrade is tracked by rolls to the main branch and will receive it as a
+// backport rather than an independent roll.
+export async function getBranchesTrackedByMain(
   octokit: Octokit,
   chromiumMajorVersion: number,
 ): Promise<string[]> {
@@ -40,6 +42,16 @@ export async function getTargetBranchLabels(
       (entry) =>
         supported.includes(entry.branch) && Number(entry.chromiumVersion) >= chromiumMajorVersion,
     )
-    .map((entry) => `target/${entry.branch}`)
-    .sort();
+    .map((entry) => entry.branch);
+}
+
+// Returns the `target/N-x-y` label for every supported release branch whose
+// scheduled Chromium version is greater than or equal to the Chromium major
+// being rolled to, per https://releases.electronjs.org/schedule.
+export async function getTargetBranchLabels(
+  octokit: Octokit,
+  chromiumMajorVersion: number,
+): Promise<string[]> {
+  const branches = await getBranchesTrackedByMain(octokit, chromiumMajorVersion);
+  return branches.map((branch) => `target/${branch}`).sort();
 }

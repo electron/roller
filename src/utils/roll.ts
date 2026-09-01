@@ -27,6 +27,51 @@ interface RollParams {
   previousVersion?: string;
 }
 
+const TARGET_BRANCH_LABEL_PATTERN = /^target\/\d+-x-y$/;
+
+// The main branch roll PR is long-lived and relabeled on every update, and
+// labels are otherwise only ever added - so a `target/N-x-y` label that no
+// longer qualifies (main rolled past the branch's scheduled Chromium version)
+// or a `no-backport` added while the schedule was unavailable would stick
+// around forever. Remove only those roller-managed labels; never touch
+// anything else (merged/*, trop, semver, ...) and never replace the label set.
+async function removeStaleBackportLabels(
+  octokit: Octokit,
+  prNumber: number,
+  targetBranchLabels: string[],
+) {
+  const d = debug('roller/chromium:removeStaleBackportLabels()');
+
+  const { data: labelData } = await octokit.issues.listLabelsOnIssue({
+    ...REPOS.electron,
+    issue_number: prNumber,
+    per_page: 100,
+    page: 1,
+  });
+
+  const staleLabels = labelData
+    .map((label) => label.name)
+    .filter(
+      (name) =>
+        (TARGET_BRANCH_LABEL_PATTERN.test(name) && !targetBranchLabels.includes(name)) ||
+        (name === NO_BACKPORT && targetBranchLabels.length > 0),
+    );
+
+  for (const name of staleLabels) {
+    d(`Removing stale backport label ${name} from #${prNumber}`);
+    try {
+      await octokit.issues.removeLabel({
+        ...REPOS.electron,
+        issue_number: prNumber,
+        name,
+      });
+    } catch (e) {
+      // The label may have been removed out from under us - not fatal.
+      d(`Failed to remove label ${name} from #${prNumber}: ${e.message}`);
+    }
+  }
+}
+
 async function updateLabels(
   octokit: Octokit,
   { rollTarget, electronBranch, targetVersion, previousVersion, prNumber }: RollParams,
@@ -44,6 +89,7 @@ async function updateLabels(
       const chromiumMajorVersion = Number(targetVersion.split('.')[0]);
       try {
         targetBranchLabels = await getTargetBranchLabels(octokit, chromiumMajorVersion);
+        await removeStaleBackportLabels(octokit, prNumber, targetBranchLabels);
       } catch (e) {
         d(`Failed to determine target branch labels: ${e.message} - skipping target labels`);
       }
