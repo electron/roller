@@ -12,10 +12,11 @@ import { Octokit } from '@octokit/rest';
 
 type BranchItem = ReposGetBranchResponseItem | ReposListBranchesResponseItem;
 
-// The outcome of a main branch roll: the Chromium version it targets and the
-// release branches its roll PR covers with `target/N-x-y` labels.
+// The outcome of a main branch roll: the Chromium version main is currently on
+// (its landed DEPS version, not the version the open roll PR targets) and the
+// release branches the roll PR covers with `target/N-x-y` labels.
 interface MainRollResult {
-  targetVersion: string;
+  currentVersion: string;
   coveredBranches: string[];
 }
 
@@ -49,15 +50,15 @@ async function rollReleaseBranch(
 
   // A branch covered by a target/ label on the main roll PR receives the main
   // roll as a backport instead of an independent roll - but only skip it while
-  // it has actually caught up to the main roll's target, so a branch whose
-  // backports stall can pull itself forward with its own roll. Explicitly
-  // targeted rolls pass no main roll info and are never suppressed.
+  // it has kept pace with the Chromium version main has actually landed, so a
+  // branch whose backports stall can pull itself forward with its own roll.
+  // Explicitly targeted rolls pass no main roll info and are never suppressed.
   if (
     mainRoll?.coveredBranches.includes(branch.name) &&
-    compareChromiumVersions(chromiumVersion, mainRoll.targetVersion) >= 0
+    compareChromiumVersions(chromiumVersion, mainRoll.currentVersion) >= 0
   ) {
     d(
-      `${branch.name} is covered by the ${MAIN_BRANCH} roll to ${mainRoll.targetVersion} and has caught up - skipping independent roll`,
+      `${branch.name} is covered by the ${MAIN_BRANCH} roll and has kept pace with ${MAIN_BRANCH} at ${mainRoll.currentVersion} - skipping independent roll`,
     );
     return;
   }
@@ -132,7 +133,7 @@ async function rollMainBranch(github: Octokit): Promise<MainRollResult | null> {
         electronBranch: mainBranch,
         targetVersion: latestUpstreamVersion,
       });
-      return { targetVersion: latestUpstreamVersion, coveredBranches: coveredBranches ?? [] };
+      return { currentVersion, coveredBranches: coveredBranches ?? [] };
     } catch (e) {
       throw new Error(`Failed to roll ${MAIN_BRANCH} to ${latestUpstreamVersion}: ${e.message}`);
     }

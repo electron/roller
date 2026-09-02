@@ -145,19 +145,10 @@ describe('handleChromiumCheck()', () => {
       );
     });
 
-    it('skips a release branch the main roll covers once it has caught up', async () => {
+    it('skips a release branch the main roll covers when it has kept pace with main', async () => {
       vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0']);
-      // Main DEPS is fetched first and lags the latest Canary; the branch DEPS
-      // is already at the version the main roll targets.
-      vi.mocked(getContent)
-        .mockResolvedValueOnce({
-          content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`,
-          sha: '1234',
-        })
-        .mockResolvedValue({
-          content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.2.0.0',`,
-          sha: '1234',
-        });
+      // Main and the branch are level on 1.0.0.0 (the branch's backports have
+      // kept pace with what main has landed) while main rolls to 1.2.0.0.
       // The main roll PR covers 4-0-x with a target/ label.
       vi.mocked(roll).mockResolvedValueOnce(['4-0-x']);
 
@@ -173,10 +164,41 @@ describe('handleChromiumCheck()', () => {
       );
     });
 
-    it('rolls a covered branch independently while it lags the main roll target', async () => {
+    it('skips a covered branch level with main while the main roll PR is ahead of both', async () => {
+      // The everyday path: main has landed 1.1.0.0, its open roll PR targets
+      // 1.2.0.0, and the branch's backports have kept it level with main.
       vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0']);
-      // Both main and the branch are on 1.0.0.0 - the branch's backport has
-      // not landed yet, so it must be able to pull itself forward.
+      vi.mocked(getContent).mockResolvedValue({
+        content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`,
+        sha: '1234',
+      });
+      vi.mocked(roll).mockResolvedValueOnce(['4-0-x']);
+
+      await handleChromiumCheck();
+
+      expect(roll).toHaveBeenCalledTimes(1);
+      expect(roll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rollTarget: ROLL_TARGETS.chromium,
+          electronBranch: expect.objectContaining({ name: MAIN_BRANCH }),
+          targetVersion: '1.2.0.0',
+        }),
+      );
+    });
+
+    it('rolls a covered branch independently while it lags what main has landed', async () => {
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0']);
+      // Main has landed 1.1.0.0 but the branch is still on 1.0.0.0 - its
+      // backport stalled, so it must be able to pull itself forward.
+      vi.mocked(getContent)
+        .mockResolvedValueOnce({
+          content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`,
+          sha: '1234',
+        })
+        .mockResolvedValue({
+          content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`,
+          sha: '1234',
+        });
       vi.mocked(roll).mockResolvedValueOnce(['4-0-x']);
 
       await handleChromiumCheck();
