@@ -17,7 +17,7 @@ import { getPRText } from './pr-text.js';
 import { updateDepsFile } from './update-deps.js';
 import { Octokit } from '@octokit/rest';
 import { addLabels, removeLabel } from './label-utils.js';
-import { getTargetBranchLabels } from './get-target-branch-labels.js';
+import { getBranchesTrackedByMain } from './get-target-branch-labels.js';
 
 interface RollParams {
   rollTarget: RollTarget;
@@ -27,7 +27,7 @@ interface RollParams {
   previousVersion?: string;
 }
 
-const TARGET_BRANCH_LABEL_PATTERN = /^target\/\d+-x-y$/;
+const TARGET_BRANCH_LABEL_PATTERN = /^target\/\d+-(?:\d+-x|x-y)$/;
 
 // The main branch roll PR is long-lived and relabeled on every update, and
 // labels are otherwise only ever added - so a `target/N-x-y` label that no
@@ -35,6 +35,7 @@ const TARGET_BRANCH_LABEL_PATTERN = /^target\/\d+-x-y$/;
 // or a `no-backport` added while the schedule was unavailable would stick
 // around forever. Remove only those roller-managed labels; never touch
 // anything else (merged/*, trop, semver, ...) and never replace the label set.
+// Throws if any stale label could not be confirmed removed.
 async function removeStaleBackportLabels(
   octokit: Octokit,
   prNumber: number,
@@ -66,39 +67,62 @@ async function removeStaleBackportLabels(
         name,
       });
     } catch (e) {
-      // The label may have been removed out from under us - not fatal.
-      d(`Failed to remove label ${name} from #${prNumber}: ${e.message}`);
+      // Already removed out from under us - that still counts as removed.
+      if (e.status === 404) continue;
+      throw e;
     }
   }
 }
 
+// Updates the labels on a roll PR. Returns the names of the release branches
+// the PR's `target/N-x-y` labels cover - non-empty only for Chromium rolls to
+// the main branch whose backport labels were successfully reconciled.
 async function updateLabels(
   octokit: Octokit,
   { rollTarget, electronBranch, targetVersion, previousVersion, prNumber }: RollParams,
-) {
+  isNewPr = false,
+): Promise<string[]> {
   const d = debug(`roller/${rollTarget.name}:updateLabels()`);
   let labels: string[] = [];
   let labelToRemove: string;
+  let coveredBranches: string[] = [];
 
   if (electronBranch.name === MAIN_BRANCH) {
     let targetBranchLabels: string[] = [];
+    let reconciled = false;
 
     // Chromium rolls to main should be labeled for backport to every supported
     // release branch whose scheduled Chromium version is >= the rolled version.
     if (rollTarget === ROLL_TARGETS.chromium) {
-      const chromiumMajorVersion = Number(targetVersion.split('.')[0]);
       try {
-        targetBranchLabels = await getTargetBranchLabels(octokit, chromiumMajorVersion);
+        const chromiumMajorVersion = Number(targetVersion.split('.')[0]);
+        if (Number.isNaN(chromiumMajorVersion)) {
+          throw new Error(`${targetVersion} is not a valid version number`);
+        }
+        const trackedBranches = await getBranchesTrackedByMain(octokit, chromiumMajorVersion);
+        targetBranchLabels = trackedBranches.map((branch) => `target/${branch}`);
+        // The PR must never carry both no-backport and target/ labels - trop
+        // rejects that as ambiguous. Only transition to the new backport label
+        // set once every label conflicting with it is confirmed removed.
         await removeStaleBackportLabels(octokit, prNumber, targetBranchLabels);
+        coveredBranches = trackedBranches;
+        reconciled = true;
       } catch (e) {
-        d(`Failed to determine target branch labels: ${e.message} - skipping target labels`);
+        // Leave the PR's existing backport labels exactly as they were - a
+        // half-applied transition could strand conflicting labels on the PR.
+        targetBranchLabels = [];
+        coveredBranches = [];
+        d(`Failed to reconcile backport labels: ${e.message} - leaving existing labels unchanged`);
       }
     }
 
     if (targetBranchLabels.length > 0) {
       d(`Adding target branch labels: ${targetBranchLabels.join(', ')}`);
       labels.push(...targetBranchLabels);
-    } else {
+    } else if (rollTarget !== ROLL_TARGETS.chromium || reconciled || isNewPr) {
+      // A reconciled empty set means no release branch qualifies; a brand-new
+      // PR has no existing backport labels to preserve, so it can take the
+      // fallback even when reconciliation failed.
       labels.push(NO_BACKPORT);
     }
   } else {
@@ -109,7 +133,7 @@ async function updateLabels(
   if (electronBranch.name === MAIN_BRANCH || rollTarget === ROLL_TARGETS.chromium) {
     labels.push('semver/patch');
     await addLabels(octokit, { prNumber, labels });
-    return;
+    return coveredBranches;
   }
 
   // Check Node.js rolls against previous version and determine the semver label to add.
@@ -124,6 +148,8 @@ async function updateLabels(
 
   await removeLabel(octokit, { prNumber, name: labelToRemove });
   await addLabels(octokit, { prNumber, labels });
+
+  return coveredBranches;
 }
 
 async function triggerChromiumUpgradeWorkflow(octokit: Octokit) {
@@ -136,11 +162,15 @@ async function triggerChromiumUpgradeWorkflow(octokit: Octokit) {
   }
 }
 
+// Rolls `rollTarget` on `electronBranch` to `targetVersion`. Returns the names
+// of the release branches covered by `target/N-x-y` labels on the roll PR -
+// non-empty only for a Chromium roll to the main branch whose PR was
+// successfully created or updated and correctly labeled.
 export async function roll({
   rollTarget,
   electronBranch,
   targetVersion,
-}: RollParams): Promise<void> {
+}: RollParams): Promise<string[]> {
   const d = debug(`roller/${rollTarget.name}:roll()`);
   const github = await getOctokit();
 
@@ -149,6 +179,7 @@ export async function roll({
   );
 
   let didRoll = false;
+  let coveredBranches: string[] = [];
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
   const existingPrsForBranch = (await github.paginate('GET /repos/:owner/:repo/pulls', {
@@ -210,6 +241,19 @@ export async function roll({
 
       if (previousDEPSVersion === newDEPSVersion) {
         d(`DEPS version unchanged - skipping PR body update`);
+        // The release schedule moves independently of Chromium - a newly cut
+        // release branch, a schedule edit, or a label call that failed on a
+        // previous run must still reconcile the labels on the open roll PR
+        // even on a day with no DEPS change.
+        if (rollTarget === ROLL_TARGETS.chromium) {
+          coveredBranches = await updateLabels(github, {
+            rollTarget,
+            electronBranch,
+            targetVersion,
+            previousVersion: previousDEPSVersion,
+            prNumber: pr.number,
+          });
+        }
         continue;
       }
 
@@ -220,7 +264,7 @@ export async function roll({
 
       if (!prVersionText || prVersionText.length === 0) {
         d('Could not find PR version text in existing PR - exiting');
-        return;
+        return coveredBranches;
       }
 
       await github.pulls.update({
@@ -234,7 +278,7 @@ export async function roll({
         }),
       });
 
-      await updateLabels(github, {
+      coveredBranches = await updateLabels(github, {
         rollTarget,
         electronBranch,
         targetVersion,
@@ -288,13 +332,17 @@ export async function roll({
       }),
     });
 
-    await updateLabels(github, {
-      rollTarget,
-      electronBranch,
-      targetVersion,
-      previousVersion: previousDEPSVersion,
-      prNumber: newPr.data.number,
-    });
+    coveredBranches = await updateLabels(
+      github,
+      {
+        rollTarget,
+        electronBranch,
+        targetVersion,
+        previousVersion: previousDEPSVersion,
+        prNumber: newPr.data.number,
+      },
+      true,
+    );
 
     d(`New PR: ${newPr.data.html_url}`);
 
@@ -304,4 +352,6 @@ export async function roll({
   if (didRoll && rollTarget === ROLL_TARGETS.chromium && electronBranch.name === MAIN_BRANCH) {
     await triggerChromiumUpgradeWorkflow(github);
   }
+
+  return coveredBranches;
 }
