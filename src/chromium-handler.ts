@@ -12,7 +12,19 @@ import { Octokit } from '@octokit/rest';
 
 type BranchItem = ReposGetBranchResponseItem | ReposListBranchesResponseItem;
 
-async function rollReleaseBranch(github: Octokit, branch: BranchItem) {
+// The outcome of a main branch roll: the Chromium version main is currently on
+// (its landed DEPS version, not the version the open roll PR targets) and the
+// release branches the roll PR covers with `target/N-x-y` labels.
+interface MainRollResult {
+  currentVersion: string;
+  coveredBranches: string[];
+}
+
+async function rollReleaseBranch(
+  github: Octokit,
+  branch: BranchItem,
+  mainRoll?: MainRollResult | null,
+) {
   const d = debug(`roller/chromium:rollReleaseBranch('${branch.name}')`);
 
   d(`Fetching DEPS for ${branch.name}`);
@@ -34,6 +46,21 @@ async function rollReleaseBranch(github: Octokit, branch: BranchItem) {
   // We should be able to parse major version as a number.
   if (Number.isNaN(chromiumMajorVersion)) {
     throw new Error(`${branch.name} roll failed: ${chromiumVersion} is not a valid version number`);
+  }
+
+  // A branch covered by a target/ label on the main roll PR receives the main
+  // roll as a backport instead of an independent roll - but only skip it while
+  // it has kept pace with the Chromium version main has actually landed, so a
+  // branch whose backports stall can pull itself forward with its own roll.
+  // Explicitly targeted rolls pass no main roll info and are never suppressed.
+  if (
+    mainRoll?.coveredBranches.includes(branch.name) &&
+    compareChromiumVersions(chromiumVersion, mainRoll.currentVersion) >= 0
+  ) {
+    d(
+      `${branch.name} is covered by the ${MAIN_BRANCH} roll and has kept pace with ${MAIN_BRANCH} at ${mainRoll.currentVersion} - skipping independent roll`,
+    );
+    return;
   }
 
   d(`Computing latest upstream version for Chromium ${chromiumMajorVersion}`);
@@ -61,7 +88,7 @@ async function rollReleaseBranch(github: Octokit, branch: BranchItem) {
   }
 }
 
-async function rollMainBranch(github: Octokit) {
+async function rollMainBranch(github: Octokit): Promise<MainRollResult | null> {
   const d = debug('roller/chromium:rollMainBranch()');
 
   d(`Fetching ${MAIN_BRANCH} branch for electron/electron`);
@@ -101,17 +128,18 @@ async function rollMainBranch(github: Octokit) {
   if (latestUpstreamVersion && currentVersion !== latestUpstreamVersion) {
     d(`Updating ${MAIN_BRANCH} from ${currentVersion} to ${latestUpstreamVersion}`);
     try {
-      await roll({
+      const coveredBranches = await roll({
         rollTarget: ROLL_TARGETS.chromium,
         electronBranch: mainBranch,
         targetVersion: latestUpstreamVersion,
       });
+      return { currentVersion, coveredBranches: coveredBranches ?? [] };
     } catch (e) {
       throw new Error(`Failed to roll ${MAIN_BRANCH} to ${latestUpstreamVersion}: ${e.message}`);
     }
   }
 
-  return true;
+  return null;
 }
 
 export async function handleChromiumCheck(target?: string): Promise<void> {
@@ -154,20 +182,23 @@ export async function handleChromiumCheck(target?: string): Promise<void> {
     const releaseBranches = branches.filter((branch) => supported.includes(branch.name));
     d(`Found ${releaseBranches.length} release branches`);
 
+    // Roll main first, so that the release branches its roll PR covers with
+    // target/ labels can skip their own rolls in favor of the backports.
+    let mainRoll: MainRollResult | null = null;
+    try {
+      mainRoll = await rollMainBranch(github);
+    } catch (e) {
+      failed = true;
+    }
+
     // Roll all non-main release branches.
     for (const branch of releaseBranches) {
       try {
-        await rollReleaseBranch(github, branch);
+        await rollReleaseBranch(github, branch, mainRoll);
       } catch (e) {
         failed = true;
         continue;
       }
-    }
-
-    try {
-      await rollMainBranch(github);
-    } catch (e) {
-      failed = true;
     }
   }
 

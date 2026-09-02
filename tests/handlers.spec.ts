@@ -41,6 +41,7 @@ describe('handleChromiumCheck()', () => {
       },
     };
     vi.mocked(getOctokit).mockReturnValue(mockOctokit);
+    vi.mocked(roll).mockReset().mockResolvedValue([]);
   });
 
   describe('release branches', () => {
@@ -139,6 +140,118 @@ describe('handleChromiumCheck()', () => {
       expect(roll).toHaveBeenCalledWith(
         expect.objectContaining({
           rollTarget: ROLL_TARGETS.chromium,
+          targetVersion: '1.2.0.0',
+        }),
+      );
+    });
+
+    it('skips a release branch the main roll covers when it has kept pace with main', async () => {
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0']);
+      // Main and the branch are level on 1.0.0.0 (the branch's backports have
+      // kept pace with what main has landed) while main rolls to 1.2.0.0.
+      // The main roll PR covers 4-0-x with a target/ label.
+      vi.mocked(roll).mockResolvedValueOnce(['4-0-x']);
+
+      await handleChromiumCheck();
+
+      expect(roll).toHaveBeenCalledTimes(1);
+      expect(roll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rollTarget: ROLL_TARGETS.chromium,
+          electronBranch: expect.objectContaining({ name: MAIN_BRANCH }),
+          targetVersion: '1.2.0.0',
+        }),
+      );
+    });
+
+    it('skips a covered branch level with main while the main roll PR is ahead of both', async () => {
+      // The everyday path: main has landed 1.1.0.0, its open roll PR targets
+      // 1.2.0.0, and the branch's backports have kept it level with main.
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0']);
+      vi.mocked(getContent).mockResolvedValue({
+        content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`,
+        sha: '1234',
+      });
+      vi.mocked(roll).mockResolvedValueOnce(['4-0-x']);
+
+      await handleChromiumCheck();
+
+      expect(roll).toHaveBeenCalledTimes(1);
+      expect(roll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rollTarget: ROLL_TARGETS.chromium,
+          electronBranch: expect.objectContaining({ name: MAIN_BRANCH }),
+          targetVersion: '1.2.0.0',
+        }),
+      );
+    });
+
+    it('rolls a covered branch independently while it lags what main has landed', async () => {
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0']);
+      // Main has landed 1.1.0.0 but the branch is still on 1.0.0.0 - its
+      // backport stalled, so it must be able to pull itself forward.
+      vi.mocked(getContent)
+        .mockResolvedValueOnce({
+          content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`,
+          sha: '1234',
+        })
+        .mockResolvedValue({
+          content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`,
+          sha: '1234',
+        });
+      vi.mocked(roll).mockResolvedValueOnce(['4-0-x']);
+
+      await handleChromiumCheck();
+
+      expect(roll).toHaveBeenCalledTimes(2);
+      expect(roll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rollTarget: ROLL_TARGETS.chromium,
+          electronBranch: expect.objectContaining({ name: '4-0-x' }),
+          targetVersion: '1.2.0.0',
+        }),
+      );
+    });
+
+    it('does not skip release branches if the main roll fails', async () => {
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0']);
+      vi.mocked(roll).mockImplementationOnce(() => {
+        throw new Error('main roll failed');
+      });
+
+      await expect(handleChromiumCheck()).rejects.toThrowError(
+        'One or more upgrade checks failed - see logs for more details',
+      );
+
+      expect(roll).toHaveBeenCalledTimes(2);
+      expect(roll).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          rollTarget: ROLL_TARGETS.chromium,
+          electronBranch: expect.objectContaining({ name: '4-0-x' }),
+          targetVersion: '1.2.0.0',
+        }),
+      );
+    });
+
+    it('never skips an explicitly targeted release branch roll', async () => {
+      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0']);
+
+      mockOctokit.repos.getBranch.mockReturnValue({
+        data: {
+          name: '4-0-x',
+          commit: {
+            sha: '1234',
+          },
+        },
+      });
+
+      await handleChromiumCheck('4-0-x');
+
+      expect(roll).toHaveBeenCalledTimes(1);
+      expect(roll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rollTarget: ROLL_TARGETS.chromium,
+          electronBranch: expect.objectContaining({ name: '4-0-x' }),
           targetVersion: '1.2.0.0',
         }),
       );
