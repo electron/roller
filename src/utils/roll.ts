@@ -11,7 +11,7 @@ import {
   ROLLER_BOT_LOGIN,
   RollTarget,
 } from '../constants.js';
-import { ReposListBranchesResponseItem, PullsListResponseItem } from '../types.js';
+import { Branch, PullsListResponseItem } from '../types.js';
 import { getOctokit } from './octokit.js';
 import { getPRText } from './pr-text.js';
 import { updateDepsFile } from './update-deps.js';
@@ -21,7 +21,7 @@ import { getBranchesTrackedByMain } from './get-target-branch-labels.js';
 
 interface RollParams {
   rollTarget: RollTarget;
-  electronBranch: ReposListBranchesResponseItem;
+  electronBranch: Branch;
   targetVersion: string;
   prNumber?: number;
   previousVersion?: string;

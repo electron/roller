@@ -5,7 +5,6 @@ import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from './constants.js';
 import { getContent } from './utils/github-utils.js';
 import { getOctokit } from './utils/octokit.js';
 import { roll } from './utils/roll.js';
-import { ReposListBranchesResponseItem } from './types.js';
 import { getSupportedBranches } from './utils/get-supported-branches.js';
 import { getLatestLTSVersion } from './utils/get-nodejs-lts.js';
 
@@ -15,15 +14,7 @@ export async function handleNodeCheck(target?: string): Promise<void> {
   const github = await getOctokit();
 
   d('Fetching release branches for electron/electron');
-  const branches: ReposListBranchesResponseItem[] = await github.paginate(
-    github.repos.listBranches.endpoint.merge({
-      ...REPOS.electron,
-      protected: true,
-    }),
-  );
-
-  const supported = getSupportedBranches(branches, 3);
-  const releaseBranches = branches.filter((branch) => supported.includes(branch.name));
+  const releaseBranches = await getSupportedBranches(github, 3);
   d(`Found ${releaseBranches.length} release branches`);
 
   let failed = false;

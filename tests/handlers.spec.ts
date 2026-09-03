@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MAIN_BRANCH, REPOS, ROLL_TARGETS } from '../src/constants.js';
-import { getSupportedBranches } from '../src/utils/get-supported-branches.js';
 import { handleNodeCheck } from '../src/node-handler.js';
 import { handleChromiumCheck } from '../src/chromium-handler.js';
 import { getChromiumReleases } from '../src/utils/get-chromium-tags.js';
@@ -9,25 +8,21 @@ import { getContent } from '../src/utils/github-utils.js';
 import { getOctokit } from '../src/utils/octokit.js';
 import { roll } from '../src/utils/roll.js';
 import { getLatestLTSVersion } from '../src/utils/get-nodejs-lts.js';
+import { getSupportedBranches } from '../src/utils/get-supported-branches.js';
 
 vi.mock('../src/utils/get-chromium-tags.js');
 vi.mock('../src/utils/github-utils.js');
 vi.mock('../src/utils/octokit.js');
 vi.mock('../src/utils/roll.js');
 vi.mock('../src/utils/get-nodejs-lts.js');
+vi.mock('../src/utils/get-supported-branches.js');
 
 describe('handleChromiumCheck()', () => {
   let mockOctokit: any;
 
   beforeEach(() => {
     mockOctokit = {
-      paginate: vi.fn(),
       repos: {
-        listBranches: {
-          endpoint: {
-            merge: vi.fn(),
-          },
-        },
         getContent: vi.fn(),
         get: vi.fn(),
         getBranch: vi.fn().mockReturnValue({
@@ -41,95 +36,18 @@ describe('handleChromiumCheck()', () => {
       },
     };
     vi.mocked(getOctokit).mockReturnValue(mockOctokit);
+    vi.mocked(getSupportedBranches)
+      .mockReset()
+      .mockResolvedValue([{ name: '4-0-x', commit: { sha: '1234' } }]);
     vi.mocked(roll).mockReset().mockResolvedValue([]);
   });
 
   describe('release branches', () => {
     beforeEach(() => {
-      mockOctokit.paginate.mockReturnValue([
-        {
-          name: '4-0-x',
-          commit: {
-            sha: '1234',
-          },
-        },
-      ]);
-
       vi.mocked(getContent).mockResolvedValue({
         content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`,
         sha: '1234',
       });
-    });
-
-    it('properly fetches supported versions of Electron to roll against', async () => {
-      vi.mocked(getChromiumReleases).mockResolvedValue(['1.1.0.0', '1.2.0.0', '2.1.0.0']);
-
-      mockOctokit.paginate.mockReturnValue([
-        {
-          name: '10-x-y',
-          commit: {
-            sha: '1234',
-          },
-        },
-        {
-          name: '9-x-y',
-          commit: {
-            sha: '1234',
-          },
-        },
-        {
-          name: '8-x-y',
-          commit: {
-            sha: '1234',
-          },
-        },
-        {
-          name: '7-1-x',
-          commit: {
-            sha: '1234',
-          },
-        },
-        {
-          name: '7-0-x',
-          commit: {
-            sha: '1234',
-          },
-        },
-        {
-          name: '6-1-x',
-          commit: {
-            sha: '1234',
-          },
-        },
-        {
-          name: '6-0-x',
-          commit: {
-            sha: '1234',
-          },
-        },
-        {
-          name: '5-0-x',
-          commit: {
-            sha: '1234',
-          },
-        },
-        {
-          name: MAIN_BRANCH,
-          commit: {
-            sha: '1234',
-          },
-        },
-      ]);
-
-      const branches: { name: string }[] = await mockOctokit.paginate(
-        mockOctokit.repos.listBranches.endpoint.merge({
-          ...REPOS.electron,
-          protected: true,
-        }),
-      );
-
-      const supported = getSupportedBranches(branches);
-      expect(supported).toEqual(['7-1-x', '8-x-y', '9-x-y', '10-x-y']);
     });
 
     it('rolls with latest versions from release tags', async () => {
@@ -298,14 +216,7 @@ describe('handleChromiumCheck()', () => {
 
   describe('main branch', () => {
     beforeEach(() => {
-      mockOctokit.paginate.mockReturnValue([
-        {
-          name: MAIN_BRANCH,
-          commit: {
-            sha: '1234',
-          },
-        },
-      ]);
+      vi.mocked(getSupportedBranches).mockResolvedValue([]);
 
       vi.mocked(getContent).mockResolvedValue({
         content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.1.0.0',`,
@@ -336,15 +247,6 @@ describe('handleChromiumCheck()', () => {
   });
 
   it('throws error if roll() process failed', async () => {
-    mockOctokit.paginate.mockReturnValue([
-      {
-        name: '4-0-x',
-        commit: {
-          sha: '1234',
-        },
-      },
-    ]);
-
     vi.mocked(getContent).mockResolvedValue({
       content: `${ROLL_TARGETS.chromium.depsKey}':\n    '1.0.0.0',`,
       sha: '1234',
@@ -366,7 +268,6 @@ describe('handleNodeCheck()', () => {
 
   beforeEach(() => {
     mockOctokit = {
-      paginate: vi.fn().mockReturnValue([]),
       repos: {
         getBranch: vi.fn().mockReturnValue({
           data: {
@@ -393,38 +294,19 @@ describe('handleNodeCheck()', () => {
           ],
         }),
         getContent: vi.fn(),
-        listBranches: {
-          endpoint: {
-            merge: vi.fn(),
-          },
-        },
       },
     };
     vi.mocked(getOctokit).mockReturnValue(mockOctokit);
+    vi.mocked(getSupportedBranches).mockReset().mockResolvedValue([]);
   });
 
   it('rolls even major versions of Node.js with latest minor/patch update', async () => {
     vi.mocked(getLatestLTSVersion).mockResolvedValue('14.0.0');
 
-    mockOctokit.paginate.mockReturnValue([
-      {
-        name: '4-x-y',
-        commit: {
-          sha: '1234',
-        },
-      },
-      {
-        name: '5-x-y',
-        commit: {
-          sha: '2345',
-        },
-      },
-      {
-        name: '6-x-y',
-        commit: {
-          sha: '3456',
-        },
-      },
+    vi.mocked(getSupportedBranches).mockResolvedValue([
+      { name: '4-x-y', commit: { sha: '1234' } },
+      { name: '5-x-y', commit: { sha: '2345' } },
+      { name: '6-x-y', commit: { sha: '3456' } },
     ]);
 
     vi.mocked(getContent).mockResolvedValue({
