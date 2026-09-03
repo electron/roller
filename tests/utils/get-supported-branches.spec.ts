@@ -20,6 +20,7 @@ describe('getSupportedBranches', () => {
             name,
             target: { oid: `${name}-sha` },
           })),
+          pageInfo: { hasNextPage: false, endCursor: null },
         },
       },
     });
@@ -35,6 +36,41 @@ describe('getSupportedBranches', () => {
       owner: 'electron',
       repo: 'electron',
       branchQuery: '-x-y',
+      cursor: null,
+    });
+  });
+
+  it('fetches every page of release branches', async () => {
+    graphql
+      .mockResolvedValueOnce({
+        repository: {
+          refs: {
+            nodes: ['30-x-y', '31-x-y', '32-x-y', '33-x-y'].map((name) => ({
+              name,
+              target: { oid: `${name}-sha` },
+            })),
+            pageInfo: { hasNextPage: true, endCursor: 'page-2' },
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        repository: {
+          refs: {
+            nodes: [{ name: '34-x-y', target: { oid: '34-x-y-sha' } }],
+            pageInfo: { hasNextPage: false, endCursor: null },
+          },
+        },
+      });
+
+    const branches = await getSupportedBranches(octokit);
+
+    expect(branches.map((branch) => branch.name)).toEqual(['31-x-y', '32-x-y', '33-x-y', '34-x-y']);
+    expect(graphql).toHaveBeenCalledTimes(2);
+    expect(graphql).toHaveBeenLastCalledWith(expect.any(String), {
+      owner: 'electron',
+      repo: 'electron',
+      branchQuery: '-x-y',
+      cursor: 'page-2',
     });
   });
 
@@ -46,6 +82,7 @@ describe('getSupportedBranches', () => {
             name,
             target: { oid: `${name}-sha` },
           })),
+          pageInfo: { hasNextPage: false, endCursor: null },
         },
       },
     });

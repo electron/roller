@@ -16,29 +16,50 @@ export async function getSupportedBranches(
     throw new Error('numSupportedVersions must be less than or equal to 100');
   }
 
-  const { repository } = await github.graphql<{
-    repository: {
-      refs: { nodes: { name: string; target: { oid: string } }[] };
-    };
-  }>(
-    `query ($owner: String!, $repo: String!, $branchQuery: String!) {
-      repository(owner: $owner, name: $repo) {
-        refs(refPrefix: "refs/heads/", query: $branchQuery, first: 100) {
-          nodes {
-            name
-            target {
-              ... on Commit {
-                oid
+  const branchRefs: { name: string; target: { oid: string } }[] = [];
+  let cursor: string | null = null;
+
+  while (true) {
+    const { repository } = await github.graphql<{
+      repository: {
+        refs: {
+          nodes: { name: string; target: { oid: string } }[];
+          pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        };
+      };
+    }>(
+      `query ($owner: String!, $repo: String!, $branchQuery: String!, $cursor: String) {
+        repository(owner: $owner, name: $repo) {
+          refs(refPrefix: "refs/heads/", query: $branchQuery, first: 100, after: $cursor) {
+            nodes {
+              name
+              target {
+                ... on Commit {
+                  oid
+                }
               }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
             }
           }
         }
-      }
-    }`,
-    { owner: 'electron', repo: 'electron', branchQuery: '-x-y' },
-  );
+      }`,
+      { owner: 'electron', repo: 'electron', branchQuery: '-x-y', cursor },
+    );
 
-  const releaseBranches = repository.refs.nodes
+    branchRefs.push(...repository.refs.nodes);
+
+    if (!repository.refs.pageInfo.hasNextPage) break;
+
+    cursor = repository.refs.pageInfo.endCursor;
+    if (cursor === null) {
+      throw new Error('GitHub returned no cursor for the next page of branches');
+    }
+  }
+
+  const releaseBranches = branchRefs
     .filter((branch) => {
       const releasePattern = /^(\d)+-(?:(?:[0-9]+-x$)|(?:x+-y$))$/;
       return releasePattern.test(branch.name);
