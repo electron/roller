@@ -7,10 +7,8 @@ import { getSupportedBranches } from './utils/get-supported-branches.js';
 import { getContent } from './utils/github-utils.js';
 import { getOctokit } from './utils/octokit.js';
 import { roll } from './utils/roll.js';
-import { ReposGetBranchResponseItem, ReposListBranchesResponseItem } from './types.js';
+import { Branch } from './types.js';
 import { Octokit } from '@octokit/rest';
-
-type BranchItem = ReposGetBranchResponseItem | ReposListBranchesResponseItem;
 
 // The outcome of a main branch roll: the Chromium version main is currently on
 // (its landed DEPS version, not the version the open roll PR targets) and the
@@ -22,7 +20,7 @@ interface MainRollResult {
 
 async function rollReleaseBranch(
   github: Octokit,
-  branch: BranchItem,
+  branch: Branch,
   mainRoll?: MainRollResult | null,
 ) {
   const d = debug(`roller/chromium:rollReleaseBranch('${branch.name}')`);
@@ -171,15 +169,7 @@ export async function handleChromiumCheck(target?: string): Promise<void> {
     }
   } else {
     d('Fetching release branches for electron/electron');
-    const branches: ReposListBranchesResponseItem[] = await github.paginate(
-      github.repos.listBranches.endpoint.merge({
-        ...REPOS.electron,
-        protected: true,
-      }),
-    );
-
-    const supported = getSupportedBranches(branches);
-    const releaseBranches = branches.filter((branch) => supported.includes(branch.name));
+    const releaseBranches = await getSupportedBranches(github);
     d(`Found ${releaseBranches.length} release branches`);
 
     // Roll main first, so that the release branches its roll PR covers with

@@ -1,7 +1,5 @@
 import { Octokit } from '@octokit/rest';
 
-import { REPOS } from '../constants.js';
-import { ReposListBranchesResponseItem } from '../types.js';
 import { getSupportedBranches } from './get-supported-branches.js';
 
 export const ELECTRON_RELEASE_SCHEDULE_URL = 'https://releases.electronjs.org/schedule.json';
@@ -29,13 +27,9 @@ export async function getBranchesTrackedByMain(
   }
   const schedule = (await response.json()) as ReleaseScheduleEntry[];
 
-  const branches: ReposListBranchesResponseItem[] = await octokit.paginate(
-    octokit.repos.listBranches.endpoint.merge({
-      ...REPOS.electron,
-      protected: true,
-    }),
+  const supported = await getSupportedBranches(octokit).then((branches) =>
+    branches.map((branch) => branch.name),
   );
-  const supported = getSupportedBranches(branches);
 
   return schedule
     .filter(
