@@ -2,11 +2,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getOctokit } from '../../src/utils/octokit.js';
 import {
+  computeRefresh,
   getSpecWeightsPRText,
   rollSpecWeights,
   type SpecWeightsRefresh,
 } from '../../src/utils/roll-spec-weights.js';
 import { BACKPORT_CHECK_SKIP, NO_BACKPORT, ROLLER_BOT_LOGIN } from '../../src/constants.js';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const fixtureZip = readFileSync(
+  join(
+    dirname(fileURLToPath(import.meta.url)),
+    '../fixtures/spec-weights/test_artifacts_darwin_x64_1.zip',
+  ),
+);
 
 vi.mock('../../src/utils/octokit.js');
 
@@ -150,5 +161,43 @@ describe('getSpecWeightsPRText()', () => {
     expect(body).toContain('| `darwin` | 3 | 11.7 min | 10.0 min | 0 |');
     expect(body).toContain('`darwin` spec/a-spec.ts: 5s -> 400s');
     expect(body.trim().endsWith('Notes: none')).toBe(true);
+  });
+});
+
+describe('computeRefresh()', () => {
+  it('drops a run whose artifacts are unreadable or gone and reports only the runs it used', async () => {
+    const zipOf = (id: number) => (id === 2 ? Buffer.from('not a zip') : fixtureZip);
+    const octokit: any = {
+      actions: {
+        listWorkflowRuns: vi
+          .fn()
+          .mockResolvedValue({ data: { workflow_runs: [{ id: 1 }, { id: 2 }, { id: 3 }] } }),
+        listWorkflowRunArtifacts: vi.fn(),
+        downloadArtifact: vi
+          .fn()
+          .mockImplementation(({ artifact_id }) => ({ data: zipOf(artifact_id) })),
+      },
+      paginate: vi
+        .fn()
+        .mockImplementation((_fn, { run_id }) =>
+          run_id === 3 ? [] : [{ id: run_id, name: 'test_artifacts_darwin_x64_1', expired: false }],
+        ),
+      git: {
+        getTree: vi.fn().mockResolvedValue({
+          data: { tree: [{ type: 'blob', path: 'api-browser-window-spec.ts' }] },
+        }),
+      },
+      // The committed file is unparseable here too; that must not fail the branch.
+      repos: {
+        getContent: vi
+          .fn()
+          .mockResolvedValue({ data: { content: Buffer.from('{').toString('base64'), sha: 's' } }),
+      },
+    };
+
+    const refresh = await computeRefresh(octokit, 'main');
+    expect(refresh?.runIds).toEqual([1]);
+    expect(refresh?.committed).toEqual({});
+    expect(refresh?.fresh.darwin_x64['spec/api-browser-window-spec.ts']).toBe(365);
   });
 });

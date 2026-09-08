@@ -80,6 +80,7 @@ export async function fetchRunTimings(octokit: Octokit, runId: number): Promise<
 
 export interface SpecWeightsRefresh {
   branch: string;
+  /** The sampled runs whose timings actually went into `fresh`. */
   runIds: number[];
   committed: Weights;
   fresh: Weights;
@@ -103,11 +104,24 @@ export async function computeRefresh(
     return null;
   }
 
+  // A run whose artifacts have expired, or one with a corrupt upload, drops
+  // out of the median rather than failing the branch: the others still count.
   const runs: Weights[] = [];
+  const usedRunIds: number[] = [];
   for (const runId of runIds) {
-    const jobs = await fetchRunTimings(octokit, runId);
-    if (jobs.length) runs.push(aggregateRun(jobs));
-    else d(`run ${runId} has no timing artifacts (expired?) - ignoring`);
+    let jobs: JobTimings[];
+    try {
+      jobs = await fetchRunTimings(octokit, runId);
+    } catch (e) {
+      d(`run ${runId}: could not read its timing artifacts (${e.message}) - ignoring`);
+      continue;
+    }
+    if (!jobs.length) {
+      d(`run ${runId} has no timing artifacts (expired?) - ignoring`);
+      continue;
+    }
+    runs.push(aggregateRun(jobs));
+    usedRunIds.push(runId);
   }
   if (!runs.length) {
     d('no timing data in any sampled run - skipping');
@@ -122,11 +136,19 @@ export async function computeRefresh(
     path: SPEC_WEIGHTS.filePath,
     ref: branch,
   });
-  const committed: Weights = existing ? JSON.parse(existing.content) : {};
+  let committed: Weights = {};
+  if (existing) {
+    try {
+      committed = JSON.parse(existing.content);
+    } catch (e) {
+      // Treat an unparseable file as no weights at all: the refresh replaces it.
+      d(`committed ${SPEC_WEIGHTS.filePath} is not valid JSON (${e.message}) - treating as empty`);
+    }
+  }
 
   return {
     branch,
-    runIds,
+    runIds: usedRunIds,
     committed,
     fresh,
     content: serializeWeights(fresh),
@@ -241,6 +263,8 @@ export async function rollSpecWeights(
     await octokit.git.getRef({ ...REPOS.electron, ref: shortRef });
     d(`Found orphan ref ${ref} with no open PR - deleting`);
     await octokit.git.deleteRef({ ...REPOS.electron, ref: shortRef });
+    // Ref deletion is eventually consistent; recreating it at once can fail.
+    await new Promise<void>((r) => setTimeout(r, 2000));
   } catch {
     // No orphan ref.
   }
