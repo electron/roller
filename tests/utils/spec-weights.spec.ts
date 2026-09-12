@@ -28,6 +28,11 @@ describe('spec-weights', () => {
       expect(timings[0].files['spec/api-browser-window-spec.ts']).toBeCloseTo(364.971, 3);
     });
 
+    it('rejects a timings file with no per-file data', () => {
+      const zip = readFileSync(join(fixtures, 'test_artifacts_truncated_1.zip'));
+      expect(() => timingsFromArtifactZip(zip)).toThrow(/no per-file timings/);
+    });
+
     it('rejects something that is not a zip', () => {
       expect(() => timingsFromArtifactZip(Buffer.from('nope'))).toThrow(/not a zip/);
     });
