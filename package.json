@@ -12,6 +12,7 @@
     "prepare": "husky",
     "roll-chromium": "DEBUG=roller* node lib/chromium-cron.js",
     "roll-node": "DEBUG=roller* node lib/node-cron.js",
+    "roll-spec-weights": "DEBUG=roller* node lib/spec-weights-cron.js",
     "start": "DEBUG=roller* probot run ./lib/index.js",
     "test": "vitest run --coverage --reporter=verbose"
   },

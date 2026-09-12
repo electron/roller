@@ -70,3 +70,13 @@ export interface Repository {
   owner: string;
   repo: string;
 }
+
+// The CI test-shard weight tables in electron/electron, refreshed from the
+// spec-timings.json files the test jobs upload.
+export const SPEC_WEIGHTS = {
+  filePath: 'script/spec-weights.json',
+  specDir: 'spec',
+  workflowFile: 'build.yml',
+  // Green push runs whose timings are combined (median per file) for one refresh.
+  runsToSample: 3,
+};
