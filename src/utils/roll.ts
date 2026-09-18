@@ -152,13 +152,21 @@ async function updateLabels(
   return coveredBranches;
 }
 
-async function triggerChromiumUpgradeWorkflow(octokit: Octokit) {
+// Dispatches the agent-driven Chromium upgrade workflow against the given
+// roll branch (`roller/chromium/<electron branch>`), for main and release
+// branches alike.
+async function triggerChromiumUpgradeWorkflow(octokit: Octokit, rollBranchName: string) {
   const d = debug('roller/chromium:triggerChromiumUpgradeWorkflow()');
   try {
-    await octokit.actions.createWorkflowDispatch(CHROMIUM_UPGRADE_WORKFLOW);
-    d(`Dispatched ${CHROMIUM_UPGRADE_WORKFLOW.workflow_id}`);
+    await octokit.actions.createWorkflowDispatch({
+      ...CHROMIUM_UPGRADE_WORKFLOW,
+      inputs: { 'base-ref': rollBranchName },
+    });
+    d(`Dispatched ${CHROMIUM_UPGRADE_WORKFLOW.workflow_id} for ${rollBranchName}`);
   } catch (e) {
-    d(`Failed to dispatch ${CHROMIUM_UPGRADE_WORKFLOW.workflow_id}: ${e.message}`);
+    d(
+      `Failed to dispatch ${CHROMIUM_UPGRADE_WORKFLOW.workflow_id} for ${rollBranchName}: ${e.message}`,
+    );
   }
 }
 
@@ -181,6 +189,10 @@ export async function roll({
   let didRoll = false;
   let coveredBranches: string[] = [];
 
+  // The bot only ever rolls into the branch it created itself, which it names
+  // `roller/<target>/<electron branch>` in the electron/electron repo.
+  const rollBranchName = `roller/${rollTarget.name}/${electronBranch.name}`;
+
   // Look for a pre-existing PR that targets this branch to see if we can update that.
   const existingPrsForBranch = (await github.paginate('GET /repos/:owner/:repo/pulls', {
     base: electronBranch.name,
@@ -193,11 +205,8 @@ export async function roll({
   );
 
   if (prs.length) {
-    // The bot only ever rolls into the branch it created itself, which it names
-    // `roller/<target>/<electron branch>` in the electron/electron repo. Derive
-    // the write target solely from this trusted naming rather than from any
-    // field of the (potentially untrusted) PR.
-    const rollBranchName = `roller/${rollTarget.name}/${electronBranch.name}`;
+    // Derive the write target solely from the bot's trusted roll branch naming
+    // rather than from any field of the (potentially untrusted) PR.
     const electronRepoFullName = `${REPOS.electron.owner}/${REPOS.electron.repo}`;
 
     // Update existing PR(s)
@@ -291,8 +300,7 @@ export async function roll({
   } else {
     d(`No existing PR found - raising a new PR`);
     const sha = electronBranch.commit.sha;
-    const branchName = `roller/${rollTarget.name}/${electronBranch.name}`;
-    const shortRef = `heads/${branchName}`;
+    const shortRef = `heads/${rollBranchName}`;
     const ref = `refs/${shortRef}`;
 
     d(`Checking that no orphan ref exists from a previous roll`);
@@ -315,16 +323,16 @@ export async function roll({
     const { previousDEPSVersion } = await updateDepsFile({
       depName: rollTarget.name,
       depKey: rollTarget.depsKey,
-      branch: branchName,
+      branch: rollBranchName,
       targetVersion,
     });
 
     // Raise a PR
-    d(`Raising a PR for ${branchName} to ${electronBranch.name}`);
+    d(`Raising a PR for ${rollBranchName} to ${electronBranch.name}`);
     const newPr = await github.pulls.create({
       ...REPOS.electron,
       base: electronBranch.name,
-      head: `${REPOS.electron.owner}:${branchName}`,
+      head: `${REPOS.electron.owner}:${rollBranchName}`,
       ...getPRText(rollTarget, {
         previousVersion: previousDEPSVersion,
         newVersion: targetVersion,
@@ -349,8 +357,8 @@ export async function roll({
     didRoll = true;
   }
 
-  if (didRoll && rollTarget === ROLL_TARGETS.chromium && electronBranch.name === MAIN_BRANCH) {
-    await triggerChromiumUpgradeWorkflow(github);
+  if (didRoll && rollTarget === ROLL_TARGETS.chromium) {
+    await triggerChromiumUpgradeWorkflow(github, rollBranchName);
   }
 
   return coveredBranches;

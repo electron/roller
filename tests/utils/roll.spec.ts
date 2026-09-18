@@ -300,9 +300,10 @@ describe('roll()', () => {
       });
 
       expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledTimes(1);
-      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledWith(
-        CHROMIUM_UPGRADE_WORKFLOW,
-      );
+      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledWith({
+        ...CHROMIUM_UPGRADE_WORKFLOW,
+        inputs: { 'base-ref': `roller/chromium/${MAIN_BRANCH}` },
+      });
     });
 
     it('dispatches when updating an existing chromium PR on main', async () => {
@@ -328,9 +329,10 @@ describe('roll()', () => {
       });
 
       expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledTimes(1);
-      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledWith(
-        CHROMIUM_UPGRADE_WORKFLOW,
-      );
+      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledWith({
+        ...CHROMIUM_UPGRADE_WORKFLOW,
+        inputs: { 'base-ref': `roller/chromium/${MAIN_BRANCH}` },
+      });
     });
 
     it('does not dispatch for node rolls on main', async () => {
@@ -345,12 +347,70 @@ describe('roll()', () => {
       expect(mockOctokit.actions.createWorkflowDispatch).not.toHaveBeenCalled();
     });
 
-    it('does not dispatch for chromium rolls on a release branch', async () => {
+    it('dispatches for chromium rolls on a release branch with that roll branch as base-ref', async () => {
       mockOctokit.paginate.mockReturnValue([]);
 
       await roll({
         rollTarget: ROLL_TARGETS.chromium,
         electronBranch: branch,
+        targetVersion: '120.0.0.0',
+      });
+
+      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledTimes(1);
+      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledWith({
+        ...CHROMIUM_UPGRADE_WORKFLOW,
+        inputs: { 'base-ref': `roller/chromium/${branch.name}` },
+      });
+    });
+
+    it('does not dispatch when the existing chromium PR is paused', async () => {
+      mockOctokit.paginate.mockReturnValue([
+        {
+          user: { login: 'electron-roller[bot]' },
+          title: `chore: bump ${ROLL_TARGETS.chromium.name} to bar`,
+          number: 1,
+          head: {
+            ref: `roller/${ROLL_TARGETS.chromium.name}/${mainBranch.name}`,
+            repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
+          },
+          body: 'Original-Version: 119.0.0.0',
+          labels: [{ name: 'roller/pause' }],
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+      await roll({
+        rollTarget: ROLL_TARGETS.chromium,
+        electronBranch: mainBranch,
+        targetVersion: '120.0.0.0',
+      });
+
+      expect(mockOctokit.actions.createWorkflowDispatch).not.toHaveBeenCalled();
+    });
+
+    it('does not dispatch when the DEPS version is unchanged', async () => {
+      mockOctokit.paginate.mockReturnValue([
+        {
+          user: { login: 'electron-roller[bot]' },
+          title: `chore: bump ${ROLL_TARGETS.chromium.name} to bar`,
+          number: 1,
+          head: {
+            ref: `roller/${ROLL_TARGETS.chromium.name}/${mainBranch.name}`,
+            repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
+          },
+          body: 'Original-Version: 119.0.0.0',
+          labels: [],
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      vi.mocked(updateDepsFile).mockResolvedValue({
+        previousDEPSVersion: '120.0.0.0',
+        newDEPSVersion: '120.0.0.0',
+      });
+
+      await roll({
+        rollTarget: ROLL_TARGETS.chromium,
+        electronBranch: mainBranch,
         targetVersion: '120.0.0.0',
       });
 
