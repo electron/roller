@@ -109,18 +109,19 @@ export async function computeRefresh(
   const runs: Weights[] = [];
   const usedRunIds: number[] = [];
   for (const runId of runIds) {
-    let jobs: JobTimings[];
+    let run: Weights;
     try {
-      jobs = await fetchRunTimings(octokit, runId);
+      const jobs = await fetchRunTimings(octokit, runId);
+      if (!jobs.length) {
+        d(`run ${runId} has no timing artifacts (expired?) - ignoring`);
+        continue;
+      }
+      run = aggregateRun(jobs);
     } catch (e) {
       d(`run ${runId}: could not read its timing artifacts (${e.message}) - ignoring`);
       continue;
     }
-    if (!jobs.length) {
-      d(`run ${runId} has no timing artifacts (expired?) - ignoring`);
-      continue;
-    }
-    runs.push(aggregateRun(jobs));
+    runs.push(run);
     usedRunIds.push(runId);
   }
   if (!runs.length) {

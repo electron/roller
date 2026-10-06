@@ -258,7 +258,11 @@ export function timingsFromArtifactZip(zip: Buffer): SpecTimings[] {
     const data = zip.subarray(dataStart, dataStart + compressedSize);
     const raw = method === 0 ? data : method === 8 ? inflateRawSync(data) : null;
     if (!raw) throw new Error(`unsupported zip compression method ${method} for ${name}`);
-    found.push(JSON.parse(raw.toString('utf8')));
+    const timings = JSON.parse(raw.toString('utf8'));
+    if (!timings || typeof timings.files !== 'object' || timings.files === null) {
+      throw new Error(`${name} carries no per-file timings`);
+    }
+    found.push(timings);
   }
   return found;
 }
