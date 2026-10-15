@@ -36,6 +36,6 @@ export async function getChromiumReleases({
   // Beta, ...) and platforms within a milestone ship on their own schedules,
   // so the most recently released entry is not necessarily the newest version.
   return releases
-    .sort((a, b) => compareChromiumVersions(a.version, b.version) || a.time - b.time)
+    .sort((a, b) => compareChromiumVersions(a.version, b.version))
     .map((r) => r.version);
 }
