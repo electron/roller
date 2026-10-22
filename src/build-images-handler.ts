@@ -40,38 +40,30 @@ export async function shouldUpdateFiles(octokit: Octokit, oid: string) {
   return true;
 }
 
-export async function getPreviousOid(payload: Context<'registry_package.published'>['payload']) {
-  const { registry_package, organization } = payload;
-  const { target_oid } = registry_package.package_version;
-  const { name } = registry_package;
+// Matches the hardcoded image SHA in the build-image-sha action, e.g.
+// `echo "build-image-sha=<oid>" >> "$GITHUB_OUTPUT"`. The `$OVERRIDE` branch of
+// the action is not hex and so is never matched.
+const BUILD_IMAGE_SHA_REGEX = /build-image-sha=([0-9a-f]{40})\b/;
 
-  try {
-    const octokit = await getOctokit();
-    const { data: packages } =
-      await octokit.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
-        org: organization.login,
-        package_type: 'container',
-        package_name: name,
-        direction: 'desc',
-      });
+export async function getCurrentOid(octokit: Octokit, ref: string) {
+  const file = await getContent(octokit, {
+    ...REPOS.electron,
+    path: files[0],
+    ref,
+  });
 
-    const previousPackage = packages.find(({ metadata }) => {
-      return metadata.container.tags[0] !== target_oid;
-    });
+  if (file === null) {
+    throw new Error(`Could not fetch content for ${files[0]}`);
+  }
 
-    const previousTag = previousPackage?.metadata.container.tags[0];
+  const currentOid = file.content.match(BUILD_IMAGE_SHA_REGEX)?.[1];
 
-    // The tag is attacker-influenceable package metadata. Only accept it if it
-    // is a well-formed OID; otherwise it must not be used to match/rewrite files.
-    if (!isValidOid(previousTag)) {
-      return null;
-    }
-
-    return previousTag;
-  } catch (error) {
-    console.error('Error fetching previous target_oid:', error);
+  // Only accept a well-formed OID; otherwise it must not be used to match/rewrite files.
+  if (!isValidOid(currentOid)) {
     return null;
   }
+
+  return currentOid;
 }
 
 export async function updateFilesWithNewOid(
@@ -92,9 +84,12 @@ export async function updateFilesWithNewOid(
 
   for (const filePath of files) {
     try {
+      // Read from the branch being written to so that both the content and the
+      // blob sha match what `createOrUpdateFileContents` will update.
       const file = await getContent(octokit, {
         ...REPOS.electron,
         path: filePath,
+        ref: branchName,
       });
 
       if (file === null) {
@@ -171,13 +166,6 @@ export async function handleBuildImagesCheck(
     return;
   }
 
-  const previousOid = await getPreviousOid(payload);
-
-  if (!previousOid) {
-    d('No previous target OID found, cannot proceed with updates');
-    return;
-  }
-
   const branchName = `roller/build-images/${MAIN_BRANCH}`;
 
   // Look for a pre-existing PR that targets this branch to see if we can update that.
@@ -192,6 +180,19 @@ export async function handleBuildImagesCheck(
     const oid = targetOid.slice(0, 7);
 
     d(`Found existing PR: #${pr.number} opened by ${pr.user.login} - updating`);
+
+    const previousOid = await getCurrentOid(octokit, branchName);
+    if (!previousOid) {
+      console.error(
+        `Could not find a valid build-image-sha in ${files[0]} on ${branchName} - not updating PR #${pr.number}`,
+      );
+      return;
+    }
+
+    if (previousOid === targetOid) {
+      d(`${branchName} is already at ${targetOid} - skipping PR update`);
+      return;
+    }
 
     d(`Preparing to update files with new OID: ${targetOid}`);
     const updatedFiles = await updateFilesWithNewOid(octokit, previousOid, targetOid, branchName);
@@ -218,6 +219,15 @@ export async function handleBuildImagesCheck(
     const shouldUpdate = await shouldUpdateFiles(octokit, targetOid);
     if (!shouldUpdate) {
       d('Build images are up to date - skipping PR creation');
+      return;
+    }
+
+    // The new branch is created at `sha`, so read the current OID from there.
+    const previousOid = await getCurrentOid(octokit, sha);
+    if (!previousOid) {
+      console.error(
+        `Could not find a valid build-image-sha in ${files[0]} on ${MAIN_BRANCH} - not creating a PR`,
+      );
       return;
     }
 

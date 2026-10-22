@@ -50,39 +50,6 @@ describe('build-images', () => {
     mockOctokit = {
       paginate: vi.fn(),
       rest: {
-        packages: {
-          getAllPackageVersionsForPackageOwnedByOrg: vi.fn().mockResolvedValue({
-            data: [
-              {
-                id: 395219211,
-                created_at: '2025-04-14T14:53:47Z',
-                metadata: {
-                  container: {
-                    tags: ['424eedbf277ad9749ffa9219068aa72ed4a5e373'],
-                  },
-                },
-              },
-              {
-                id: 392728624,
-                created_at: '2025-04-10T09:53:31Z',
-                metadata: {
-                  container: {
-                    tags: ['bed562b00714c63080bda07af3f016cab4ba02fc'],
-                  },
-                },
-              },
-              {
-                id: 382348549,
-                created_at: '2025-03-26T14:17:04Z',
-                metadata: {
-                  container: {
-                    tags: ['9f11982e806f439d0a0a8ebbbf566cd5e0d9e952'],
-                  },
-                },
-              },
-            ],
-          }),
-        },
         repos: {
           getBranch: vi.fn().mockReturnValue({
             data: {
@@ -102,6 +69,7 @@ describe('build-images', () => {
         },
         pulls: {
           create: vi.fn(),
+          update: vi.fn(),
           list: vi.fn().mockResolvedValue({
             data: [],
           }),
@@ -145,12 +113,45 @@ describe('build-images', () => {
     expect(buildImagesHandler.handleBuildImagesCheck).toHaveBeenCalled();
   });
 
-  it('can get the previous target OID', async () => {
-    const payload = JSON.parse(JSON.stringify(payloadJson));
-    payload.registry_package.package_version.target_oid = 'newtargetoid123';
+  describe('getCurrentOid', () => {
+    const oid = '424eedbf277ad9749ffa9219068aa72ed4a5e373';
 
-    const previousTargetOid = await buildImagesHandler.getPreviousOid(payload);
-    expect(previousTargetOid).toBe('424eedbf277ad9749ffa9219068aa72ed4a5e373');
+    it('reads the build image SHA from the build-image-sha action on the given ref', async () => {
+      vi.mocked(getContent).mockResolvedValue({
+        content: [
+          'if [ -n "$OVERRIDE" ]; then',
+          '  echo "build-image-sha=$OVERRIDE" >> "$GITHUB_OUTPUT"',
+          'else',
+          `  echo "build-image-sha=${oid}" >> "$GITHUB_OUTPUT"`,
+          'fi',
+        ].join('\n'),
+        sha: 'action-sha',
+      });
+
+      const result = await buildImagesHandler.getCurrentOid(mockOctokit, branchName);
+
+      expect(result).toBe(oid);
+      expect(getContent).toHaveBeenCalledWith(
+        mockOctokit,
+        expect.objectContaining({
+          path: '.github/actions/build-image-sha/action.yml',
+          ref: branchName,
+        }),
+      );
+    });
+
+    it.each([
+      ['is missing', 'echo "build-image-sha=$OVERRIDE" >> "$GITHUB_OUTPUT"'],
+      ['is too short', 'echo "build-image-sha=424eedb" >> "$GITHUB_OUTPUT"'],
+      ['is too long', `echo "build-image-sha=${oid}0" >> "$GITHUB_OUTPUT"`],
+      ['is not lowercase hex', `echo "build-image-sha=${oid.toUpperCase()}" >> "$GITHUB_OUTPUT"`],
+    ])('returns null when the build image SHA %s', async (_, content) => {
+      vi.mocked(getContent).mockResolvedValue({ content, sha: 'action-sha' });
+
+      const result = await buildImagesHandler.getCurrentOid(mockOctokit, branchName);
+
+      expect(result).toBeNull();
+    });
   });
 
   describe('prepareGitBranch', () => {
@@ -234,6 +235,17 @@ describe('build-images', () => {
 
       expect(result).toBe(true);
       expect(getContent).toHaveBeenCalledTimes(2);
+      expect(getContent).toHaveBeenCalledWith(
+        mockOctokit,
+        expect.objectContaining({
+          path: '.github/actions/build-image-sha/action.yml',
+          ref: branchName,
+        }),
+      );
+      expect(getContent).toHaveBeenCalledWith(
+        mockOctokit,
+        expect.objectContaining({ path: '.devcontainer/docker-compose.yml', ref: branchName }),
+      );
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledTimes(1);
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -316,7 +328,33 @@ describe('build-images', () => {
   });
 
   describe('handleBuildImagesCheck', () => {
+    const targetOid = 'f61ed670557184b30a582b7701eee3e9f57a55a3';
+    const actionPath = '.github/actions/build-image-sha/action.yml';
+    const devcontainerPath = '.devcontainer/docker-compose.yml';
+
+    const mockFiles = (actionContent: string, devcontainerContent: string) => {
+      vi.mocked(getContent).mockImplementation(async (_, options) => {
+        if (options?.path === actionPath) {
+          return { content: actionContent, sha: 'action-sha' };
+        }
+        return { content: devcontainerContent, sha: 'devcontainer-sha' };
+      });
+    };
+
+    const actionFor = (oid: string) => `echo "build-image-sha=${oid}" >> "$GITHUB_OUTPUT"`;
+    const devcontainerFor = (oid: string) => `image: ghcr.io/electron/build:${oid}`;
+
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      vi.mocked(console.error).mockRestore();
+    });
+
     it('creates a PR when files are updated', async () => {
+      const previousOid = '424eedbf277ad9749ffa9219068aa72ed4a5e373';
+
       mockOctokit.rest.git.createRef.mockResolvedValue({});
       mockOctokit.rest.pulls.create.mockResolvedValue({
         data: { html_url: 'https://github.com/electron/electron/pull/123' },
@@ -324,10 +362,7 @@ describe('build-images', () => {
 
       mockOctokit.rest.pulls.list.mockResolvedValue({ data: [] });
 
-      vi.mocked(getContent).mockResolvedValue({
-        content: 'image: ghcr.io/electron/build:424eedbf277ad9749ffa9219068aa72ed4a5e373',
-        sha: 'linux-publishsha',
-      });
+      mockFiles(actionFor(previousOid), devcontainerFor(previousOid));
 
       const payload = JSON.parse(JSON.stringify(payloadJson));
       await buildImagesHandler.handleBuildImagesCheck(payload);
@@ -338,6 +373,30 @@ describe('build-images', () => {
           sha: '1234',
           owner: 'electron',
           repo: 'electron',
+        }),
+      );
+
+      // The previous OID is read from the commit the new branch is created at.
+      expect(getContent).toHaveBeenCalledWith(
+        mockOctokit,
+        expect.objectContaining({ path: actionPath, ref: '1234' }),
+      );
+
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledTimes(2);
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: actionPath,
+          content: Buffer.from(actionFor(targetOid)).toString('base64'),
+          sha: 'action-sha',
+          branch: branchName,
+        }),
+      );
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: devcontainerPath,
+          content: Buffer.from(devcontainerFor(targetOid)).toString('base64'),
+          sha: 'devcontainer-sha',
+          branch: branchName,
         }),
       );
 
@@ -353,22 +412,116 @@ describe('build-images', () => {
       );
     });
 
+    it('bumps the build-image-sha action even when it has drifted from the previous registry tag', async () => {
+      // An OID that is not the previous package version's tag in the registry.
+      const driftedOid = '9f11982e806f439d0a0a8ebbbf566cd5e0d9e952';
+
+      mockOctokit.rest.git.createRef.mockResolvedValue({});
+      mockOctokit.rest.pulls.create.mockResolvedValue({
+        data: { html_url: 'https://github.com/electron/electron/pull/123' },
+      });
+
+      mockFiles(actionFor(driftedOid), devcontainerFor(driftedOid));
+
+      const payload = JSON.parse(JSON.stringify(payloadJson));
+      await buildImagesHandler.handleBuildImagesCheck(payload);
+
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: actionPath,
+          content: Buffer.from(actionFor(targetOid)).toString('base64'),
+          branch: branchName,
+        }),
+      );
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: devcontainerPath,
+          content: Buffer.from(devcontainerFor(targetOid)).toString('base64'),
+          branch: branchName,
+        }),
+      );
+      expect(mockOctokit.rest.pulls.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: 'This PR updates the build-images references from 9f11982 to f61ed67.',
+        }),
+      );
+    });
+
+    it.each([
+      ['missing', 'echo "build-image-sha=$OVERRIDE" >> "$GITHUB_OUTPUT"'],
+      ['invalid', 'echo "build-image-sha=424eedb" >> "$GITHUB_OUTPUT"'],
+    ])('does not create a PR when the build image SHA is %s', async (_, actionContent) => {
+      mockFiles(actionContent, devcontainerFor('424eedbf277ad9749ffa9219068aa72ed4a5e373'));
+
+      const payload = JSON.parse(JSON.stringify(payloadJson));
+      await buildImagesHandler.handleBuildImagesCheck(payload);
+
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Could not find a valid build-image-sha'),
+      );
+      expect(mockOctokit.rest.git.createRef).not.toHaveBeenCalled();
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
+      expect(mockOctokit.rest.pulls.create).not.toHaveBeenCalled();
+    });
+
+    it('updates an existing PR using the OID and files from the roll branch', async () => {
+      const branchOid = 'bed562b00714c63080bda07af3f016cab4ba02fc';
+
+      mockOctokit.rest.pulls.list.mockResolvedValue({
+        data: [{ number: 42, user: { login: 'electron-roller[bot]' } }],
+      });
+
+      mockFiles(actionFor(branchOid), devcontainerFor(branchOid));
+
+      const payload = JSON.parse(JSON.stringify(payloadJson));
+      await buildImagesHandler.handleBuildImagesCheck(payload);
+
+      expect(getContent).toHaveBeenCalledTimes(3);
+      for (const call of vi.mocked(getContent).mock.calls) {
+        expect(call[1]).toEqual(expect.objectContaining({ ref: branchName }));
+      }
+
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: actionPath,
+          content: Buffer.from(actionFor(targetOid)).toString('base64'),
+          sha: 'action-sha',
+          branch: branchName,
+        }),
+      );
+      expect(mockOctokit.rest.pulls.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pull_number: 42,
+          title: 'chore: bump build image tag to f61ed67',
+          body: 'This PR updates the build-images references from bed562b to f61ed67.',
+        }),
+      );
+      expect(mockOctokit.rest.git.createRef).not.toHaveBeenCalled();
+      expect(mockOctokit.rest.pulls.create).not.toHaveBeenCalled();
+    });
+
+    it('does not update an existing PR when the build image SHA is missing', async () => {
+      mockOctokit.rest.pulls.list.mockResolvedValue({
+        data: [{ number: 42, user: { login: 'electron-roller[bot]' } }],
+      });
+
+      mockFiles('no sha here', devcontainerFor('bed562b00714c63080bda07af3f016cab4ba02fc'));
+
+      const payload = JSON.parse(JSON.stringify(payloadJson));
+      await buildImagesHandler.handleBuildImagesCheck(payload);
+
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Could not find a valid build-image-sha'),
+      );
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
+      expect(mockOctokit.rest.pulls.update).not.toHaveBeenCalled();
+    });
+
     it('skips PR creation when no files need updating', async () => {
       const newSha = randomBytes(20).toString('hex');
 
       mockOctokit.rest.pulls.list.mockResolvedValue({ data: [] });
-      vi.mocked(getContent).mockResolvedValue({ content: newSha, sha: 'foo' });
-
-      vi.spyOn(buildImagesHandler, 'getPreviousOid').mockResolvedValue('oldsha123');
-
-      vi.spyOn(buildImagesHandler, 'prepareGitBranch').mockResolvedValue({
-        ref: `refs/heads/${branchName}`,
-        shortRef: `heads/${branchName}`,
-        branchName,
-        sha: '1234567890abcdef',
-      });
-
-      vi.spyOn(buildImagesHandler, 'updateFilesWithNewOid').mockResolvedValue(false);
+      vi.mocked(getContent).mockResolvedValue({ content: actionFor(newSha), sha: 'foo' });
 
       const payload = JSON.parse(JSON.stringify(payloadJson));
       payload.registry_package.package_version.target_oid = newSha;
@@ -376,6 +529,7 @@ describe('build-images', () => {
       await buildImagesHandler.handleBuildImagesCheck(payload);
 
       expect(mockOctokit.rest.git.createRef).not.toHaveBeenCalled();
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
       expect(mockOctokit.rest.pulls.create).not.toHaveBeenCalled();
     });
   });
