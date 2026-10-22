@@ -7,9 +7,24 @@ import { getContent } from './utils/github-utils.js';
 import { getOctokit } from './utils/octokit.js';
 import { MAIN_BRANCH, REPOS } from './constants.js';
 
-// The first entry is the canonical location of the CI build image SHA and is
-// what `shouldUpdateFiles` checks against.
-const files = ['.github/actions/build-image-sha/action.yml', '.devcontainer/docker-compose.yml'];
+// Each file that pins the build image, with a pattern whose first capture group
+// is that file's current pin. Files are bumped independently, as they can drift
+// apart (e.g. electron/electron#55200 bumped only the devcontainer).
+const files = [
+  {
+    // `echo "build-image-sha=<oid>" >> "$GITHUB_OUTPUT"`. The `$OVERRIDE` branch
+    // of the action is not hex and so is never matched.
+    path: '.github/actions/build-image-sha/action.yml',
+    pattern: /build-image-sha=([0-9a-f]{40})\b/,
+  },
+  {
+    // `image: ghcr.io/electron/devcontainer:<oid>`
+    path: '.devcontainer/docker-compose.yml',
+    pattern: /ghcr\.io\/electron\/devcontainer:([0-9a-f]{40})\b/,
+  },
+];
+
+type PinnedFile = (typeof files)[number];
 
 // Git object IDs are 40-character lowercase hex strings. Any value taken from a
 // webhook payload or package metadata must match this exactly before it is used
@@ -21,102 +36,111 @@ export function isValidOid(value: unknown): value is string {
   return typeof value === 'string' && OID_REGEX.test(value);
 }
 
-export async function shouldUpdateFiles(octokit: Octokit, oid: string) {
-  const file = await getContent(octokit, {
+async function readFile(octokit: Octokit, file: PinnedFile, ref: string) {
+  const content = await getContent(octokit, {
     ...REPOS.electron,
-    path: files[0],
-  });
-
-  if (file === null) {
-    throw new Error(`Could not fetch content for ${files[0]}`);
-  }
-
-  // `oid` is a validated 40-char hex OID; use a literal substring check so the
-  // value is never compiled into a regular expression.
-  if (file.content.includes(oid)) {
-    return false;
-  }
-
-  return true;
-}
-
-// Matches the hardcoded image SHA in the build-image-sha action, e.g.
-// `echo "build-image-sha=<oid>" >> "$GITHUB_OUTPUT"`. The `$OVERRIDE` branch of
-// the action is not hex and so is never matched.
-const BUILD_IMAGE_SHA_REGEX = /build-image-sha=([0-9a-f]{40})\b/;
-
-export async function getCurrentOid(octokit: Octokit, ref: string) {
-  const file = await getContent(octokit, {
-    ...REPOS.electron,
-    path: files[0],
+    path: file.path,
     ref,
   });
 
-  if (file === null) {
-    throw new Error(`Could not fetch content for ${files[0]}`);
+  if (content === null) {
+    throw new Error(`Could not fetch content for ${file.path}`);
   }
 
-  const currentOid = file.content.match(BUILD_IMAGE_SHA_REGEX)?.[1];
+  return content;
+}
 
-  // Only accept a well-formed OID; otherwise it must not be used to match/rewrite files.
-  if (!isValidOid(currentOid)) {
-    return null;
+// Returns the file's current pin, or null if it has no well-formed OID pin.
+function findOid(file: PinnedFile, content: string) {
+  const oid = content.match(file.pattern)?.[1];
+  return isValidOid(oid) ? oid : null;
+}
+
+export async function shouldUpdateFiles(octokit: Octokit, oid: string) {
+  for (const file of files) {
+    const { content } = await readFile(octokit, file, MAIN_BRANCH);
+    if (findOid(file, content) !== oid) {
+      return true;
+    }
   }
 
-  return currentOid;
+  return false;
+}
+
+// Reads each file's current pin at `ref`, keyed by path. Returns null if any
+// file lacks a valid pin, so that a roll never silently updates only some files.
+export async function getCurrentOids(octokit: Octokit, ref: string) {
+  const oids: Record<string, string> = {};
+
+  for (const file of files) {
+    const { content } = await readFile(octokit, file, ref);
+    const oid = findOid(file, content);
+    if (!oid) {
+      console.error(`Could not find a valid build image SHA in ${file.path} on ${ref}`);
+      return null;
+    }
+    oids[file.path] = oid;
+  }
+
+  return oids;
+}
+
+// Short form of the distinct pins being replaced, e.g. `424eedb and 9f11982`.
+function describeOids(oids: Record<string, string>, targetOid: string) {
+  return [...new Set(Object.values(oids))]
+    .filter((oid) => oid !== targetOid)
+    .map((oid) => oid.slice(0, 7))
+    .join(' and ');
 }
 
 export async function updateFilesWithNewOid(
   octokit: Octokit,
-  previousOid: string,
   targetOid: string,
   branchName: string,
 ) {
   const d = debug(`roller/github:updateFilesWithNewOid`);
   let updatedAny = false;
 
-  // Defense-in-depth: never match against or substitute values that are not
-  // well-formed OIDs, regardless of how this function is reached.
-  if (!isValidOid(previousOid) || !isValidOid(targetOid)) {
-    d(`Refusing to update files with invalid OID(s)`);
+  // Defense-in-depth: never substitute a value that is not a well-formed OID,
+  // regardless of how this function is reached.
+  if (!isValidOid(targetOid)) {
+    d(`Refusing to update files with invalid OID`);
     return updatedAny;
   }
 
-  for (const filePath of files) {
+  for (const file of files) {
     try {
       // Read from the branch being written to so that both the content and the
       // blob sha match what `createOrUpdateFileContents` will update.
-      const file = await getContent(octokit, {
-        ...REPOS.electron,
-        path: filePath,
-        ref: branchName,
-      });
+      const { content, sha } = await readFile(octokit, file, branchName);
 
-      if (file === null) {
-        throw new Error(`Could not fetch content for ${filePath}`);
-      }
-
-      // `previousOid` and `targetOid` are validated 40-char hex OIDs. Use literal
-      // substring matching and split/join so neither value is ever interpreted as
-      // a regular expression or as a replacement pattern (e.g. `$&`, `$1`).
-      if (!file.content.includes(previousOid)) {
-        d(`No match found for ${filePath}`);
+      const currentOid = findOid(file, content);
+      if (!currentOid) {
+        d(`No valid OID found in ${file.path}`);
         continue;
       }
 
-      d(`Updating ${filePath} from ${previousOid} to ${targetOid}`);
-      const newContent = file.content.split(previousOid).join(targetOid);
+      if (currentOid === targetOid) {
+        d(`${file.path} is already at ${targetOid}`);
+        continue;
+      }
+
+      // `currentOid` and `targetOid` are validated 40-char hex OIDs. Use literal
+      // substring matching and split/join so neither value is ever interpreted as
+      // a regular expression or as a replacement pattern (e.g. `$&`, `$1`).
+      d(`Updating ${file.path} from ${currentOid} to ${targetOid}`);
+      const newContent = content.split(currentOid).join(targetOid);
       await octokit.rest.repos.createOrUpdateFileContents({
         ...REPOS.electron,
-        path: filePath,
+        path: file.path,
         content: Buffer.from(newContent).toString('base64'),
-        message: `chore: bump build image tag in ${filePath} to ${targetOid.slice(0, 7)}`,
-        sha: file.sha,
+        message: `chore: bump build image tag in ${file.path} to ${targetOid.slice(0, 7)}`,
+        sha,
         branch: branchName,
       });
       updatedAny = true;
     } catch (error) {
-      d(`Failed to update ${filePath}: ${error.message}`);
+      d(`Failed to update ${file.path}: ${error.message}`);
     }
   }
 
@@ -181,21 +205,19 @@ export async function handleBuildImagesCheck(
 
     d(`Found existing PR: #${pr.number} opened by ${pr.user.login} - updating`);
 
-    const previousOid = await getCurrentOid(octokit, branchName);
-    if (!previousOid) {
-      console.error(
-        `Could not find a valid build-image-sha in ${files[0]} on ${branchName} - not updating PR #${pr.number}`,
-      );
+    const currentOids = await getCurrentOids(octokit, branchName);
+    if (!currentOids) {
+      d(`Not updating PR #${pr.number}`);
       return;
     }
 
-    if (previousOid === targetOid) {
+    if (Object.values(currentOids).every((currentOid) => currentOid === targetOid)) {
       d(`${branchName} is already at ${targetOid} - skipping PR update`);
       return;
     }
 
     d(`Preparing to update files with new OID: ${targetOid}`);
-    const updatedFiles = await updateFilesWithNewOid(octokit, previousOid, targetOid, branchName);
+    const updatedFiles = await updateFilesWithNewOid(octokit, targetOid, branchName);
 
     if (!updatedFiles) {
       d('No files were updated, skipping PR update');
@@ -206,9 +228,9 @@ export async function handleBuildImagesCheck(
       ...REPOS.electron,
       pull_number: pr.number,
       title: `chore: bump build image tag to ${oid}`,
-      body: `This PR updates the build-images references from ${previousOid.slice(
-        0,
-        7,
+      body: `This PR updates the build-images references from ${describeOids(
+        currentOids,
+        targetOid,
       )} to ${oid}.`,
     });
     return;
@@ -222,12 +244,10 @@ export async function handleBuildImagesCheck(
       return;
     }
 
-    // The new branch is created at `sha`, so read the current OID from there.
-    const previousOid = await getCurrentOid(octokit, sha);
-    if (!previousOid) {
-      console.error(
-        `Could not find a valid build-image-sha in ${files[0]} on ${MAIN_BRANCH} - not creating a PR`,
-      );
+    // The new branch is created at `sha`, so read the current OIDs from there.
+    const currentOids = await getCurrentOids(octokit, sha);
+    if (!currentOids) {
+      d('Not creating a PR');
       return;
     }
 
@@ -235,7 +255,7 @@ export async function handleBuildImagesCheck(
     await octokit.rest.git.createRef({ ...REPOS.electron, ref, sha });
 
     d(`Preparing to update files with new OID: ${targetOid}`);
-    await updateFilesWithNewOid(octokit, previousOid, targetOid, branchName);
+    await updateFilesWithNewOid(octokit, targetOid, branchName);
 
     d(`Raising a PR for ${branchName} to ${MAIN_BRANCH}`);
     const pr = await octokit.rest.pulls.create({
@@ -243,9 +263,9 @@ export async function handleBuildImagesCheck(
       base: MAIN_BRANCH,
       head: `${REPOS.electron.owner}:${branchName}`,
       title: `build: update build-images to ${targetOid.slice(0, 7)}`,
-      body: `This PR updates the build-images references from ${previousOid.slice(
-        0,
-        7,
+      body: `This PR updates the build-images references from ${describeOids(
+        currentOids,
+        targetOid,
       )} to ${targetOid.slice(0, 7)}.`,
     });
 
