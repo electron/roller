@@ -7,15 +7,9 @@ import { getContent } from './utils/github-utils.js';
 import { getOctokit } from './utils/octokit.js';
 import { MAIN_BRANCH, REPOS } from './constants.js';
 
-const files = [
-  '.github/workflows/clean-src-cache.yml',
-  '.github/workflows/build.yml',
-  '.github/workflows/linux-publish.yml',
-  '.github/workflows/macos-publish.yml',
-  '.github/workflows/windows-publish.yml',
-  '.github/workflows/build.yml',
-  '.devcontainer/docker-compose.yml',
-];
+// The first entry is the canonical location of the CI build image SHA and is
+// what `shouldUpdateFiles` checks against.
+const files = ['.github/actions/build-image-sha/action.yml', '.devcontainer/docker-compose.yml'];
 
 // Git object IDs are 40-character lowercase hex strings. Any value taken from a
 // webhook payload or package metadata must match this exactly before it is used

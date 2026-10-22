@@ -210,10 +210,10 @@ describe('build-images', () => {
       const targetOid = 'bed562b00714c63080bda07af3f016cab4ba02fc';
 
       vi.mocked(getContent).mockImplementation(async (_, options) => {
-        if (options?.path === '.github/workflows/linux-publish.yml') {
+        if (options?.path === '.github/actions/build-image-sha/action.yml') {
           return {
-            content: `image: ghcr.io/electron/build:${previousOid}`,
-            sha: 'linux-publishsha',
+            content: `echo "build-image-sha=${previousOid}" >> "$GITHUB_OUTPUT"`,
+            sha: 'action-sha',
           };
         } else {
           return {
@@ -233,13 +233,15 @@ describe('build-images', () => {
       );
 
       expect(result).toBe(true);
-      expect(getContent).toHaveBeenCalledTimes(7);
+      expect(getContent).toHaveBeenCalledTimes(2);
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledTimes(1);
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: '.github/workflows/linux-publish.yml',
-          content: expect.any(String),
-          sha: 'linux-publishsha',
+          path: '.github/actions/build-image-sha/action.yml',
+          content: Buffer.from(`echo "build-image-sha=${targetOid}" >> "$GITHUB_OUTPUT"`).toString(
+            'base64',
+          ),
+          sha: 'action-sha',
           branch: branchName,
         }),
       );
@@ -280,6 +282,36 @@ describe('build-images', () => {
       expect(result).toBe(false);
       expect(getContent).not.toHaveBeenCalled();
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('shouldUpdateFiles', () => {
+    const oid = '424eedbf277ad9749ffa9219068aa72ed4a5e373';
+
+    it('checks the build-image-sha action for the OID', async () => {
+      vi.mocked(getContent).mockResolvedValue({
+        content: `echo "build-image-sha=${oid}" >> "$GITHUB_OUTPUT"`,
+        sha: 'action-sha',
+      });
+
+      const result = await buildImagesHandler.shouldUpdateFiles(mockOctokit, oid);
+
+      expect(result).toBe(false);
+      expect(getContent).toHaveBeenCalledWith(
+        mockOctokit,
+        expect.objectContaining({ path: '.github/actions/build-image-sha/action.yml' }),
+      );
+    });
+
+    it('returns true when the action does not reference the OID', async () => {
+      vi.mocked(getContent).mockResolvedValue({
+        content: 'echo "build-image-sha=bed562b00714c63080bda07af3f016cab4ba02fc"',
+        sha: 'action-sha',
+      });
+
+      const result = await buildImagesHandler.shouldUpdateFiles(mockOctokit, oid);
+
+      expect(result).toBe(true);
     });
   });
 
