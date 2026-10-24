@@ -91,8 +91,8 @@ export const SPEC_WEIGHTS = {
 
 // The RBE credential helper release pinned by electron/build-tools.
 export const RBE_CREDENTIAL_HELPER = {
-  // The build-tools file holding `CREDENTIAL_HELPER_TAG` and `CREDENTIAL_HELPER_SHA256`.
-  filePath: 'src/utils/reclient.ts',
+  // The build-tools JSON file pinning the helper: `{ "tag": "vX.Y.Z", "sha256": { "<platform>": "<hex>" } }`.
+  filePath: 'src/utils/rbe-credential-helper.json',
   // build-tools downloads `<cdnBaseUrl>/<tag>/<asset>` and checks it against the pinned hash.
   cdnBaseUrl: 'https://dev-cdn-experimental.electronjs.org/reclient/credential-helper',
   platforms: [

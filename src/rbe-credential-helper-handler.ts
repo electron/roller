@@ -11,16 +11,10 @@ import { MAIN_BRANCH, RBE_CREDENTIAL_HELPER, REPOS, ROLLER_BOT_LOGIN } from './c
 export const RBE_CREDENTIAL_HELPER_BRANCH = `roller/rbe-credential-helper/${MAIN_BRANCH}`;
 
 // Releases are cut by electron/rbe-credential-helper's release workflow with tags
-// like `v1.2.3`. The tag is written into build-tools source, so it must match
+// like `v1.2.3`. The tag is written into build-tools' pin file, so it must match
 // exactly before it is used.
 const TAG_REGEX = /^v\d+\.\d+\.\d+$/;
 const SHA256_REGEX = /^[0-9a-f]{64}$/;
-
-// `const CREDENTIAL_HELPER_TAG = 'v0.6.3';`
-const TAG_LINE_REGEX = /(const CREDENTIAL_HELPER_TAG = ')(v\d+\.\d+\.\d+)(';)/g;
-// `  'darwin-amd64': '<sha256>',` inside `CREDENTIAL_HELPER_SHA256`.
-const hashLineRegex = (platform: string) =>
-  new RegExp(`(['"]${platform}['"]:\\s*['"])([0-9a-f]{64})(['"])`, 'g');
 
 // The release can be published before all of its assets have finished uploading,
 // and the CDN can lag behind the blob upload, so both are polled with backoff.
@@ -159,50 +153,54 @@ export async function verifyCdnHashes(
   return true;
 }
 
-export function getCurrentTag(content: string): string | null {
-  const matches = [...content.matchAll(TAG_LINE_REGEX)];
-  return matches.length === 1 ? matches[0][2] : null;
+export interface RbeCredentialHelperPin {
+  tag: string;
+  sha256: Record<string, unknown>;
 }
 
-// Rewrites the pinned tag and every platform hash. Returns null, rather than a
-// partially updated file, if any of them is not found exactly once.
-export function updateReclientSource(
-  content: string,
-  tag: string,
-  hashes: PlatformHashes,
-): string | null {
-  if (!isValidTag(tag)) return null;
-
-  const replaceOnce = (source: string, regex: RegExp, value: string) => {
-    if ([...source.matchAll(regex)].length !== 1) return null;
-    // A replacement function is used so that `value` is never interpreted as a
-    // replacement pattern (e.g. `$&`).
-    return source.replace(regex, (_, prefix, _old, suffix) => `${prefix}${value}${suffix}`);
-  };
-
-  let updated = replaceOnce(content, TAG_LINE_REGEX, tag);
-  if (updated === null) {
-    console.error(`Could not find CREDENTIAL_HELPER_TAG in ${RBE_CREDENTIAL_HELPER.filePath}`);
+// Parses build-tools' pin file. Returns null if it is not JSON with a string
+// `tag` and a `sha256` object.
+export function parsePin(content: string, ref: string): RbeCredentialHelperPin | null {
+  let pin: unknown;
+  try {
+    pin = JSON.parse(content);
+  } catch {
+    console.error(`${RBE_CREDENTIAL_HELPER.filePath} on ${ref} is not valid JSON`);
     return null;
   }
 
+  const isObject = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
+  if (!isObject(pin) || typeof pin.tag !== 'string' || !isObject(pin.sha256)) {
+    console.error(
+      `${RBE_CREDENTIAL_HELPER.filePath} on ${ref} does not have a string "tag" and a "sha256" object`,
+    );
+    return null;
+  }
+
+  return { tag: pin.tag, sha256: pin.sha256 };
+}
+
+// Serializes the new pin with the platforms in a fixed order. Returns null if
+// the tag or any platform hash is invalid.
+export function serializePin(tag: string, hashes: PlatformHashes): string | null {
+  if (!isValidTag(tag)) return null;
+
+  const sha256: PlatformHashes = {};
   for (const platform of RBE_CREDENTIAL_HELPER.platforms) {
     const hash = hashes[platform];
     if (!SHA256_REGEX.test(hash ?? '')) {
       console.error(`Invalid SHA-256 for ${platform}`);
       return null;
     }
-    updated = replaceOnce(updated, hashLineRegex(platform), hash);
-    if (updated === null) {
-      console.error(`Could not find the ${platform} hash in ${RBE_CREDENTIAL_HELPER.filePath}`);
-      return null;
-    }
+    sha256[platform] = hash;
   }
 
-  return updated;
+  return JSON.stringify({ tag, sha256 }, null, 2) + '\n';
 }
 
-async function readReclientSource(octokit: Octokit, ref: string) {
+async function readPinFile(octokit: Octokit, ref: string) {
   const file = await getContent(octokit, {
     ...REPOS.buildTools,
     path: RBE_CREDENTIAL_HELPER.filePath,
@@ -214,14 +212,17 @@ async function readReclientSource(octokit: Octokit, ref: string) {
   return file;
 }
 
-// True when `ref` already pins `tag` or a newer release.
-function isUpToDate(content: string, tag: string, ref: string) {
-  const currentTag = getCurrentTag(content);
-  if (!isValidTag(currentTag)) {
-    console.error(`Could not find a valid CREDENTIAL_HELPER_TAG on ${ref}`);
-    return { currentTag: null, upToDate: true };
+// Compares the tag pinned on `ref` with `tag`. Returns null, after logging why,
+// when the pin file cannot be understood, so that nothing is rolled.
+function checkPin(content: string, tag: string, ref: string) {
+  const pin = parsePin(content, ref);
+  if (pin === null) return null;
+  if (!isValidTag(pin.tag)) {
+    console.error(`${RBE_CREDENTIAL_HELPER.filePath} on ${ref} pins an invalid tag`);
+    return null;
   }
-  return { currentTag, upToDate: semver.gte(currentTag, tag) };
+  // True when `ref` already pins `tag` or a newer release.
+  return { currentTag: pin.tag, upToDate: semver.gte(pin.tag, tag) };
 }
 
 function getPRText(release: RbeCredentialHelperRelease, previousTag: string) {
@@ -265,16 +266,17 @@ export async function handleRbeCredentialHelperRelease(
   });
   const mainSha = mainBranch.commit.sha;
 
-  const main = await readReclientSource(octokit, mainSha);
-  const { currentTag: mainTag, upToDate: mainUpToDate } = isUpToDate(
-    main.content,
-    tag,
-    MAIN_BRANCH,
-  );
-  if (mainUpToDate) {
-    d(`${owner}/${repo} already pins ${mainTag ?? 'an unknown tag'} - not rolling to ${tag}`);
+  const main = await readPinFile(octokit, mainSha);
+  const mainPin = checkPin(main.content, tag, MAIN_BRANCH);
+  if (mainPin === null) return;
+  const mainTag = mainPin.currentTag;
+  if (mainPin.upToDate) {
+    d(`${owner}/${repo} already pins ${mainTag} - not rolling to ${tag}`);
     return;
   }
+
+  const newContent = serializePin(tag, hashes);
+  if (newContent === null) return;
 
   // Look for an open roll PR from roller's own branch that can be updated instead.
   const { data: openPrs } = await octokit.rest.pulls.list({
@@ -294,19 +296,13 @@ export async function handleRbeCredentialHelperRelease(
     }
 
     // Read from the branch being written to so the blob sha matches.
-    const branch = await readReclientSource(octokit, RBE_CREDENTIAL_HELPER_BRANCH);
-    const { currentTag: branchTag, upToDate } = isUpToDate(
-      branch.content,
-      tag,
-      RBE_CREDENTIAL_HELPER_BRANCH,
-    );
-    if (upToDate) {
-      d(`#${pr.number} already pins ${branchTag ?? 'an unknown tag'} - skipping`);
+    const branch = await readPinFile(octokit, RBE_CREDENTIAL_HELPER_BRANCH);
+    const branchPin = checkPin(branch.content, tag, RBE_CREDENTIAL_HELPER_BRANCH);
+    if (branchPin === null) return;
+    if (branchPin.upToDate) {
+      d(`#${pr.number} already pins ${branchPin.currentTag} - skipping`);
       return;
     }
-
-    const newContent = updateReclientSource(branch.content, tag, hashes);
-    if (newContent === null) return;
 
     await octokit.rest.repos.createOrUpdateFileContents({
       owner,
@@ -327,9 +323,6 @@ export async function handleRbeCredentialHelperRelease(
     d(`Updated #${pr.number} to ${tag}`);
     return;
   }
-
-  const newContent = updateReclientSource(main.content, tag, hashes);
-  if (newContent === null) return;
 
   const shortRef = `heads/${RBE_CREDENTIAL_HELPER_BRANCH}`;
   let orphanRef = false;

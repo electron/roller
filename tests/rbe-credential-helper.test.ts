@@ -6,9 +6,9 @@ import { MAIN_BRANCH, ROLLER_BOT_LOGIN } from '../src/constants.js';
 import {
   RBE_CREDENTIAL_HELPER_BRANCH,
   cdnUrl,
-  getCurrentTag,
   handleRbeCredentialHelperRelease,
-  updateReclientSource,
+  parsePin,
+  serializePin,
 } from '../src/rbe-credential-helper-handler.js';
 import { getContent } from '../src/utils/github-utils.js';
 import { getOctokit } from '../src/utils/octokit.js';
@@ -27,18 +27,14 @@ const PLATFORMS = [
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 
-// The shape of electron/build-tools' src/utils/reclient.ts around the pin.
-const reclientSource = (
-  tag: string,
-  hashes: Record<string, string>,
-) => `const RBE_SERVICE_ADDRESS = 'rbe.notgoma.com:443';
-
-const CREDENTIAL_HELPER_TAG = '${tag}';
-const CREDENTIAL_HELPER_SHA256: Record<string, string> = {
-${PLATFORMS.map((p) => `  '${p}': '${hashes[p]}',`).join('\n')}
-};
-
-export let usingRemote = true;
+// electron/build-tools' src/utils/rbe-credential-helper.json, written out by hand
+// so the exact output format is checked.
+const pinFile = (tag: string, hashes: Record<string, string>) => `{
+  "tag": "${tag}",
+  "sha256": {
+${PLATFORMS.map((p) => `    "${p}": "${hashes[p]}"`).join(',\n')}
+  }
+}
 `;
 
 const OLD_TAG = 'v0.6.3';
@@ -113,7 +109,7 @@ describe('rbe-credential-helper', () => {
       ),
     );
 
-    mockFiles({ 'main-sha': reclientSource(OLD_TAG, OLD_HASHES) });
+    mockFiles({ 'main-sha': pinFile(OLD_TAG, OLD_HASHES) });
   });
 
   afterEach(() => {
@@ -127,31 +123,44 @@ describe('rbe-credential-helper', () => {
       'base64',
     ).toString();
 
-  describe('updateReclientSource', () => {
-    it('rewrites the tag and every platform hash', () => {
-      const result = updateReclientSource(reclientSource(OLD_TAG, OLD_HASHES), NEW_TAG, NEW_HASHES);
+  describe('serializePin', () => {
+    it('writes the tag and every platform hash as 2-space indented JSON', () => {
+      // Hashes given out of order are written in the fixed platform order.
+      const shuffled = Object.fromEntries(Object.entries(NEW_HASHES).reverse());
 
-      expect(result).toEqual(reclientSource(NEW_TAG, NEW_HASHES));
-      expect(getCurrentTag(result)).toBe(NEW_TAG);
+      expect(serializePin(NEW_TAG, shuffled)).toBe(pinFile(NEW_TAG, NEW_HASHES));
     });
 
-    it('returns null when a platform hash is not in the file', () => {
-      const source = reclientSource(OLD_TAG, OLD_HASHES).replace(/ {2}'windows-arm64'.*\n/, '');
+    it('returns null when a platform hash is missing', () => {
+      const { 'windows-arm64': _, ...hashes } = NEW_HASHES;
 
-      expect(updateReclientSource(source, NEW_TAG, NEW_HASHES)).toBeNull();
+      expect(serializePin(NEW_TAG, hashes)).toBeNull();
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('windows-arm64'));
     });
 
-    it('returns null when the tag is not in the file', () => {
-      const source = reclientSource(OLD_TAG, OLD_HASHES).replace('CREDENTIAL_HELPER_TAG', 'TAG');
+    it('refuses a tag that is not a plain version', () => {
+      expect(serializePin('v1.0.0"; evil', NEW_HASHES)).toBeNull();
+    });
+  });
 
-      expect(updateReclientSource(source, NEW_TAG, NEW_HASHES)).toBeNull();
+  describe('parsePin', () => {
+    it('reads the tag and hashes', () => {
+      expect(parsePin(pinFile(OLD_TAG, OLD_HASHES), 'main')).toEqual({
+        tag: OLD_TAG,
+        sha256: OLD_HASHES,
+      });
     });
 
-    it('refuses a tag that is not a plain version', () => {
-      const source = reclientSource(OLD_TAG, OLD_HASHES);
-
-      expect(updateReclientSource(source, "v1.0.0'; evil()", NEW_HASHES)).toBeNull();
+    it.each([
+      ['invalid JSON', '{ "tag": "v0.6.3",'],
+      ['an array', '[]'],
+      ['no tag', JSON.stringify({ sha256: {} })],
+      ['a non-string tag', JSON.stringify({ tag: 6, sha256: {} })],
+      ['no sha256', JSON.stringify({ tag: OLD_TAG })],
+      ['a non-object sha256', JSON.stringify({ tag: OLD_TAG, sha256: 'abc' })],
+    ])('returns null for %s', (_, content) => {
+      expect(parsePin(content, 'main')).toBeNull();
+      expect(console.error).toHaveBeenCalled();
     });
   });
 
@@ -182,13 +191,13 @@ describe('rbe-credential-helper', () => {
         expect.objectContaining({
           owner: 'electron',
           repo: 'build-tools',
-          path: 'src/utils/reclient.ts',
+          path: 'src/utils/rbe-credential-helper.json',
           sha: 'blob-main-sha',
           branch: RBE_CREDENTIAL_HELPER_BRANCH,
           message: `chore: bump rbe credential helper to ${NEW_TAG}`,
         }),
       );
-      expect(committedContent()).toEqual(reclientSource(NEW_TAG, NEW_HASHES));
+      expect(committedContent()).toBe(pinFile(NEW_TAG, NEW_HASHES));
       expect(mockOctokit.rest.pulls.create).toHaveBeenCalledWith(
         expect.objectContaining({
           owner: 'electron',
@@ -265,10 +274,29 @@ describe('rbe-credential-helper', () => {
       ['already at', NEW_TAG],
       ['newer than', 'v0.8.0'],
     ])('does nothing when build-tools is %s the release', async (_, mainTag) => {
-      mockFiles({ 'main-sha': reclientSource(mainTag, NEW_HASHES) });
+      mockFiles({ 'main-sha': pinFile(mainTag, NEW_HASHES) });
 
       await handleRbeCredentialHelperRelease(release, opts);
 
+      expect(mockOctokit.rest.pulls.list).not.toHaveBeenCalled();
+      expect(mockOctokit.rest.git.createRef).not.toHaveBeenCalled();
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
+      expect(mockOctokit.rest.pulls.create).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['is not valid JSON', '{ "tag": '],
+      ['is missing the sha256 object', JSON.stringify({ tag: OLD_TAG })],
+      ['is missing the tag', JSON.stringify({ sha256: OLD_HASHES })],
+      ['pins an invalid tag', JSON.stringify({ tag: 'latest', sha256: OLD_HASHES })],
+    ])('does nothing when the build-tools pin file %s', async (_, content) => {
+      mockFiles({ 'main-sha': content });
+
+      await handleRbeCredentialHelperRelease(release, opts);
+
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('src/utils/rbe-credential-helper.json on main'),
+      );
       expect(mockOctokit.rest.pulls.list).not.toHaveBeenCalled();
       expect(mockOctokit.rest.git.createRef).not.toHaveBeenCalled();
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
@@ -280,8 +308,8 @@ describe('rbe-credential-helper', () => {
         data: [{ number: 7, user: { login: ROLLER_BOT_LOGIN }, labels: [] }],
       });
       mockFiles({
-        'main-sha': reclientSource(OLD_TAG, OLD_HASHES),
-        [RBE_CREDENTIAL_HELPER_BRANCH]: reclientSource('v0.6.4', OLD_HASHES),
+        'main-sha': pinFile(OLD_TAG, OLD_HASHES),
+        [RBE_CREDENTIAL_HELPER_BRANCH]: pinFile('v0.6.4', OLD_HASHES),
       });
 
       await handleRbeCredentialHelperRelease(release, opts);
@@ -300,7 +328,7 @@ describe('rbe-credential-helper', () => {
           branch: RBE_CREDENTIAL_HELPER_BRANCH,
         }),
       );
-      expect(committedContent()).toEqual(reclientSource(NEW_TAG, NEW_HASHES));
+      expect(committedContent()).toBe(pinFile(NEW_TAG, NEW_HASHES));
       expect(mockOctokit.rest.pulls.update).toHaveBeenCalledWith(
         expect.objectContaining({
           pull_number: 7,
@@ -317,12 +345,28 @@ describe('rbe-credential-helper', () => {
         data: [{ number: 7, user: { login: ROLLER_BOT_LOGIN }, labels: [] }],
       });
       mockFiles({
-        'main-sha': reclientSource(OLD_TAG, OLD_HASHES),
-        [RBE_CREDENTIAL_HELPER_BRANCH]: reclientSource(NEW_TAG, NEW_HASHES),
+        'main-sha': pinFile(OLD_TAG, OLD_HASHES),
+        [RBE_CREDENTIAL_HELPER_BRANCH]: pinFile(NEW_TAG, NEW_HASHES),
       });
 
       await handleRbeCredentialHelperRelease(release, opts);
 
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
+      expect(mockOctokit.rest.pulls.update).not.toHaveBeenCalled();
+    });
+
+    it('does not update an existing roll PR whose pin file is malformed', async () => {
+      mockOctokit.rest.pulls.list.mockResolvedValue({
+        data: [{ number: 7, user: { login: ROLLER_BOT_LOGIN }, labels: [] }],
+      });
+      mockFiles({
+        'main-sha': pinFile(OLD_TAG, OLD_HASHES),
+        [RBE_CREDENTIAL_HELPER_BRANCH]: 'not json',
+      });
+
+      await handleRbeCredentialHelperRelease(release, opts);
+
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('is not valid JSON'));
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
       expect(mockOctokit.rest.pulls.update).not.toHaveBeenCalled();
     });
