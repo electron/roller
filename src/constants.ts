@@ -15,6 +15,14 @@ export const REPOS = {
     owner: 'nodejs',
     repo: 'node',
   },
+  buildTools: {
+    owner: 'electron',
+    repo: 'build-tools',
+  },
+  rbeCredentialHelper: {
+    owner: 'electron',
+    repo: 'rbe-credential-helper',
+  },
 };
 
 export const REPO_OWNER = 'electron';
@@ -79,4 +87,21 @@ export const SPEC_WEIGHTS = {
   workflowFile: 'build.yml',
   // Green push runs whose timings are combined (median per file) for one refresh.
   runsToSample: 3,
+};
+
+// The RBE credential helper release pinned by electron/build-tools.
+export const RBE_CREDENTIAL_HELPER = {
+  // The build-tools JSON file pinning the helper: `{ "tag": "vX.Y.Z", "sha256": { "<platform>": "<hex>" } }`.
+  filePath: 'src/utils/rbe-credential-helper.json',
+  // build-tools downloads `<cdnBaseUrl>/<tag>/<asset>` and checks it against the pinned hash.
+  cdnBaseUrl: 'https://dev-cdn-experimental.electronjs.org/reclient/credential-helper',
+  platforms: [
+    'darwin-amd64',
+    'darwin-arm64',
+    'linux-amd64',
+    'linux-arm64',
+    'windows-amd64',
+    'windows-arm64',
+  ],
+  assetName: (platform: string) => `electron-rbe-credential-helper-${platform}.tar.gz`,
 };
