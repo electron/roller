@@ -4,6 +4,7 @@ import { handleNodeCheck } from './node-handler.js';
 import { handleChromiumCheck } from './chromium-handler.js';
 import { handleBuildImagesCheck } from './build-images-handler.js';
 import { handleBuildImagesChromiumDepsCheck } from './build-images-chromium-deps-handler.js';
+import { handleRbeCredentialHelperRelease } from './rbe-credential-helper-handler.js';
 import { REPOS, ROLLER_BOT_LOGIN, ROLL_TARGETS } from './constants.js';
 import { isAuthorizedElectronRepoUser } from './utils/is-authorized-user.js';
 import { updatePRBranch } from './utils/update-pr-branch.js';
@@ -57,6 +58,28 @@ const handler = (robot: Probot) => {
       await handleBuildImagesCheck(payload);
     } catch (error) {
       d(`Failed to autoroll new build-images version: ${error.message}`);
+    }
+  });
+
+  robot.on('release.published', async (context) => {
+    const d = debug('roller/github:release.published');
+
+    const { release, repository } = context.payload;
+
+    // Releases are written into electron/build-tools, so only react to the
+    // credential helper's own repository.
+    const { owner, repo } = REPOS.rbeCredentialHelper;
+    if (repository.full_name !== `${owner}/${repo}`) return;
+
+    if (release.draft || release.prerelease) {
+      d(`Ignoring draft or prerelease ${release.tag_name}`);
+      return;
+    }
+
+    try {
+      await handleRbeCredentialHelperRelease(release);
+    } catch (error) {
+      d(`Failed to roll rbe-credential-helper ${release.tag_name}: ${error.message}`);
     }
   });
 

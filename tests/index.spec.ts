@@ -6,6 +6,7 @@ import handler from '../src/index.js';
 import { handleChromiumCheck } from '../src/chromium-handler.js';
 import { ROLLER_BOT_LOGIN } from '../src/constants.js';
 import { handleNodeCheck } from '../src/node-handler.js';
+import { handleRbeCredentialHelperRelease } from '../src/rbe-credential-helper-handler.js';
 import { isAuthorizedElectronRepoUser } from '../src/utils/is-authorized-user.js';
 import { updatePRBranch } from '../src/utils/update-pr-branch.js';
 
@@ -14,6 +15,7 @@ import issueCommentUpdateBranchCreatedEvent from './fixtures/issue_comment_updat
 
 vi.mock('../src/chromium-handler.js');
 vi.mock('../src/node-handler.js');
+vi.mock('../src/rbe-credential-helper-handler.js');
 vi.mock('../src/utils/is-authorized-user.js');
 vi.mock('../src/utils/update-pr-branch.js');
 
@@ -167,6 +169,61 @@ describe('roller', () => {
       expect(comment).toEqual(
         'This PR was not created by roller and cannot be updated via this command.',
       );
+    });
+  });
+
+  describe('release.published event', () => {
+    let probot: Probot;
+
+    const releaseEvent = (fullName: string, release: Record<string, unknown> = {}) => ({
+      id: '123',
+      name: 'release' as const,
+      payload: {
+        action: 'published',
+        release: {
+          id: 1,
+          tag_name: 'v0.7.0',
+          html_url: 'https://github.com/electron/rbe-credential-helper/releases/tag/v0.7.0',
+          draft: false,
+          prerelease: false,
+          ...release,
+        },
+        repository: { full_name: fullName, name: fullName.split('/')[1] },
+      },
+    });
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      probot = new Probot({ githubToken: 'test' });
+      probot.load(handler);
+    });
+
+    it('rolls a release of electron/rbe-credential-helper', async () => {
+      await probot.receive(
+        releaseEvent('electron/rbe-credential-helper') as Parameters<typeof probot.receive>[0],
+      );
+
+      expect(handleRbeCredentialHelperRelease).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 1, tag_name: 'v0.7.0' }),
+      );
+    });
+
+    it('ignores releases from other repositories', async () => {
+      await probot.receive(
+        releaseEvent('electron/other-repo') as Parameters<typeof probot.receive>[0],
+      );
+
+      expect(handleRbeCredentialHelperRelease).not.toHaveBeenCalled();
+    });
+
+    it('ignores prereleases', async () => {
+      await probot.receive(
+        releaseEvent('electron/rbe-credential-helper', {
+          prerelease: true,
+        }) as Parameters<typeof probot.receive>[0],
+      );
+
+      expect(handleRbeCredentialHelperRelease).not.toHaveBeenCalled();
     });
   });
 });
