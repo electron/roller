@@ -3,7 +3,6 @@ import * as semver from 'semver';
 
 import {
   BACKPORT_CHECK_SKIP,
-  CHROMIUM_UPGRADE_WORKFLOW,
   MAIN_BRANCH,
   NO_BACKPORT,
   REPOS,
@@ -152,21 +151,26 @@ async function updateLabels(
   return coveredBranches;
 }
 
-// Dispatches the agent-driven Chromium upgrade workflow against the given
-// roll branch (`roller/chromium/<electron branch>`), for main and release
-// branches alike.
-async function triggerChromiumUpgradeWorkflow(octokit: Octokit, rollBranchName: string) {
-  const d = debug('roller/chromium:triggerChromiumUpgradeWorkflow()');
+// Dispatches the roll target's agent-driven upgrade workflow (Chromium or
+// Node.js) against the given roll branch (`roller/<target>/<electron branch>`),
+// for main and release branches alike. Best-effort: a failed dispatch is
+// logged and never fails the roll.
+async function triggerUpgradeWorkflow(
+  octokit: Octokit,
+  rollTarget: RollTarget,
+  rollBranchName: string,
+) {
+  const workflow = rollTarget.upgradeWorkflow;
+  if (!workflow) return;
+  const d = debug(`roller/${rollTarget.name}:triggerUpgradeWorkflow()`);
   try {
     await octokit.actions.createWorkflowDispatch({
-      ...CHROMIUM_UPGRADE_WORKFLOW,
+      ...workflow,
       inputs: { 'base-ref': rollBranchName },
     });
-    d(`Dispatched ${CHROMIUM_UPGRADE_WORKFLOW.workflow_id} for ${rollBranchName}`);
+    d(`Dispatched ${workflow.workflow_id} for ${rollBranchName}`);
   } catch (e) {
-    d(
-      `Failed to dispatch ${CHROMIUM_UPGRADE_WORKFLOW.workflow_id} for ${rollBranchName}: ${e.message}`,
-    );
+    d(`Failed to dispatch ${workflow.workflow_id} for ${rollBranchName}: ${e.message}`);
   }
 }
 
@@ -357,8 +361,8 @@ export async function roll({
     didRoll = true;
   }
 
-  if (didRoll && rollTarget === ROLL_TARGETS.chromium) {
-    await triggerChromiumUpgradeWorkflow(github, rollBranchName);
+  if (didRoll) {
+    await triggerUpgradeWorkflow(github, rollTarget, rollBranchName);
   }
 
   return coveredBranches;
