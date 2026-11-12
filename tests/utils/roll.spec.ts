@@ -7,6 +7,7 @@ import {
   CHROMIUM_UPGRADE_WORKFLOW,
   MAIN_BRANCH,
   NO_BACKPORT,
+  NODE_UPGRADE_WORKFLOW,
   REPOS,
   ROLL_TARGETS,
 } from '../../src/constants.js';
@@ -287,7 +288,7 @@ describe('roll()', () => {
     );
   });
 
-  describe('chromium-upgrade workflow dispatch', () => {
+  describe('upgrade workflow dispatch', () => {
     const mainBranch = { ...branch, name: MAIN_BRANCH };
 
     it('dispatches when creating a new chromium PR on main', async () => {
@@ -335,7 +336,7 @@ describe('roll()', () => {
       });
     });
 
-    it('does not dispatch for node rolls on main', async () => {
+    it('dispatches node-upgrade.yml when creating a new node PR on main', async () => {
       mockOctokit.paginate.mockReturnValue([]);
 
       await roll({
@@ -344,6 +345,122 @@ describe('roll()', () => {
         targetVersion: 'v10.0.0',
       });
 
+      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledTimes(1);
+      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledWith({
+        ...NODE_UPGRADE_WORKFLOW,
+        inputs: { 'base-ref': `roller/node/${MAIN_BRANCH}` },
+      });
+    });
+
+    it('dispatches node-upgrade.yml when updating an existing node PR on main', async () => {
+      mockOctokit.paginate.mockReturnValue([
+        {
+          user: { login: 'electron-roller[bot]' },
+          title: `chore: bump ${ROLL_TARGETS.node.name} to v10.0.0`,
+          number: 1,
+          head: {
+            ref: `roller/${ROLL_TARGETS.node.name}/${mainBranch.name}`,
+            repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
+          },
+          body: 'Original-Version: v4.0.0',
+          labels: [],
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+      await roll({
+        rollTarget: ROLL_TARGETS.node,
+        electronBranch: mainBranch,
+        targetVersion: 'v10.0.0',
+      });
+
+      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledTimes(1);
+      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledWith({
+        ...NODE_UPGRADE_WORKFLOW,
+        inputs: { 'base-ref': `roller/node/${MAIN_BRANCH}` },
+      });
+    });
+
+    it('dispatches node-upgrade.yml for node rolls on a release branch with that roll branch as base-ref', async () => {
+      mockOctokit.paginate.mockReturnValue([]);
+
+      await roll({
+        rollTarget: ROLL_TARGETS.node,
+        electronBranch: branch,
+        targetVersion: 'v10.0.0',
+      });
+
+      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledTimes(1);
+      expect(mockOctokit.actions.createWorkflowDispatch).toHaveBeenCalledWith({
+        ...NODE_UPGRADE_WORKFLOW,
+        inputs: { 'base-ref': `roller/node/${branch.name}` },
+      });
+    });
+
+    it('does not dispatch when the node DEPS version is unchanged', async () => {
+      mockOctokit.paginate.mockReturnValue([
+        {
+          user: { login: 'electron-roller[bot]' },
+          title: `chore: bump ${ROLL_TARGETS.node.name} to v10.0.0`,
+          number: 1,
+          head: {
+            ref: `roller/${ROLL_TARGETS.node.name}/${branch.name}`,
+            repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
+          },
+          body: 'Original-Version: v10.0.0',
+          labels: [],
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      vi.mocked(updateDepsFile).mockResolvedValue({
+        previousDEPSVersion: 'v10.0.0',
+        newDEPSVersion: 'v10.0.0',
+      });
+
+      await roll({
+        rollTarget: ROLL_TARGETS.node,
+        electronBranch: branch,
+        targetVersion: 'v10.0.0',
+      });
+
+      expect(mockOctokit.actions.createWorkflowDispatch).not.toHaveBeenCalled();
+    });
+
+    it('does not dispatch when the existing node PR is paused', async () => {
+      mockOctokit.paginate.mockReturnValue([
+        {
+          user: { login: 'electron-roller[bot]' },
+          title: `chore: bump ${ROLL_TARGETS.node.name} to v10.0.0`,
+          number: 1,
+          head: {
+            ref: `roller/${ROLL_TARGETS.node.name}/${branch.name}`,
+            repo: { full_name: `${REPOS.electron.owner}/${REPOS.electron.repo}` },
+          },
+          body: 'Original-Version: v4.0.0',
+          labels: [{ name: 'roller/pause' }],
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+      await roll({
+        rollTarget: ROLL_TARGETS.node,
+        electronBranch: branch,
+        targetVersion: 'v10.0.0',
+      });
+
+      expect(mockOctokit.actions.createWorkflowDispatch).not.toHaveBeenCalled();
+    });
+
+    it('does not dispatch for a roll target without an upgrade workflow', async () => {
+      mockOctokit.paginate.mockReturnValue([]);
+
+      await roll({
+        rollTarget: { ...ROLL_TARGETS.node, upgradeWorkflow: undefined },
+        electronBranch: branch,
+        targetVersion: 'v10.0.0',
+      });
+
+      expect(mockOctokit.pulls.create).toHaveBeenCalled();
       expect(mockOctokit.actions.createWorkflowDispatch).not.toHaveBeenCalled();
     });
 

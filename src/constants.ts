@@ -33,10 +33,20 @@ export const ROLLER_BOT_LOGIN = 'electron-roller[bot]';
 
 export const MAIN_BRANCH = 'main';
 
-export const CHROMIUM_UPGRADE_WORKFLOW = {
+// Agent-driven upgrade workflows in electron/agent-workflows. After a roll
+// updates `roller/<target>/<electron branch>`, the roller dispatches the
+// target's workflow with that branch as its `base-ref` input.
+export const CHROMIUM_UPGRADE_WORKFLOW: UpgradeWorkflow = {
   owner: 'electron',
   repo: 'agent-workflows',
   workflow_id: 'chromium-upgrade.yml',
+  ref: 'main',
+};
+
+export const NODE_UPGRADE_WORKFLOW: UpgradeWorkflow = {
+  owner: 'electron',
+  repo: 'agent-workflows',
+  workflow_id: 'node-upgrade.yml',
   ref: 'main',
 };
 
@@ -44,10 +54,12 @@ export const ROLL_TARGETS = {
   node: {
     name: 'node',
     depsKey: 'node_version',
+    upgradeWorkflow: NODE_UPGRADE_WORKFLOW,
   },
   chromium: {
     name: 'chromium',
     depsKey: 'chromium_version',
+    upgradeWorkflow: CHROMIUM_UPGRADE_WORKFLOW,
   },
 };
 
@@ -69,9 +81,18 @@ export interface Commit {
   message: string;
 }
 
+export interface UpgradeWorkflow {
+  owner: string;
+  repo: string;
+  workflow_id: string;
+  ref: string;
+}
+
 export interface RollTarget {
   name: string;
   depsKey: string;
+  // The agent workflow dispatched after a successful roll, if any.
+  upgradeWorkflow?: UpgradeWorkflow;
 }
 
 export interface Repository {
