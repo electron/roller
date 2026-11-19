@@ -14,7 +14,7 @@ export async function handleNodeCheck(target?: string): Promise<void> {
   const github = await getOctokit();
 
   d('Fetching release branches for electron/electron');
-  const releaseBranches = await getSupportedBranches(github, 3);
+  const releaseBranches = await getSupportedBranches(github);
   d(`Found ${releaseBranches.length} release branches`);
 
   let failed = false;
